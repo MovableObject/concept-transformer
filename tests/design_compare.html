@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en" class="sl-theme-dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design comparison</title>
+<!-- 2. A ready-made component library: Shoelace 2 (Web Awesome is its successor, same look and same way of theming) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+<!-- 3. A token toolkit: Open Props -->
+<link rel="stylesheet" href="https://unpkg.com/open-props@1.7.16/open-props.min.css">
+<style>
+  body { margin: 0; background: #141416; color: #e4e4e6; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 28px 16px 60px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .lead { color: #9a9aa0; margin: 0 0 24px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 18px; }
+  .panel { padding: 18px; border: 1px solid #2c2c30; }
+  .panel > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .7px; margin: 0 0 2px; color: #b9b4a6; }
+  .panel > .what { font-size: 12px; color: #8a8a90; margin: 0 0 16px; min-height: 36px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; align-items: center; }
+  .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .7px; color: #8a8a90; width: 90px; }
+
+  /* ── 1. shadcn's tokens in plain CSS ───────────────────────────────── */
+  .shad {
+    --background: hsl(240 6% 9%); --foreground: hsl(0 0% 96%);
+    --card: hsl(240 5% 11%); --muted: hsl(240 4% 16%); --muted-foreground: hsl(240 5% 62%);
+    --border: hsl(240 4% 20%); --input: hsl(240 4% 22%); --ring: hsl(240 5% 70%);
+    --primary: hsl(40 12% 82%); --primary-foreground: hsl(240 6% 10%);
+    --secondary: hsl(240 4% 17%); --radius: 0.25rem;
+    background: var(--background); color: var(--foreground); border-color: var(--border);
+  }
+  .shad textarea { width: 100%; box-sizing: border-box; min-height: 64px; background: transparent; color: var(--foreground);
+    border: 1px solid var(--input); border-radius: var(--radius); padding: 8px 12px; font: inherit; font-size: 16px; }
+  .shad textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring); }
+  .shad .btn { height: 34px; padding: 0 12px; border-radius: var(--radius); font: 500 14px system-ui, sans-serif; cursor: pointer;
+    border: 1px solid var(--input); background: transparent; color: var(--foreground); }
+  .shad .btn:hover { background: var(--muted); }
+  .shad .btn.primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  .shad .btn.secondary { background: var(--secondary); border-color: transparent; }
+  .shad .btn.ghost { border-color: transparent; }
+  .shad .tabs { display: inline-flex; padding: 3px; background: var(--muted); border-radius: var(--radius); }
+  .shad .tabs button { border: 0; background: transparent; color: var(--muted-foreground); font: 500 13px system-ui; padding: 4px 12px; border-radius: calc(var(--radius) - 1px); cursor: pointer; }
+  .shad .tabs button.on { background: var(--background); color: var(--foreground); box-shadow: 0 1px 2px rgb(0 0 0 / .4); }
+  .shad .switch { width: 34px; height: 18px; border-radius: 3px; background: var(--primary); position: relative; display: inline-block; vertical-align: middle; }
+  .shad .switch::after { content: ""; position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; border-radius: 2px; background: var(--primary-foreground); }
+  .shad .card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); padding: 14px; margin-top: 12px; }
+  .shad .card .meta { font-size: 12px; color: var(--muted-foreground); }
+  .shad .card p { margin: 6px 0 10px; }
+  .shad .badge { display: inline-block; font-size: 11px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 3px; color: var(--muted-foreground); }
+
+  /* ── 2. Shoelace / Web Awesome, themed square ─────────────────────── */
+  .sl {
+    --sl-border-radius-small: 2px; --sl-border-radius-medium: 3px; --sl-border-radius-large: 4px;
+    --sl-border-radius-x-large: 4px; --sl-border-radius-pill: 4px; --sl-border-radius-circle: 4px;
+    --sl-color-primary-600: #b9b4a6; --sl-color-primary-500: #a8a396; --sl-color-primary-950: #f3f1ea;
+    --sl-color-neutral-0: #1b1b1e; --sl-panel-background-color: #1b1b1e;
+    --sl-input-background-color: #1b1b1e; --sl-input-border-color: #3a3a40;
+    background: #19191b; border-color: #2c2c30;
+  }
+  .sl sl-switch::part(control) { border-radius: 3px; }
+  .sl sl-switch::part(thumb) { border-radius: 2px; }
+  .sl sl-card { width: 100%; margin-top: 12px; --border-radius: 4px; --border-color: #2c2c30; }
+  .sl sl-card::part(base) { background: #202023; }
+  .sl .meta { font-size: 12px; color: #8a8a90; }
+  .sl sl-card p { margin: 6px 0 10px; }
+
+  /* ── 3. Open Props tokens ──────────────────────────────────────────── */
+  .op {
+    --r: var(--radius-1); /* 2px; Open Props' scale goes up to round "pill" sizes, we stay at the bottom */
+    background: var(--gray-12); color: var(--gray-1); border-color: var(--gray-10);
+    font-family: var(--font-system-ui);
+  }
+  .op textarea { width: 100%; box-sizing: border-box; min-height: 64px; background: var(--gray-11); color: var(--gray-1);
+    border: var(--border-size-1) solid var(--gray-9); border-radius: var(--r); padding: var(--size-2) var(--size-3); font: inherit; font-size: var(--font-size-2);
+    box-shadow: var(--inner-shadow-2); }
+  .op .btn { padding: var(--size-1) var(--size-3); border-radius: var(--r); font-weight: var(--font-weight-6); font-size: var(--font-size-1);
+    border: var(--border-size-1) solid var(--gray-8); background: var(--gray-10); color: var(--gray-1); cursor: pointer;
+    box-shadow: var(--shadow-2); transition: transform .1s var(--ease-3), background .2s; }
+  .op .btn:hover { background: var(--gray-9); transform: translateY(-1px); }
+  .op .btn.primary { background: var(--stone-6); border-color: var(--stone-5); color: var(--gray-12); }
+  .op .tabs { display: inline-flex; border: var(--border-size-1) solid var(--gray-8); border-radius: var(--r); overflow: hidden; }
+  .op .tabs button { border: 0; padding: var(--size-1) var(--size-3); background: var(--gray-11); color: var(--gray-5); font-size: var(--font-size-0); cursor: pointer; }
+  .op .tabs button.on { background: var(--gray-8); color: var(--gray-0); }
+  .op .card { border-radius: var(--r); background: var(--gray-11); padding: var(--size-3); margin-top: var(--size-3); box-shadow: var(--shadow-3); border-left: 3px solid var(--stone-6); }
+  .op .card .meta { font-size: var(--font-size-0); color: var(--gray-6); letter-spacing: var(--font-letterspacing-2); text-transform: uppercase; }
+  .op .card p { margin: var(--size-2) 0 var(--size-3); font-size: var(--font-size-2); }
+
+
+  /* ── 4. Tremor's look, recreated (Tremor itself is React + Tailwind only) ── */
+  .tr {
+    --tr-bg: #030712; --tr-subtle: #111827; --tr-border: #1f2937; --tr-ring: #1f2937;
+    --tr-content: #6b7280; --tr-emph: #e5e7eb; --tr-strong: #f9fafb;
+    --tr-brand: #3b82f6; --tr-brand-faint: #172554; --tr-brand-inverted: #030712; --tr-r: 4px;
+    background: var(--tr-bg); color: var(--tr-emph); border-color: var(--tr-border);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  .tr textarea { width: 100%; box-sizing: border-box; min-height: 64px; background: var(--tr-bg); color: var(--tr-emph);
+    border: 1px solid var(--tr-border); border-radius: var(--tr-r); padding: 8px 12px; font: inherit; font-size: 15px;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / .05); }
+  .tr textarea:focus { outline: none; border-color: var(--tr-brand); box-shadow: 0 0 0 2px var(--tr-brand-faint); }
+  .tr .btn { padding: 6px 12px; border-radius: var(--tr-r); font: 500 14px ui-sans-serif, system-ui; cursor: pointer;
+    border: 1px solid var(--tr-border); background: var(--tr-bg); color: var(--tr-emph); box-shadow: 0 1px 2px 0 rgb(0 0 0 / .05); }
+  .tr .btn:hover { background: var(--tr-subtle); }
+  .tr .btn.primary { background: var(--tr-brand); border-color: var(--tr-brand); color: var(--tr-brand-inverted); }
+  .tr .btn.light { background: transparent; border-color: transparent; color: var(--tr-brand); }
+  .tr .tabs { display: inline-flex; gap: 2px; padding: 2px; background: var(--tr-subtle); border-radius: var(--tr-r); }
+  .tr .tabs button { border: 0; background: transparent; color: var(--tr-content); font: 500 13px ui-sans-serif, system-ui; padding: 5px 12px; border-radius: calc(var(--tr-r) - 1px); cursor: pointer; }
+  .tr .tabs button.on { background: var(--tr-bg); color: var(--tr-brand); box-shadow: 0 1px 2px 0 rgb(0 0 0 / .4); }
+  .tr .card { position: relative; border-radius: var(--tr-r); background: var(--tr-bg); padding: 16px; margin-top: 12px;
+    box-shadow: 0 0 0 1px var(--tr-ring), 0 1px 3px 0 rgb(0 0 0 / .1); border-top: 3px solid var(--tr-brand); }
+  .tr .card .meta { font-size: 13px; color: var(--tr-content); display: flex; gap: 8px; align-items: center; }
+  .tr .card p { margin: 6px 0 12px; color: var(--tr-strong); font-size: 16px; }
+  .tr .badge { font-size: 12px; padding: 1px 8px; border-radius: 3px; background: var(--tr-brand-faint); color: #93c5fd; }
+  .tr .bar { height: 6px; border-radius: 2px; background: var(--tr-subtle); overflow: hidden; margin: 4px 0 10px; }
+  .tr .bar span { display: block; height: 100%; width: 62%; background: var(--tr-brand); }
+
+  /* ── 0. today's site, for reference ───────────────────────────────── */
+  .now { background: #19191b; border-color: #36363a; }
+  .now textarea { width: 100%; box-sizing: border-box; min-height: 64px; background: #212124; color: #e4e4e6; border: 1px solid #4a4a50; border-radius: 4px; padding: 10px 12px; font: inherit; font-size: 17px; }
+  .now .btn { background: #262629; border: 1px solid #4a4a50; border-radius: 4px; padding: 5px 12px; color: #e4e4e6; font-size: 14px; cursor: pointer; }
+  .now .tabs { display: inline-flex; border: 1px solid #4a4a50; border-radius: 4px; overflow: hidden; }
+  .now .tabs button { border: 0; background: #212124; color: #9a9aa0; font-size: 13px; padding: 5px 11px; }
+  .now .tabs button.on { background: #34343a; color: #e4e4e6; }
+  .now .card { border: 1px solid #36363a; border-radius: 4px; background: #212124; padding: 12px 14px; margin-top: 12px; }
+  .now .card .meta { font-size: 12px; color: #9a9aa0; text-transform: uppercase; letter-spacing: .6px; }
+  .now .card p { margin: 6px 0 10px; font-size: 17px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Four ways to style Concept Transformer</h1>
+  <p class="lead">The same pieces of the page in each style: the concept box, the mode switch, move buttons, and one result card. All set to small, square-ish corners and no pill shapes.</p>
+  <div class="grid">
+
+    <section class="panel now">
+      <h2>Today's site</h2>
+      <p class="what">Hand-written CSS. For reference.</p>
+      <div class="tabs"><button class="on">Image concepts</button><button>Ideas</button></div>
+      <div class="row"><textarea>A bakery that only opens at night.</textarea></div>
+      <div class="row"><span class="lbl">SCAMPER</span><button class="btn">Substitute</button><button class="btn">Combine</button><button class="btn">Adapt</button><button class="btn">Reverse</button></div>
+      <div class="card"><div class="meta">Reverse · Groq GPT OSS</div><p>Night bakery: customers bake the morning bread while the bakers sleep upstairs.</p>
+        <div class="row"><button class="btn">Copy</button><button class="btn">Read aloud</button><button class="btn">Use this</button></div></div>
+    </section>
+
+    <section class="panel shad">
+      <h2>1 · shadcn's tokens, plain CSS</h2>
+      <p class="what">The same variable names as your React apps, and shadcn-style buttons, tabs and cards. One theme block shared across projects.</p>
+      <div class="tabs"><button class="on">Image concepts</button><button>Ideas</button></div>
+      <div class="row"><textarea>A bakery that only opens at night.</textarea></div>
+      <div class="row"><span class="lbl" style="color:var(--muted-foreground)">SCAMPER</span><button class="btn">Substitute</button><button class="btn">Combine</button><button class="btn secondary">Adapt</button><button class="btn primary">Reverse</button></div>
+      <div class="row"><span class="switch"></span> <span style="font-size:14px">Stack moves</span> <button class="btn ghost">What each move does</button></div>
+      <div class="card"><div class="meta">Reverse <span class="badge">Groq GPT OSS</span></div><p>Night bakery: customers bake the morning bread while the bakers sleep upstairs.</p>
+        <div class="row"><button class="btn">Copy</button><button class="btn">Read aloud</button><button class="btn primary">Use this</button></div></div>
+    </section>
+
+    <section class="panel sl">
+      <h2>2 · Component library (Shoelace / Web Awesome)</h2>
+      <p class="what">Finished components with their own polish: focus rings, transitions, a real switch and tooltips. Themed down to square corners.</p>
+      <sl-radio-group value="image" size="small"><sl-radio-button value="image">Image concepts</sl-radio-button><sl-radio-button value="ideas">Ideas</sl-radio-button></sl-radio-group>
+      <div class="row"><sl-textarea value="A bakery that only opens at night." rows="2" style="width:100%"></sl-textarea></div>
+      <div class="row"><span class="lbl">SCAMPER</span><sl-button size="small">Substitute</sl-button><sl-button size="small">Combine</sl-button><sl-tooltip content="Borrows how another field solves things"><sl-button size="small">Adapt</sl-button></sl-tooltip><sl-button size="small" variant="primary">Reverse</sl-button></div>
+      <div class="row"><sl-switch size="small" checked>Stack moves</sl-switch></div>
+      <sl-card><div class="meta">Reverse · <sl-tag size="small">Groq GPT OSS</sl-tag></div><p>Night bakery: customers bake the morning bread while the bakers sleep upstairs.</p>
+        <div class="row"><sl-button size="small">Copy</sl-button><sl-button size="small">Read aloud</sl-button><sl-button size="small" variant="primary">Use this</sl-button></div></sl-card>
+    </section>
+
+    <section class="panel op">
+      <h2>3 · Token toolkit (Open Props)</h2>
+      <p class="what">A designed scale of colors, shadows, spacing and easing. You still write the components; they come out more dimensional, with soft shadows and motion.</p>
+      <div class="tabs"><button class="on">Image concepts</button><button>Ideas</button></div>
+      <div class="row"><textarea>A bakery that only opens at night.</textarea></div>
+      <div class="row"><span class="lbl">SCAMPER</span><button class="btn">Substitute</button><button class="btn">Combine</button><button class="btn">Adapt</button><button class="btn primary">Reverse</button></div>
+      <div class="card"><div class="meta">Reverse · Groq GPT OSS</div><p>Night bakery: customers bake the morning bread while the bakers sleep upstairs.</p>
+        <div class="row"><button class="btn">Copy</button><button class="btn">Read aloud</button><button class="btn primary">Use this</button></div></div>
+    </section>
+
+    <section class="panel tr">
+      <h2 style="color:#93c5fd">4 · Tremor's look, recreated</h2>
+      <p class="what">Tremor is a React and Tailwind library for dashboards, so on this plain page it can only be copied by eye: near-black, cool grays, one bright brand color, thin outlines with a faint ring, and small data touches like the bar.</p>
+      <div class="tabs"><button class="on">Image concepts</button><button>Ideas</button></div>
+      <div class="row"><textarea>A bakery that only opens at night.</textarea></div>
+      <div class="row"><span class="lbl" style="color:#6b7280">SCAMPER</span><button class="btn">Substitute</button><button class="btn">Combine</button><button class="btn light">Adapt</button><button class="btn primary">Reverse</button></div>
+      <div class="card"><div class="meta">Reverse <span class="badge">Groq GPT OSS</span></div>
+        <div class="bar" title="Free presses left today"><span></span></div>
+        <p>Night bakery: customers bake the morning bread while the bakers sleep upstairs.</p>
+        <div class="row"><button class="btn">Copy</button><button class="btn">Read aloud</button><button class="btn primary">Use this</button></div></div>
+    </section>
+
+  </div>
+</div>
+</body>
+</html>

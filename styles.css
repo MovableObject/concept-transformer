@@ -1,31 +1,50 @@
 /* Concept Transformer — styled with shadcn/ui's design tokens in plain CSS.
  * The variable names below are shadcn's, so a theme made on ui.shadcn.com/themes or tweakcn.com
  * can be pasted over this :root block and the page follows, the same as the owner's React apps.
- * House rules: dark, muted, small square-ish corners (radius 4px), no pill shapes, no bright fills. */
+ * House rules: dark, small square-ish corners (radius 4px), no pill shapes. */
+/* Nunito, hosted on this site (the security policy allows only this site's own fonts). */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('fonts/nunito-latin.woff2') format('woff2');
+}
+
+/* The owner's tweakcn theme (dark block), 2026-10-09. Two deliberate changes from the export:
+ * --radius stays 0.25rem (owner prefers square-ish corners; the export had 0.625rem), and
+ * --primary-foreground is near-white so text on the indigo buttons stays readable. */
 :root {
   color-scheme: dark;
-  --background: hsl(240 6% 8%);
-  --foreground: hsl(0 0% 95%);
-  --card: hsl(240 5% 10.5%);
-  --card-foreground: hsl(0 0% 95%);
-  --popover: hsl(240 5% 10.5%);
-  --popover-foreground: hsl(0 0% 95%);
-  --primary: hsl(42 10% 76%);            /* muted warm gray: the one "colored" fill, kept quiet */
-  --primary-foreground: hsl(240 6% 9%);
-  --secondary: hsl(240 4% 16%);
-  --secondary-foreground: hsl(0 0% 95%);
-  --muted: hsl(240 4% 15%);
-  --muted-foreground: hsl(240 4% 62%);
-  --accent: hsl(240 4% 17%);
-  --accent-foreground: hsl(0 0% 96%);
-  --destructive: hsl(25 45% 62%);        /* errors: a soft amber, not alarm red */
-  --border: hsl(240 4% 19%);
-  --input: hsl(240 4% 23%);
-  --ring: hsl(42 8% 62%);
+  --background: oklch(0.1450 0 0);
+  --foreground: oklch(0.9850 0 0);
+  --card: oklch(0.2050 0 0);
+  --card-foreground: oklch(0.9850 0 0);
+  --popover: oklch(0.2690 0 0);
+  --popover-foreground: oklch(0.9850 0 0);
+  --primary: oklch(0.5110 0.2620 276.9660);
+  --primary-foreground: oklch(0.9850 0 0);
+  --secondary: oklch(0.2690 0 0);
+  --secondary-foreground: oklch(0.9850 0 0);
+  --muted: oklch(0.2690 0 0);
+  --muted-foreground: oklch(0.7080 0 0);
+  --accent: oklch(0.3710 0 0);
+  --accent-foreground: oklch(0.9850 0 0);
+  --destructive: oklch(0.7040 0.1910 22.2160);
+  --destructive-foreground: oklch(0.9850 0 0);
+  --border: oklch(0.2750 0 0);
+  --input: oklch(0.3250 0 0);
+  --ring: oklch(0.5560 0 0);
+  --chart-1: oklch(0.8100 0.1000 252);
+  --chart-2: oklch(0.6200 0.1900 260);
+  --chart-3: oklch(0.5500 0.2200 263);
+  --chart-4: oklch(0.4900 0.2200 264);
+  --chart-5: oklch(0.4200 0.1800 266);
+  --font-sans: Nunito, ui-sans-serif, sans-serif, system-ui;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --radius: 0.25rem;
-  --chart-1: hsl(42 14% 64%);            /* mind map move labels */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.35);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
 }
 
 * { box-sizing: border-box; }
@@ -51,7 +70,7 @@ button:disabled { opacity: .5; cursor: default; }
 }
 /* primary: the main action in a group */
 #ownKeyUse, #stackGo { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
-#ownKeyUse:hover:not(:disabled), #stackGo:hover:not(:disabled) { background: hsl(42 10% 84%); color: var(--primary-foreground); }
+#ownKeyUse:hover:not(:disabled), #stackGo:hover:not(:disabled) { background: color-mix(in oklch, var(--primary) 82%, white); color: var(--primary-foreground); }
 /* ghost text buttons */
 .link {
   height: auto; padding: 2px 0; border: none; background: none; box-shadow: none;
@@ -233,3 +252,4 @@ footer .privacy b { color: var(--foreground); font-weight: 600; }
   .mapWrap { height: 60vh; }
   .mapHint { display: none; }
 }
+.group .btns button.picked { background: color-mix(in oklch, var(--primary) 22%, transparent); border-color: var(--primary); }

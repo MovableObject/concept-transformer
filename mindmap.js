@@ -126,11 +126,13 @@ const CTMap = (() => {
     }
     return lines;
   }
-  const FONT = '13px system-ui, -apple-system, "Segoe UI", sans-serif';
-  const TAG_FONT = '11px system-ui, -apple-system, "Segoe UI", sans-serif';
+  // Measure text in the page's own font (the theme's --font-sans), so wrapped lines fit their boxes.
+  const family = () => getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim() || 'system-ui, sans-serif';
+  let FONT = '13px system-ui, sans-serif', TAG_FONT = '11px system-ui, sans-serif';
 
   /** Positions every visible node: {id: {x, y, w, h, lines, tagLine}}. */
   function layout() {
+    FONT = `13px ${family()}`; TAG_FONT = `11px ${family()}`;
     const box = {};
     const sizeOf = (id) => {
       const n = graph.nodes[id];
@@ -197,7 +199,7 @@ const CTMap = (() => {
         const ys = sibs.map((k) => boxes[k].y + boxes[k].h / 2);
         const ly = (Math.min(...ys) + Math.max(...ys)) / 2;
         const lx = x1 + 12;
-        const label = wrap(n.move, '600 11px system-ui, sans-serif', GAP_X - 24, 2);
+        const label = wrap(n.move, `600 11px ${family()}`, GAP_X - 24, 2);
         const t = sv('text', { x: lx, y: ly - (label.length - 1) * 7 + 4, class: 'mm-move' });
         label.forEach((ln, i) => t.append(sv('tspan', { x: lx, dy: i ? 14 : 0 }, ln)));
         labels.append(sv('rect', { x: lx - 4, y: ly - label.length * 7 - 3, width: GAP_X - 16, height: label.length * 14 + 6, rx: 3, class: 'mm-move-bg' }), t);
