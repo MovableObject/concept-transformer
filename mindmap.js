@@ -363,17 +363,22 @@ const CTMap = (() => {
     return out.join('\n');
   }
 
-  const PNG_STYLE = `
-    .mm-edges path{fill:none;stroke:#55555c;stroke-width:1.2}
-    .mm-move{fill:#b9b4a6;font:600 11px system-ui,sans-serif}
-    .mm-move-bg{fill:#19191b}
-    .mm-node rect{fill:#26262a;stroke:#4a4a50}
-    .mm-root rect{fill:#2f2f34;stroke:#8a8a90}
-    .mm-current rect{stroke:#d8d4c8;stroke-width:1.6}
-    .mm-text{fill:#e4e4e6;font:13px system-ui,sans-serif}
-    .mm-tag{fill:#8e8e94;font:11px system-ui,sans-serif}
-    .mm-fold circle{fill:#19191b;stroke:#6e6e74}
-    .mm-fold text{fill:#9a9aa0;font:11px system-ui,sans-serif}`;
+  /** The picture export carries its own copy of the map's colors, read from the page's theme. */
+  function pngStyle() {
+    const v = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return `
+    .mm-edges path{fill:none;stroke:${v('--input')};stroke-width:1.2}
+    .mm-move{fill:${v('--chart-1')};font:600 11px system-ui,sans-serif}
+    .mm-move-bg{fill:${v('--background')}}
+    .mm-node rect{fill:${v('--card')};stroke:${v('--input')}}
+    .mm-root rect{fill:${v('--secondary')};stroke:${v('--muted-foreground')}}
+    .mm-current rect{stroke:${v('--primary')};stroke-width:1.6}
+    .mm-text{fill:${v('--foreground')};font:13px system-ui,sans-serif}
+    .mm-tag{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}
+    .mm-fold circle{fill:${v('--background')};stroke:${v('--muted-foreground')}}
+    .mm-fold circle.mm-hit{fill:transparent;stroke:none}
+    .mm-fold text{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}`;
+  }
 
   function downloadPicture(btn) {
     const ids = Object.keys(boxes);
@@ -385,7 +390,7 @@ const CTMap = (() => {
     clone.setAttribute('transform', `translate(${-minX},${-minY})`);
     clone.querySelectorAll('title').forEach((t) => t.remove());
     const svg = sv('svg', { xmlns: SVGNS, width: w, height: h, viewBox: `0 0 ${w} ${h}` },
-      sv('style', {}, PNG_STYLE), sv('rect', { width: w, height: h, fill: '#19191b' }), clone);
+      sv('style', {}, pngStyle()), sv('rect', { width: w, height: h, fill: getComputedStyle(document.documentElement).getPropertyValue('--background').trim() }), clone);
     const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
     const img = new Image();
     img.onload = () => {
