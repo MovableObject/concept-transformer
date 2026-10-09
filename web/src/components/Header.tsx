@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ENGINES, PROVIDERS } from '@/lib/api'
@@ -95,9 +96,16 @@ export function Header() {
           {(Object.keys(ENGINES) as Engine[]).map((e) => <ToggleGroupItem key={e} value={e} className="px-3">{ENGINES[e]}</ToggleGroupItem>)}
         </ToggleGroup>
         <Popover open={open} onOpenChange={(o) => useUI.getState().set({ keyPanelOpen: o })}>
-          <PopoverTrigger asChild>
-            <Button variant={own ? 'default' : 'outline'} size="sm"><KeyRound />{own ? `Your ${PROVIDERS[s.useOwnProvider]} key` : 'Use your own key'}</Button>
-          </PopoverTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <Button variant={own ? 'default' : 'outline'} size="sm"><KeyRound />{own ? `Your ${PROVIDERS[s.useOwnProvider]} key` : 'Use your own key'}</Button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-72">
+              Use your own Gemini, Groq, Claude or OpenAI key. You'll get better results using Claude Opus or better.
+            </TooltipContent>
+          </Tooltip>
           <PopoverContent align="end" className="w-80"><KeyPanel /></PopoverContent>
         </Popover>
         {own && <Button variant="link" size="sm" className="px-0" onClick={() => s.set({ useOwn: false })}>Back to the free engines</Button>}

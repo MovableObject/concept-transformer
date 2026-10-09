@@ -5,6 +5,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+
+const MODE_TIPS: Record<string, string> = {
+  image: 'Every result is one still picture: what is in the frame, plain enough to draw, photograph or give to an image generator.',
+  ideas: 'Every result is a one-line pitch for something you could make or do: a product, a service, a rule, a game, an event or a story premise.',
+}
 import { Textarea } from '@/components/ui/textarea'
 import { labelOf, useMoves } from '@/lib/api'
 import { runMove, targetId } from '@/lib/press'
@@ -74,7 +80,12 @@ export function SidePanel() {
         {moves && (
           <Tabs value={s.mode} onValueChange={(v) => s.set({ mode: v as ModeId })}>
             <TabsList className="h-8">
-              {(Object.keys(moves.modes) as ModeId[]).map((m) => <TabsTrigger key={m} value={m} className="px-2.5 text-xs">{moves.modes[m].label}</TabsTrigger>)}
+              {(Object.keys(moves.modes) as ModeId[]).map((m) => (
+                <Tooltip key={m}>
+                  <TooltipTrigger asChild><TabsTrigger value={m} className="px-2.5 text-xs">{moves.modes[m].label}</TabsTrigger></TooltipTrigger>
+                  {MODE_TIPS[m] && <TooltipContent side="bottom" className="max-w-64">{MODE_TIPS[m]}</TooltipContent>}
+                </Tooltip>
+              ))}
             </TabsList>
           </Tabs>
         )}
