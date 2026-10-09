@@ -310,7 +310,7 @@ function useThis(text, nodeId) {
   c.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function renderCard(v, before, nodeId) {
+function renderCard(v, before, nodeId, option) {
   const text = el('div', { class: 'text' });
   text.dataset.before = before; text.dataset.after = v;
   renderText(text, before, v, state.showChanges);
@@ -318,30 +318,32 @@ function renderCard(v, before, nodeId) {
   say.addEventListener('click', () => speak(v, say));
   const copy = el('button', { type: 'button' }, 'Copy');
   copy.addEventListener('click', () => { const t = (v.match(TAG_RE) || [''])[0]; copyText(t ? `${v.slice(t.length)} ${t.trim()}` : v, copy); });
-  return el('div', { class: 'card' }, text,
-    el('div', { class: 'acts' }, copy, say, el('button', { type: 'button', onclick: () => useThis(v, nodeId) }, 'Use this')));
+  const acts = el('div', { class: 'acts' }, copy, say, el('button', { type: 'button', onclick: () => useThis(v, nodeId) }, 'Use this'));
+  if (option) acts.append(el('button', { type: 'button', class: 'link nextOpt', onclick: option.next }, `Next option · ${option.label}`));
+  return el('div', { class: 'card' }, text, acts);
 }
 
-// Results arrive best first: show the best, keep the rest behind a "more" link (shared with the map).
+// Results arrive best first. Each press shows ONE result; "Next option" rotates through the three,
+// in step with the map (the same press shows the same option in both views).
+const pressHolders = {};
 function renderCards(box, before, variants, nodeIds = []) {
   if (!variants.length) return;
-  box.append(renderCard(variants[0], before, nodeIds[0]));
-  const rest = variants.slice(1);
-  if (!rest.length) return;
-  const more = el('div', { class: 'more' });
-  rest.forEach((v, i) => more.append(renderCard(v, before, nodeIds[i + 1])));
   const press = nodeIds[0] && window.CTMap ? CTMap.pressOf(nodeIds[0]) : null;
-  const opened = !!(press && CTMap.graph().open && CTMap.graph().open[press]);
-  more.hidden = !opened;
-  const label = (open) => (open ? 'Hide the other results' : `${rest.length} more`);
-  const toggle = el('button', { type: 'button', class: 'link moreToggle' }, label(opened));
-  toggle.addEventListener('click', () => {
-    more.hidden = !more.hidden;
-    toggle.textContent = label(!more.hidden);
-    if (press) CTMap.setOpen(press, !more.hidden);
-  });
-  box.append(toggle, more);
+  let i = press ? CTMap.shownIndex(press) : 0;
+  const holder = el('div');
+  const show = (index) => {
+    i = ((index % variants.length) + variants.length) % variants.length;
+    holder.textContent = '';
+    holder.append(renderCard(variants[i], before, nodeIds[i], variants.length > 1 ? {
+      label: `${i + 1} of ${variants.length}`,
+      next: () => { if (press) CTMap.show(press, i + 1); else show(i + 1); },
+    } : null));
+  };
+  show(i);
+  if (press) pressHolders[press] = show;
+  box.append(holder);
 }
+window.addEventListener('ct-shown', (e) => { const f = pressHolders[e.detail.press]; if (f) f(e.detail.index); });
 
 async function run(move) {
   if (busy) return;
@@ -437,6 +439,7 @@ function wire() {
     if (mapNodes && !window.confirm('Clear the results and the map?')) return;
     window.speechSynthesis?.cancel();
     $('results').textContent = '';
+    for (const k of Object.keys(pressHolders)) delete pressHolders[k];
     if (window.CTMap) CTMap.clear();
     $('clearResults').hidden = true;
   });

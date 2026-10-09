@@ -32,9 +32,11 @@ const CTMap = (() => {
   const newId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const norm = (t) => String(t || '').replace(TAG_RE, '').trim().replace(/\s+/g, ' ').toLowerCase();
   const kids = (id) => graph.order.filter((k) => graph.nodes[k].parent === id);
-  // Results come back best first; the map shows each press's best one until that press is opened.
-  const isOpen = (press) => !!(graph.open && graph.open[press]);
-  const shown = (k) => { const n = graph.nodes[k]; return !n.rank || isOpen(n.press); };
+  // Results come back best first. Each press is ONE node on the map, showing one of its options
+  // (graph.shown[press] = the option's rank; the best, 0, until the visitor rotates it).
+  const shownIndex = (press) => (graph.shown && graph.shown[press]) || 0;
+  const shown = (k) => { const n = graph.nodes[k]; return n.rank == null || n.rank === shownIndex(n.press); };
+  const options = (press) => graph.order.filter((k) => graph.nodes[k].press === press && graph.nodes[k].rank != null);
   const visibleKids = (id) => kids(id).filter(shown);
   const roots = () => graph.order.filter((k) => !graph.nodes[k].parent);
   const count = () => graph.order.length;
@@ -95,8 +97,10 @@ const CTMap = (() => {
   }
 
   function setCurrent(id) {
-    if (!graph.nodes[id]) return;
+    const n = graph.nodes[id];
+    if (!n) return;
     graph.current = id;
+    if (n.rank != null) { graph.shown = graph.shown || {}; graph.shown[n.press] = n.rank; }   // the map shows what was chosen
     save();
     if (visible()) draw();
   }
@@ -232,13 +236,14 @@ const CTMap = (() => {
           sv('circle', { cx: fx, cy: fy, r: 8 }),
           sv('text', { x: fx, y: fy + 4, 'text-anchor': 'middle' }, n.folded ? String(k) : '–')));
       }
-      if (n.parent && !n.rank) {
-        const others = graph.order.filter((x) => graph.nodes[x].press === n.press && graph.nodes[x].rank).length;
-        if (others) {
-          const open = isOpen(n.press);
-          node.append(sv('g', { class: 'mm-more', 'data-more': n.press },
-            sv('rect', { x: b.w - 62, y: b.h - 1, width: 54, height: 16, rx: 3 }),
-            sv('text', { x: b.w - 35, y: b.h + 11, 'text-anchor': 'middle' }, open ? 'hide' : `+${others} more`)));
+      if (n.rank != null) {
+        const total = options(n.press).length;
+        if (total > 1) {
+          // A small button under the box: the next option of this press. Clicking the box itself still selects it.
+          node.append(sv('g', { class: 'mm-rot', 'data-rotate': n.press },
+            sv('title', {}, 'Show the next option from this press'),
+            sv('rect', { x: b.w - 70, y: b.h - 1, width: 62, height: 16, rx: 3 }),
+            sv('text', { x: b.w - 39, y: b.h + 11, 'text-anchor': 'middle' }, `${n.rank + 1} of ${total} ▸`)));
         }
       }
       nodes.append(node);
@@ -330,8 +335,8 @@ const CTMap = (() => {
       downTarget = null;
       const fold = target && target.closest('[data-fold]');
       if (fold) { toggleFold(fold.getAttribute('data-fold')); return; }
-      const more = target && target.closest('[data-more]');
-      if (more) { setOpen(more.getAttribute('data-more'), !isOpen(more.getAttribute('data-more'))); return; }
+      const rot = target && target.closest('[data-rotate]');
+      if (rot) { rotate(rot.getAttribute('data-rotate')); return; }
       const node = target && target.closest('.mm-node');
       if (node) useNode(node.getAttribute('data-id'));
     });
@@ -351,13 +356,26 @@ const CTMap = (() => {
     });
   }
 
-  /** Show or hide a press's other results (shared by the list's "more" link and the map). */
-  function setOpen(press, open) {
-    graph.open = graph.open || {};
-    if (open) graph.open[press] = true; else delete graph.open[press];
+  /** Show one option of a press (shared with the list). If the press's node was the current concept,
+   *  the newly shown option takes over as the current concept. */
+  function show(press, index, { silent = false } = {}) {
+    const opts = options(press);
+    if (!opts.length) return;
+    const i = ((index % opts.length) + opts.length) % opts.length;
+    graph.shown = graph.shown || {};
+    graph.shown[press] = i;
+    const wasCurrent = opts.includes(graph.current);
+    if (wasCurrent) {
+      graph.current = opts[i];
+      const c = $('concept');
+      c.value = (graph.nodes[opts[i]].plain || graph.nodes[opts[i]].text).slice(0, CONFIG.maxConcept);
+      updateCount();
+    }
     save();
     if (visible()) draw();
+    if (!silent) window.dispatchEvent(new CustomEvent('ct-shown', { detail: { press, index: i } }));
   }
+  const rotate = (press) => show(press, shownIndex(press) + 1);
   const pressOf = (id) => (graph.nodes[id] ? graph.nodes[id].press : null);
 
   function toggleFold(id) {
@@ -407,8 +425,8 @@ const CTMap = (() => {
     .mm-fold circle{fill:${v('--background')};stroke:${v('--muted-foreground')}}
     .mm-fold circle.mm-hit{fill:transparent;stroke:none}
     .mm-fold text{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}
-    .mm-more rect{fill:${v('--background')};stroke:${v('--input')}}
-    .mm-more text{fill:${v('--muted-foreground')};font:10px system-ui,sans-serif}`;
+    .mm-rot rect{fill:${v('--background')};stroke:${v('--input')}}
+    .mm-rot text{fill:${v('--muted-foreground')};font:10px system-ui,sans-serif}`;
   }
 
   function downloadPicture(btn) {
@@ -457,7 +475,7 @@ const CTMap = (() => {
     window.addEventListener('resize', () => { if (visible()) fit(); });
   }
 
-  return { init, recordPress, setCurrent, setOpen, pressOf, clear, count, outline, graph: () => graph };
+  return { init, recordPress, setCurrent, show, shownIndex, pressOf, clear, count, outline, graph: () => graph };
 })();
 
 window.CTMap = CTMap;

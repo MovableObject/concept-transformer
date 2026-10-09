@@ -254,10 +254,10 @@ footer .privacy b { color: var(--foreground); font-weight: 600; }
 }
 .group .btns button.picked { background: color-mix(in oklch, var(--primary) 22%, transparent); border-color: var(--primary); }
 
-/* best result first; the others behind "2 more" */
-.run .moreToggle { font-size: 12px; margin: 2px 0 4px; }
-.run .more .card:first-of-type { border-top: 1px solid var(--border); padding-top: 12px; }
-.mm-more { cursor: pointer; }
-.mm-more rect { fill: var(--background); stroke: var(--input); }
-.mm-more text { fill: var(--muted-foreground); font: 10px var(--font-sans); }
-.mm-more:hover rect { stroke: var(--primary); }
+/* one result per press; "Next option" rotates through the three, on the card and on the map */
+.card .acts .nextOpt { height: 28px; margin-left: auto; font-size: 12px; }
+.mm-rot { cursor: pointer; }
+.mm-rot rect { fill: var(--background); stroke: var(--input); }
+.mm-rot text { fill: var(--muted-foreground); font: 10px var(--font-sans); }
+.mm-rot:hover rect { stroke: var(--primary); }
+.mm-rot:hover text { fill: var(--foreground); }
