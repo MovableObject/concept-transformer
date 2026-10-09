@@ -290,7 +290,7 @@ function speak(text, btn) {
   synth.speak(u);
 }
 
-async function copyText(text, btn) {
+async function copyText(text, btn, label = 'Copy') {
   try { await navigator.clipboard.writeText(text); }
   catch {
     const t = el('textarea', {}, text); document.body.append(t); t.select();
@@ -298,10 +298,11 @@ async function copyText(text, btn) {
     t.remove();
   }
   btn.textContent = 'Copied';
-  setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+  setTimeout(() => { btn.textContent = label; }, 1200);
 }
 
-function useThis(text) {
+function useThis(text, nodeId) {
+  if (nodeId && window.CTMap) CTMap.setCurrent(nodeId);
   const c = $('concept');
   c.value = text.replace(TAG_RE, '').slice(0, CONFIG.maxConcept);
   updateCount();
@@ -309,8 +310,8 @@ function useThis(text) {
   c.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function renderCards(box, before, variants) {
-  for (const v of variants) {
+function renderCards(box, before, variants, nodeIds = []) {
+  for (const [i, v] of variants.entries()) {
     const text = el('div', { class: 'text' });
     text.dataset.before = before; text.dataset.after = v;
     renderText(text, before, v, state.showChanges);
@@ -319,7 +320,7 @@ function renderCards(box, before, variants) {
     const copy = el('button', { type: 'button' }, 'Copy');
     copy.addEventListener('click', () => { const t = (v.match(TAG_RE) || [''])[0]; copyText(t ? `${v.slice(t.length)} ${t.trim()}` : v, copy); });
     box.append(el('div', { class: 'card' }, text,
-      el('div', { class: 'acts' }, copy, say, el('button', { type: 'button', onclick: () => useThis(v) }, 'Use this'))));
+      el('div', { class: 'acts' }, copy, say, el('button', { type: 'button', onclick: () => useThis(v, nodeIds[i]) }, 'Use this'))));
   }
 }
 
@@ -349,7 +350,10 @@ async function run(move) {
       box.querySelector('.eng').textContent = `${CONFIG.shared[engine].label} · ${MOVES.modes[state.mode].label}`;
     }
     if (note) box.append(el('div', { class: 'note' }, note));
-    renderCards(box, move.diff === false ? '' : concept, variants);
+    const answeredBy = box.querySelector('.eng').textContent;
+    const moveLabel = move.field ? `${label.replace(/ with$/, '')} → ${field}` : label;
+    const nodeIds = window.CTMap ? CTMap.recordPress({ concept, move: moveLabel, mode: state.mode, engine: answeredBy, variants }) : [];
+    renderCards(box, move.diff === false ? '' : concept, variants, nodeIds);
   } catch (e) {
     working.remove();
     const msg = e instanceof FriendlyError ? e.message : 'Something went wrong. Press the move again.';
@@ -409,7 +413,14 @@ function wire() {
   $('showChanges').addEventListener('change', (e) => {
     state.showChanges = e.target.checked; lsSet(LS.changes, state.showChanges ? '1' : '0'); rerenderAll();
   });
-  $('clearResults').addEventListener('click', () => { window.speechSynthesis?.cancel(); $('results').textContent = ''; $('clearResults').hidden = true; });
+  $('clearResults').addEventListener('click', () => {
+    const mapNodes = window.CTMap ? CTMap.count() : 0;
+    if (mapNodes && !window.confirm('Clear the results and the map?')) return;
+    window.speechSynthesis?.cancel();
+    $('results').textContent = '';
+    if (window.CTMap) CTMap.clear();
+    $('clearResults').hidden = true;
+  });
   $('concept').addEventListener('input', updateCount);
   $('words').addEventListener('input', (e) => {
     lsSet('ct.words.' + state.mode, e.target.value);
@@ -459,6 +470,7 @@ async function init() {
   wire();
   updateEngineUI();
   showKeyHelp();
+  if (lsGet('ct.map.v1', '')) $('clearResults').hidden = false;
   try {
     const r = await fetch('moves.json', { cache: 'no-cache' });
     MOVES = await r.json();

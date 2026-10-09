@@ -11,6 +11,7 @@ repository; they live only on the server.
 ## What is here
 
 - `index.html`, `app.js`, `styles.css`: the page. It holds no prompts and loads no outside code.
+- `mindmap.js`: the Map view. It records each press as a small graph in the visitor's browser and draws it as a tree; nothing from it is sent anywhere.
 - `relay.php`: the only server file. Every press goes through it. It reads the prompts from a
   locked folder, calls the engine, and returns the results. See below for how it treats keys.
 - `moves.json`: the public list of moves: names, descriptions, examples. Built by

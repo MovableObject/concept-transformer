@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Concept Transformer</title>
 <meta name="description" content="Type a simple scene, press a creative move, get three rewrites.">
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 <div class="wrap">
@@ -74,10 +74,27 @@
     </details>
 
     <div class="resultsBar">
+      <div class="seg" id="viewSeg" role="radiogroup" aria-label="View">
+        <button type="button" role="radio" data-view="list" aria-checked="true">List</button>
+        <button type="button" role="radio" data-view="map" aria-checked="false">Map</button>
+      </div>
       <label class="switch"><input type="checkbox" id="showChanges"> Show changes</label>
       <button type="button" class="link" id="clearResults" hidden>Clear</button>
     </div>
     <section id="results" aria-live="polite"></section>
+    <section id="mapView" hidden aria-label="Mind map">
+      <div class="mapBar">
+        <button type="button" id="mapFit">Fit</button>
+        <button type="button" id="mapOutline">Copy as outline</button>
+        <button type="button" id="mapPicture">Download picture</button>
+        <span class="mapHint">Drag to move, scroll or pinch to zoom, click a box to make it the concept.</span>
+      </div>
+      <div id="mapInfo" aria-live="polite"></div>
+      <div class="mapWrap">
+        <svg id="mapSvg" role="img" aria-label="Mind map of results"></svg>
+        <p id="mapEmpty">Press a move to start the map. Each result branches from its concept, and "Use this" grows the next branch.</p>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -92,6 +109,7 @@
     </details>
   </footer>
 </div>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
+<script src="mindmap.js?v=2"></script>
 </body>
 </html>
