@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concept Transformer</title>
+<meta name="description" content="Type a simple scene, press a creative move, get three rewrites.">
+<link rel="stylesheet" href="styles.css?v=6">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Concept Transformer</h1>
+      <p class="sub">Type a concept. Press a move. Get fresh takes on it.</p>
+    </div>
+    <div class="engine">
+      <div class="seg" id="engineSeg" role="radiogroup" aria-label="Engine">
+        <button type="button" role="radio" data-engine="gemini">Gemini Flash</button>
+        <button type="button" role="radio" data-engine="groq">Groq GPT OSS</button>
+      </div>
+      <button type="button" class="link" id="ownKeyToggle" aria-expanded="false">Use your own key</button>
+      <div class="ownkey" id="ownKeyPanel" hidden>
+        <label>Provider
+          <select id="ownProvider">
+            <option value="gemini">Gemini</option>
+            <option value="groq">Groq</option>
+            <option value="claude">Claude</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </label>
+        <label>Key
+          <input id="ownKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your API key">
+        </label>
+        <label class="check"><input type="checkbox" id="ownKeyRemember"> Remember on this computer</label>
+        <div class="row">
+          <button type="button" id="ownKeyUse">Use my key</button>
+          <button type="button" id="ownKeyForget">Forget key</button>
+        </div>
+        <details class="keyhelp">
+          <summary>How to make a safe key</summary>
+          <div id="keyHelpBody"></div>
+        </details>
+        <p class="note">Your key is kept in this browser tab only, and forgotten when you close it, unless you tick Remember. Each press sends it through this site to the provider for that one request; the site never stores or logs it. <a href="https://github.com/MovableObject/concept-transformer/blob/main/relay.php" target="_blank" rel="noopener noreferrer">Read the server code</a>.</p>
+      </div>
+      <div class="status" id="engineStatus" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="conceptRow">
+      <label class="conceptLabel" for="concept">Your concept</label>
+      <div class="seg" id="modeSeg" role="radiogroup" aria-label="Result type"></div>
+    </div>
+    <textarea id="concept" rows="2" maxlength="500" placeholder="Type a simple scene — a cat asleep on a windowsill"></textarea>
+    <div class="count" id="count"></div>
+
+    <section class="moves" id="moves" aria-label="Moves"></section>
+    <div class="lengthRow">
+      <label for="words">Length</label>
+      <input type="range" id="words" min="5" max="60" step="1">
+      <span id="wordsOut" aria-live="polite"></span>
+      <button type="button" class="link" id="wordsReset">Default</button>
+    </div>
+    <div class="stackRow">
+      <label class="switch"><input type="checkbox" id="stackToggle"> Stack moves</label>
+      <span id="stackHint" class="hint"></span>
+      <button type="button" id="stackGo" hidden disabled>Transform</button>
+    </div>
+
+    <details class="fold" id="explain">
+      <summary>What each move does</summary>
+      <div id="explainBody"></div>
+    </details>
+
+    <div class="resultsBar">
+      <label class="switch"><input type="checkbox" id="showChanges"> Show changes</label>
+      <button type="button" class="link" id="clearResults" hidden>Clear</button>
+    </div>
+    <section id="results" aria-live="polite"></section>
+  </main>
+
+  <footer>
+    <p>Free engines may use what you type to improve their models. Don't type anything private.</p>
+    <details class="privacy">
+      <summary>Privacy</summary>
+      <p><b>What is sent.</b> Each press sends your concept, the move and your settings to this site, which adds its own instructions and passes them to the AI engine: Google Gemini, Groq, Anthropic Claude or OpenAI. The answer comes straight back to you.</p>
+      <p><b>What is kept.</b> Nothing you type is saved on this site. To share the free allowance fairly, it keeps a count of presses per visitor for one hour, under a scrambled code made from your internet address, never the address itself, and a total per engine for the day.</p>
+      <p><b>Your own key.</b> It stays in your browser, for this tab only unless you tick Remember. When you press a move it travels with that one request over an encrypted connection and is used only to call your provider. It is never written to disk or to a log.</p>
+      <p><b>No tracking.</b> No cookies, no analytics, no ads, no code from other sites.</p>
+      <p><b>Check it yourself.</b> <a href="https://github.com/MovableObject/concept-transformer" target="_blank" rel="noopener noreferrer">The site's code is public</a>, including the server file that handles keys.</p>
+    </details>
+  </footer>
+</div>
+<script src="app.js?v=6"></script>
+</body>
+</html>

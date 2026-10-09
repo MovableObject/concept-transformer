@@ -1,0 +1,15 @@
+# The prompts are the site's private part and are never published.
+prompts/
+ct_private/
+# Local test server bits, results and notes (account details live in the notes).
+tests/local/data/
+tests/results/
+SESSION_STATE.md
+SPEC_*.md
+*.zip
+__pycache__/
+tests/compare_engines.py
+tests/free3.py
+tests/quick10.py
+tests/ideas6.py
+tests/local/php.ini

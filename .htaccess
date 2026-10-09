@@ -1,0 +1,22 @@
+# Concept Transformer: always check for a fresh copy, so an update shows up on the next load.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css|json)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+    Header unset Expires
+  </FilesMatch>
+
+  # Only this site's own code may run, and the page may only talk to this site.
+  # A visitor's key therefore cannot be read or sent anywhere by injected or outside scripts.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  Header always set Referrer-Policy "no-referrer"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+  # Keep the Hostinger preview address out of search results.
+  SetEnvIf Host "hostingersite\.com$" CT_PREVIEW
+  Header set X-Robots-Tag "noindex, nofollow" env=CT_PREVIEW
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive Off
+</IfModule>

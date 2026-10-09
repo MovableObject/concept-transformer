@@ -1,0 +1,340 @@
+{
+ "exported": "2026-10-08T22:47:05",
+ "default_mode": "image",
+ "modes": {
+  "image": {
+   "label": "Image concepts",
+   "placeholder": "Type a simple scene — a cat asleep on a windowsill",
+   "anchor": "A lighthouse on a cliff."
+  },
+  "ideas": {
+   "label": "Ideas",
+   "placeholder": "Type an idea — a library that lends tools instead of books",
+   "anchor": "A library that lends tools instead of books."
+  }
+ },
+ "groups": [
+  "SCAMPER",
+  "Transforms",
+  "Utilities",
+  "Map",
+  "Workbench"
+ ],
+ "stack_max": 3,
+ "moves": [
+  {
+   "id": "substitute",
+   "group": "SCAMPER",
+   "label": {
+    "image": "Substitute",
+    "ideas": "Substitute"
+   },
+   "blurb": {
+    "image": "Swaps one part for something else: a material, a person, a process, a rule, a place. Everything else stays.",
+    "ideas": "Swaps one part for something else: a material, a person, a process, a rule, a place. Everything else stays."
+   },
+   "example": {
+    "image": "The lamp is a beehive; the keeper tends the swarm at dusk.",
+    "ideas": "Skill library: instead of a drill, you borrow an hour of the neighbor who knows how to use one."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "combine",
+   "group": "SCAMPER",
+   "label": {
+    "image": "Combine",
+    "ideas": "Combine"
+   },
+   "blurb": {
+    "image": "Merges the concept with something else, often something unrelated, so the two become one thing.",
+    "ideas": "Merges the concept with something else, often something unrelated, so the two become one thing."
+   },
+   "example": {
+    "image": "A lighthouse grown into a tree: the lamp sits in the crown, roots grip the cliff.",
+    "ideas": "Laundromat workshop: a tool library inside the laundromat, so you fix the chair while your clothes dry."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "adapt",
+   "group": "SCAMPER",
+   "label": {
+    "image": "Adapt",
+    "ideas": "Adapt"
+   },
+   "blurb": {
+    "image": "Borrows how another field, trade, creature or era solves things, and applies that here.",
+    "ideas": "Borrows how another field, trade, creature or era solves things, and applies that here."
+   },
+   "example": {
+    "image": "The lighthouse runs like an airport: a strip of landing lights down the cliff face.",
+    "ideas": "Tool bank: run it like a blood bank; give a tool, bank a credit, draw any tool when you need one."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "modify",
+   "group": "SCAMPER",
+   "label": {
+    "image": "Modify",
+    "ideas": "Modify"
+   },
+   "blurb": {
+    "image": "Changes one quality of the concept and pushes it hard: bigger, smaller, more often, louder, distorted.",
+    "ideas": "Changes one quality of the concept and pushes it hard: bigger, smaller, more often, louder, distorted."
+   },
+   "example": {
+    "image": "The lighthouse is ten storeys taller than the cliff; the beam sweeps the clouds, not the sea.",
+    "ideas": "Street ritual: the library lends one tool a year, and the whole street votes on which."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "other_uses",
+   "group": "SCAMPER",
+   "label": {
+    "image": "Put to another use",
+    "ideas": "Put to another use"
+   },
+   "blurb": {
+    "image": "Keeps the thing but gives it a different job. Same thing, new purpose.",
+    "ideas": "Keeps the thing but gives it a different job. Same thing, new purpose."
+   },
+   "example": {
+    "image": "The lighthouse is a cinema: its beam projects a film onto the fog.",
+    "ideas": "Job exchange: borrow the ladder, and the fee is cleaning the gutters next door."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "eliminate",
+   "group": "SCAMPER",
+   "label": {
+    "image": "Eliminate",
+    "ideas": "Eliminate"
+   },
+   "blurb": {
+    "image": "Takes something out. What's left shows what mattered.",
+    "ideas": "Takes something out. What's left shows what mattered."
+   },
+   "example": {
+    "image": "No lamp. A dark tower; ships steer by its silhouette against the stars.",
+    "ideas": "Public repair bench: nothing leaves; the tools are chained to the bench and you bring the broken thing."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "reverse",
+   "group": "SCAMPER",
+   "label": {
+    "image": "Reverse",
+    "ideas": "Reverse"
+   },
+   "blurb": {
+    "image": "Flips an order or a direction: who does what to whom, cause and effect, inside and outside.",
+    "ideas": "Flips an order or a direction: who does what to whom, cause and effect, inside and outside."
+   },
+   "example": {
+    "image": "The sea sweeps a beam across the lighthouse; the tower is the thing being warned.",
+    "ideas": "Reverse library: it borrows your idle tools and pays you back in free repairs."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "inversion",
+   "group": "Transforms",
+   "label": {
+    "image": "Inversion",
+    "ideas": "Inversion"
+   },
+   "blurb": {
+    "image": "Turns the concept into its opposite: what's missing instead of what's there, the empty space, the reverse situation.",
+    "ideas": "Turns the concept into its opposite: what's missing instead of what's there, the empty space, the reverse situation."
+   },
+   "example": {
+    "image": "A cliff with a lighthouse-shaped hole cut out of the night.",
+    "ideas": "Museum of the unused: a catalog of tools people bought and never touched, open for borrowing."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "scale_shift",
+   "group": "Transforms",
+   "label": {
+    "image": "Scale shift",
+    "ideas": "Scale shift"
+   },
+   "blurb": {
+    "image": "Makes something enormously bigger or smaller than it should be, and keeps the rest the same.",
+    "ideas": "Makes something enormously bigger or smaller than it should be, and keeps the rest the same."
+   },
+   "example": {
+    "image": "A lighthouse the size of a thimble on the rim of a teacup; the beam crosses the saucer.",
+    "ideas": "City-wide drill: one drill for the whole city, booked a year ahead, passed hand to hand."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "defamiliarize",
+   "group": "Transforms",
+   "label": {
+    "image": "Defamiliarize",
+    "ideas": "Defamiliarize"
+   },
+   "blurb": {
+    "image": "Describes the concept as if seen for the first time, by someone who doesn't know the usual words for things.",
+    "ideas": "Describes the concept as if seen for the first time, by someone who doesn't know the usual words for things."
+   },
+   "example": {
+    "image": "A white stone finger on the edge of the land, blinking slowly at the dark water as if counting it.",
+    "ideas": "Strangers hand each other heavy metal objects there, and bring them back a little worn."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "rule_break",
+   "group": "Transforms",
+   "label": {
+    "image": "Rule break",
+    "ideas": "Rule break"
+   },
+   "blurb": {
+    "image": "Finds the one rule that makes this thing what it is, and breaks it. The thing stays recognizable, but wrong in one essential way.",
+    "ideas": "Finds the one rule that makes this thing what it is, and breaks it. The thing stays recognizable, but wrong in one essential way."
+   },
+   "example": {
+    "image": "A lighthouse built inland, in a wheat field, warning ships that can never come.",
+    "ideas": "Pass-it-on library: nothing is ever returned; whatever you borrow is yours until someone else needs it."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "provocation",
+   "group": "Transforms",
+   "label": {
+    "image": "Provocation",
+    "ideas": "Provocation"
+   },
+   "blurb": {
+    "image": "States something impossible about the concept as if it were true, then follows it to a result.",
+    "ideas": "States something impossible about the concept as if it were true, then follows it to a result."
+   },
+   "example": {
+    "image": "The lighthouse is afraid of the dark; its beam never leaves its own feet.",
+    "ideas": "Tool rating system: every tool logs who used it, and won't unlock for whoever last broke it."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "visualize",
+   "group": "Utilities",
+   "label": {
+    "image": "Visualize",
+    "ideas": "Make concrete"
+   },
+   "blurb": {
+    "image": "Turns an abstract or poetic idea into a plain picture you could actually draw or photograph.",
+    "ideas": "Turns an abstract or vague idea into a specific instance you could point at."
+   },
+   "example": {
+    "image": "\"loneliness, as a lighthouse\" → One lit window in a lighthouse, a single chair turned to face the sea.",
+    "ideas": "\"generosity, as a public service\" → Tool library with no sign-up: take what you need and chalk your name on the board."
+   },
+   "count": 3
+  },
+  {
+   "id": "extract",
+   "group": "Utilities",
+   "label": {
+    "image": "Extract",
+    "ideas": "Distill"
+   },
+   "blurb": {
+    "image": "Strips all the style words out of a finished image prompt and leaves just the bare picture.",
+    "ideas": "Strips the dressing off a long pitch or paragraph and leaves just the bare idea."
+   },
+   "example": {
+    "image": "\"a lighthouse on a cliff, moody oil painting, teal and ochre, dramatic chiaroscuro\" → A lighthouse on a cliff.",
+    "ideas": "\"a warm, community-first space reimagining what a library can be by sharing tools\" → Tool library: lends tools instead of books."
+   },
+   "count": 3
+  },
+  {
+   "id": "domain_transfer",
+   "group": "Map",
+   "label": {
+    "image": "Domain transfer",
+    "ideas": "Domain transfer"
+   },
+   "blurb": {
+    "image": "Keeps how the parts of the concept relate to each other, and rebuilds it in a different world you name.",
+    "ideas": "Keeps how the parts of the concept relate to each other, and rebuilds it in a different world you name."
+   },
+   "example": {
+    "image": "→ gardening: a sunflower at the edge of the field, its head turned to guide the bees home.",
+    "ideas": "→ cooking: Pan library: borrow a pan, return it with a portion of whatever you cooked in it."
+   },
+   "count": 3,
+   "field": {
+    "name": "target_domain",
+    "label": "Target domain",
+    "max": 60,
+    "placeholder": "target domain — architecture, gardening, weather…"
+   }
+  },
+  {
+   "id": "vary",
+   "group": "Workbench",
+   "label": {
+    "image": "Vary ×5",
+    "ideas": "Vary ×5"
+   },
+   "blurb": {
+    "image": "Five close siblings of the same concept: same level, different concrete choices. Options, not improvements.",
+    "ideas": "Five close siblings of the same concept: same level, different concrete choices. Options, not improvements."
+   },
+   "example": {
+    "image": "A lighthouse on a sea stack at low tide · A lighthouse keeper's kitchen lit by the beam · …",
+    "ideas": "Seed library: borrow seeds, return seeds from the harvest · Instrument library: lend by the week · …"
+   },
+   "count": 5
+  },
+  {
+   "id": "collide",
+   "group": "Workbench",
+   "label": {
+    "image": "Collide ×3 with",
+    "ideas": "Collide ×3 with"
+   },
+   "blurb": {
+    "image": "Merges your concept with a second one you type into a single new idea that comes from both.",
+    "ideas": "Merges your concept with a second one you type into a single new idea that comes from both."
+   },
+   "example": {
+    "image": "× \"a snow globe\": a lighthouse sealed in glass, its beam caught swirling in the snow.",
+    "ideas": "× \"a confession booth\": Tool return booth: you hand back the tool and confess what you broke with it, no fines."
+   },
+   "count": 3,
+   "field": {
+    "name": "partner",
+    "label": "Partner concept",
+    "max": 300,
+    "placeholder": "a second concept to collide with — a snow globe"
+   },
+   "diff": false
+  }
+ ]
+}
