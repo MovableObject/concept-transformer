@@ -1,0 +1,130 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Nunito, hosted on this site (the security policy allows only this site's own fonts). */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/nunito-latin.woff2') format('woff2');
+}
+
+/* The owner's tweakcn theme, dark block (2026-10-09), used as the page's only theme.
+ * Kept from the export except: --radius stays 0.25rem (owner prefers square-ish corners) and
+ * --primary-foreground is near-white so text on indigo stays readable. Paste a new export over these values. */
+:root {
+  color-scheme: dark;
+  --background: oklch(0.1450 0 0);
+  --foreground: oklch(0.9850 0 0);
+  --card: oklch(0.2050 0 0);
+  --card-foreground: oklch(0.9850 0 0);
+  --popover: oklch(0.2690 0 0);
+  --popover-foreground: oklch(0.9850 0 0);
+  --primary: oklch(0.5110 0.2620 276.9660);
+  --primary-foreground: oklch(0.9850 0 0);
+  --secondary: oklch(0.2690 0 0);
+  --secondary-foreground: oklch(0.9850 0 0);
+  --muted: oklch(0.2690 0 0);
+  --muted-foreground: oklch(0.7080 0 0);
+  --accent: oklch(0.3710 0 0);
+  --accent-foreground: oklch(0.9850 0 0);
+  --destructive: oklch(0.7040 0.1910 22.2160);
+  --destructive-foreground: oklch(0.9850 0 0);
+  --border: oklch(0.2750 0 0);
+  --input: oklch(0.3250 0 0);
+  --ring: oklch(0.5560 0 0);
+  --chart-1: oklch(0.8100 0.1000 252);
+  --chart-2: oklch(0.6200 0.1900 260);
+  --chart-3: oklch(0.5500 0.2200 263);
+  --chart-4: oklch(0.4900 0.2200 264);
+  --chart-5: oklch(0.4200 0.1800 266);
+  --font-sans: Nunito, ui-sans-serif, sans-serif, system-ui;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --radius: 0.25rem;
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  /* the studio's copied components call shadcn's "accent" `subtle` and use rounded-ui */
+  --color-subtle: var(--accent);
+  --color-subtle-foreground: var(--accent-foreground);
+  --radius-ui: var(--radius);
+  --radius-sm: calc(var(--radius) - 1px);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 2px);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html, body, #root { height: 100%; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+}
+
+/* ── React Flow, themed (colorMode="dark" plus the theme's colors) ── */
+.react-flow.dark {
+  --xy-background-color: transparent;
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--accent);
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-border-color: var(--border);
+  --xy-minimap-background-color: var(--card);
+  --xy-minimap-mask-background-color: color-mix(in oklch, var(--background) 70%, transparent);
+  --xy-edge-stroke: var(--input);
+  --xy-edge-stroke-selected: var(--primary);
+  --xy-connectionline-stroke: var(--primary);
+  --xy-node-boxshadow-selected: none;
+  --xy-selection-background-color: color-mix(in oklch, var(--primary) 10%, transparent);
+  --xy-selection-border: 1px dashed var(--primary);
+}
+.react-flow__attribution { display: none; }
+.react-flow__controls { box-shadow: none; }
+.react-flow__controls-button { background: var(--card); border-color: var(--border); color: var(--foreground); fill: var(--foreground); }
+.react-flow__controls-button:hover { background: var(--accent); }
+.react-flow__minimap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.react-flow__edge-path { stroke: var(--input); stroke-width: 1.4; }
+.react-flow__edge.selected .react-flow__edge-path { stroke: var(--primary); }
+.react-flow__handle { width: 10px; height: 10px; border-radius: 2px; background: var(--muted-foreground); border: 1px solid var(--background); }
+.react-flow__connectionline path { stroke: var(--primary); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.react-flow__selection, .react-flow__nodesselection-rect { background: color-mix(in oklch, var(--primary) 10%, transparent); border: 1px dashed var(--primary); }
+
+/* change view inside the panel */
+.ct-del { color: var(--muted-foreground); text-decoration: line-through; opacity: .8; }
+.ct-add { font-weight: 650; }
+.ct-tag { color: var(--muted-foreground); font-size: .85em; }

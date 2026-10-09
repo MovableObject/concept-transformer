@@ -2,12 +2,16 @@
 /*
  * Concept Transformer relay. Every press goes through here, so the move prompts never leave the server.
  *
- * NOT an open proxy. It accepts only {engine, move, moves? (for move "stack"), mode, words?, concept, field?, key?}, builds the prompt itself from
+ * NOT an open proxy. It accepts only {engine, move, moves? (for move "stack"), mode, words?, concept, concept2?, field?,
+ * field2?, taste?, key?}, builds the prompt itself from
  * ct_private/prompts.json, calls the engine, and returns {variants: [...]} or {error, message}.
  *   - engine: "gemini" or "groq" on the owner's free keys, or "own:gemini" / "own:groq" / "own:claude" /
  *     "own:openai" with the visitor's own key in "key" (used for this one request only, never stored or logged)
- *   - move: an id from the prompts file; concept: 1 to 500 characters;
- *     field: the second box, only for moves that have one (Domain transfer, Collide), capped per move
+ *   - move: an id from the prompts file; concept: 1 to 800 characters (1500 for a collision, which may be a pasted
+ *     source); concept2: the second box of a collision (moves with inputs 2)
+ *   - field / field2: a move's extra boxes, capped per move; a box marked optional may be left empty
+ *   - taste: {kept: [...], discarded: [...]}, the visitor's newest verdicts, appended as a taste block (not stored)
+ *   - Oblique Strategies: the relay draws the card from the private deck and returns it as "card"
  *   - per visitor: presses an hour (by a salted hash of the IP, never the raw IP); own-key presses have a looser cap
  *   - per free engine: a daily cap set below the free tier, so the owner's key is never suspended
  *
@@ -67,13 +71,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') { http_response_code(204);
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') fail(405, 'method', 'Send a POST request.');
 
 // ── input ──────────────────────────────────────────────────────────────────
-$in = json_decode((string)file_get_contents('php://input', false, null, 0, 8192), true);
+$in = json_decode((string)file_get_contents('php://input', false, null, 0, 20000), true);
 if (!is_array($in)) fail(400, 'input', 'The request was not understood.');
 $str = fn($k) => is_string($in[$k] ?? null) ? $in[$k] : '';
 $engine = $str('engine');
 $moveId = $str('move');
 $concept = $str('concept');
 $field = $str('field');
+$field2 = $str('field2');
+$concept2 = $str('concept2');
+$tasteRaw = is_array($in['taste'] ?? null) ? $in['taste'] : [];
 $mode = $str('mode');   // "image" or "ideas"; checked against the prompts file below
 $words = is_int($in['words'] ?? null) ? $in['words'] : (int)($in['words'] ?? 0);   // the length slider; 0 = the mode's default
 
@@ -124,16 +131,51 @@ function text_len(string $t): int {
 $concept = clean_text($concept);
 if ($concept === null) fail(400, 'input', 'The concept has characters that could not be read.');
 if (text_len($concept) < 1) fail(400, 'input', 'Type a concept first.');
-if (text_len($concept) > 500) fail(400, 'input', 'Keep the concept under 500 characters.');
-if (!empty($move['field'])) {
-    $field = clean_text($field);
-    $fmax = (int)($move['field']['max'] ?? 100);
-    $flabel = strtolower((string)($move['field']['label'] ?? 'second box'));
-    if ($field === null || text_len($field) < 1) fail(400, 'input', "Fill in the $flabel box first.");
-    if (text_len($field) > $fmax) fail(400, 'input', "Keep the $flabel under $fmax characters.");
+$pair = (int)($move['inputs'] ?? 1) === 2;
+$cmax = $pair ? 1500 : 800;
+if (text_len($concept) > $cmax) fail(400, 'input', "Keep the concept under $cmax characters.");
+if ($pair) {
+    $concept2 = clean_text($concept2);
+    if ($concept2 === null || text_len($concept2) < 1) fail(400, 'input', 'This move needs two boxes. Connect a second box to it.');
+    if (text_len($concept2) > 1500) fail(400, 'input', 'Keep the second box under 1500 characters.');
 } else {
-    $field = '';
+    $concept2 = '';
 }
+/** Check one extra box against its definition; '' when the move has none or an optional one is left empty. */
+function check_field(?array $def, string $value): string {
+    if (!$def) return '';
+    $value = clean_text($value);
+    $max = (int)($def['max'] ?? 100);
+    $label = strtolower((string)($def['label'] ?? 'second box'));
+    if ($value === null) fail(400, 'input', "The $label box has characters that could not be read.");
+    if (text_len($value) < 1) {
+        if (!empty($def['optional'])) return '';
+        fail(400, 'input', "Fill in the $label box first.");
+    }
+    if (text_len($value) > $max) fail(400, 'input', "Keep the $label under $max characters.");
+    return $value;
+}
+$card = '';
+if (!empty($move['deck'])) {
+    // Oblique Strategies: the card comes from the private deck, never from the page.
+    $deck = array_values(array_filter((array)($P['oblique_deck'] ?? []), 'is_string'));
+    if (!$deck) fail(500, 'config', 'The card deck is missing on the server.');
+    $card = $field = $deck[random_int(0, count($deck) - 1)];
+} else {
+    $field = check_field(is_array($move['field'] ?? null) ? $move['field'] : null, $field);
+}
+$field2 = check_field(is_array($move['field2'] ?? null) ? $move['field2'] : null, $field2);
+
+// Taste: the visitor's newest keeps and discards (from their own browser), clipped and capped.
+$taste = ['kept' => [], 'discarded' => []];
+foreach (['kept' => 8, 'discarded' => 12] as $k => $cap) {
+    foreach (array_slice(array_filter((array)($tasteRaw[$k] ?? []), 'is_string'), -$cap) as $t) {
+        $t = clean_text($t);
+        if ($t === null || $t === '') continue;
+        $taste[$k][] = text_len($t) > 240 ? (function_exists('mb_substr') ? mb_substr($t, 0, 237, 'UTF-8') : substr($t, 0, 237)) . '…' : $t;
+    }
+}
+unset($tasteRaw);
 
 // ── limits ─────────────────────────────────────────────────────────────────
 $dir = rtrim($cfg['data_dir'], '/\\');
@@ -194,8 +236,31 @@ if ($words > 0) {
 } else {
     $useLength = (bool)($move['length_rule'] ?? true);
 }
-$system = $moveSystem . $clause . (string)($P['guard'] ?? '') . ($useLength ? $lengthRule : '');
-$user = str_replace(['{concept}', '{field}'], [$concept, $field], $move['user_template'] ?? $P['user_template']);
+$tasteBlock = '';
+if ($taste['kept'] || $taste['discarded']) {
+    // The studio's ledger wording: keeps are the bar to clear, never content to copy; discards are moves to avoid.
+    $tasteBlock = "\n\n---\nWHAT THIS PERSON KEEPS AND DISCARDS: their own verdicts on ideas like the ones you are about "
+                . "to write. Treat them as the sharpest signal of their taste you have.";
+    if ($taste['kept']) {
+        $tasteBlock .= "\n\nKEPT: the bar to clear. Match their ambition and specificity, never their content: do not "
+                     . "reproduce or lightly vary any of these.\n- " . implode("\n- ", $taste['kept']);
+    }
+    if ($taste['discarded']) {
+        $tasteBlock .= "\n\nDISCARDED: rejected. Write nothing that would read as the same move, the same image, or the "
+                     . "same kind of idea.\n- " . implode("\n- ", $taste['discarded']);
+    }
+}
+$system = $moveSystem . $clause . (string)($P['guard'] ?? '') . ($useLength ? $lengthRule : '') . $tasteBlock;
+$template = (string)($move['user_template'] ?? $P['user_template']);
+// An extra box whose template has no slot for it (an optional box) is added before the closing line.
+foreach (['field' => $field, 'field2' => $field2] as $slot => $val) {
+    if ($val === '' || str_contains($template, '{' . $slot . '}')) continue;
+    $label = (string)($move[$slot]['label'] ?? 'Note');
+    $close = "\n\nReturn the JSON object now.";
+    $line = "\n\n$label: {" . $slot . '}';
+    $template = str_ends_with($template, $close) ? substr($template, 0, -strlen($close)) . $line . $close : $template . $line;
+}
+$user = strtr($template, ['{concept}' => $concept, '{concept2}' => $concept2, '{field}' => $field, '{field2}' => $field2]);
 $count = max(1, min(8, (int)($move['count'] ?? 3)));
 $wantsObject = empty($move['array']);
 
@@ -392,4 +457,5 @@ foreach ($list as $v) {
 }
 if (!$variants) fail(502, 'upstream', ($own ? $label : 'The free engine') . ' answered, but not with rewrites. Press the move again.');
 
-reply(200, ['variants' => $variants, 'engine' => $own ? $engine : $provider] + ($note !== '' ? ['note' => $note] : []));
+reply(200, ['variants' => $variants, 'engine' => $own ? $engine : $provider]
+    + ($note !== '' ? ['note' => $note] : []) + ($card !== '' ? ['card' => $card] : []));

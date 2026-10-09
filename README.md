@@ -1,8 +1,9 @@
 # Concept Transformer
 
-The code behind [concepttransformer.site](https://concepttransformer.site): type a concept, press a creative
-move (the seven SCAMPER operators, five transforms, and a few utilities), get fresh takes on it as
-image concepts or as ideas.
+The code behind [concepttransformer.site](https://concepttransformer.site): type a concept, press creative
+moves (SCAMPER, perceptual, linguistic, structural and chance moves, about forty in all), collide two ideas
+by connecting their boxes, and grow a map of results. Every result is a full concept again, so any of them
+can be transformed, collided or finished in turn. Results come as image concepts or as ideas.
 
 This repository is published so visitors can check what the site does with what they type and, if
 they use their own API key, with that key. The move prompts themselves are **not** in this
@@ -10,14 +11,32 @@ repository; they live only on the server.
 
 ## What is here
 
-- `index.html`, `app.js`, `styles.css`: the page. It holds no prompts and loads no outside code.
-- `mindmap.js`: the map, the heart of the page. Concepts, transforms and results are boxes; any result can be transformed again. The map lives in the visitor's browser only (and in map files they save); nothing from it is sent anywhere except the one concept a press is about.
+- `web/`: the page (version 3): React, React Flow and shadcn components, built with Vite. It holds no
+  prompts and loads no outside code. The map, the visitor's Keep and Discard choices and their settings live
+  in their own browser only (and in map files they save). A press sends only the box or two boxes it is
+  about, plus the visitor's newest keeps and discards so the engine can follow their taste; the server
+  does not store any of it.
 - `relay.php`: the only server file. Every press goes through it. It reads the prompts from a
   locked folder, calls the engine, and returns the results. See below for how it treats keys.
-- `moves.json`: the public list of moves: names, descriptions, examples. Built by
+- `moves.json`: the public list of moves: names, descriptions, examples and evidence notes. Built by
   `tools/export_moves.py` from the private prompt file.
 - `.htaccess`: no-cache rules and the security headers (content security policy, no referrer).
-- `tools/`, `tests/`: the export and upload scripts and the local test harness.
+- `tools/`, `tests/`: the export and deploy scripts and the local test harness.
+- `index.html`, `app.js`, `mindmap.js`, `styles.css` at the top: version 2 of the page, kept for reference.
+
+## Building and deploying
+
+```
+npm --prefix web install
+npm --prefix web run build
+python tools/export_moves.py
+python tools/deploy.py --to v3 --dry-run
+```
+
+`tools/deploy.py --to v3` uploads a test copy that only the Hostinger preview address serves;
+`--to root` replaces the live page. Both need an upload address from Hostinger in `UP_URL`, `UP_AUTH`
+and `UP_REST`. For local work, `tests/local/serve.ps1` runs the relay on port 8787 and
+`npm --prefix web run dev` serves the page on port 5180, passing presses through to it.
 
 ## How a visitor's own key is handled
 

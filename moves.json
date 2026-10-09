@@ -1,5 +1,5 @@
 {
- "exported": "2026-10-09T14:28:00",
+ "exported": "2026-10-09T17:54:15",
  "default_mode": "image",
  "modes": {
   "image": {
@@ -15,7 +15,15 @@
  },
  "groups": [
   "SCAMPER",
-  "Transforms"
+  "Collisions",
+  "Perceptual",
+  "Scale and abstraction",
+  "Substitution",
+  "Structural",
+  "Linguistic",
+  "Constraints",
+  "Chance and games",
+  "Shifts"
  ],
  "stack_max": 3,
  "moves": [
@@ -35,6 +43,7 @@
     "ideas": "Skill library: instead of a drill, you borrow an hour of the neighbor who knows how to use one."
    },
    "count": 3,
+   "evidence": "strong",
    "stackable": true
   },
   {
@@ -53,6 +62,7 @@
     "ideas": "Laundromat workshop: a tool library inside the laundromat, so you fix the chair while your clothes dry."
    },
    "count": 3,
+   "evidence": "strong",
    "stackable": true
   },
   {
@@ -89,6 +99,7 @@
     "ideas": "Street ritual: the library lends one tool a year, and the whole street votes on which."
    },
    "count": 3,
+   "evidence": "strong",
    "stackable": true
   },
   {
@@ -107,6 +118,7 @@
     "ideas": "Job exchange: borrow the ladder, and the fee is cleaning the gutters next door."
    },
    "count": 3,
+   "evidence": "strong",
    "stackable": true
   },
   {
@@ -143,11 +155,12 @@
     "ideas": "Reverse library: it borrows your idle tools and pays you back in free repairs."
    },
    "count": 3,
+   "evidence": "strong",
    "stackable": true
   },
   {
    "id": "inversion",
-   "group": "Transforms",
+   "group": "Perceptual",
    "label": {
     "image": "Inversion",
     "ideas": "Inversion"
@@ -161,11 +174,12 @@
     "ideas": "Museum of the unused: a catalog of tools people bought and never touched, open for borrowing."
    },
    "count": 3,
+   "evidence": "drifts",
    "stackable": true
   },
   {
    "id": "scale_shift",
-   "group": "Transforms",
+   "group": "Scale and abstraction",
    "label": {
     "image": "Scale shift",
     "ideas": "Scale shift"
@@ -179,11 +193,12 @@
     "ideas": "City-wide drill: one drill for the whole city, booked a year ahead, passed hand to hand."
    },
    "count": 3,
+   "evidence": "strong",
    "stackable": true
   },
   {
    "id": "defamiliarize",
-   "group": "Transforms",
+   "group": "Perceptual",
    "label": {
     "image": "Defamiliarize",
     "ideas": "Defamiliarize"
@@ -197,11 +212,12 @@
     "ideas": "Strangers hand each other heavy metal objects there, and bring them back a little worn."
    },
    "count": 3,
+   "evidence": "drifts",
    "stackable": true
   },
   {
    "id": "rule_break",
-   "group": "Transforms",
+   "group": "Perceptual",
    "label": {
     "image": "Rule break",
     "ideas": "Rule break"
@@ -215,11 +231,12 @@
     "ideas": "Pass-it-on library: nothing is ever returned; whatever you borrow is yours until someone else needs it."
    },
    "count": 3,
+   "evidence": "strong",
    "stackable": true
   },
   {
    "id": "provocation",
-   "group": "Transforms",
+   "group": "Perceptual",
    "label": {
     "image": "Provocation",
     "ideas": "Provocation"
@@ -233,11 +250,13 @@
     "ideas": "Tool rating system: every tool logs who used it, and won't unlock for whoever last broke it."
    },
    "count": 3,
+   "evidence": "strong",
+   "evidenceNote": "Strong in the studio's tests, though Concretization after it cancelled its jolt.",
    "stackable": true
   },
   {
    "id": "domain_transfer",
-   "group": "Transforms",
+   "group": "Structural",
    "label": {
     "image": "Domain transfer",
     "ideas": "Domain transfer"
@@ -256,6 +275,551 @@
     "label": "Target domain",
     "max": 60,
     "placeholder": "target domain — architecture, gardening, weather…"
+   },
+   "evidence": "mixed",
+   "evidenceNote": "Drifted under one judge in the studio's tests; a second judge rated it well."
+  },
+  {
+   "id": "visualize",
+   "group": "Finish",
+   "label": {
+    "image": "Visualize",
+    "ideas": "Make concrete"
+   },
+   "blurb": {
+    "image": "Turns an abstract or poetic idea into a plain picture you could actually draw or photograph.",
+    "ideas": "Turns an abstract or vague idea into a specific instance you could point at."
+   },
+   "example": {
+    "image": "\"loneliness, as a lighthouse\" → One lit window in a lighthouse, a single chair turned to face the sea.",
+    "ideas": "\"generosity, as a public service\" → Tool library with no sign-up: take what you need and chalk your name on the board."
+   },
+   "count": 3
+  },
+  {
+   "id": "bisociation",
+   "group": "Collisions",
+   "label": {
+    "image": "Bisociation",
+    "ideas": "Bisociation"
+   },
+   "blurb": {
+    "image": "Pulls A into B's world and lets B's logic change it, so the two genuinely intersect.",
+    "ideas": "Pulls A into B's world and lets B's logic change it, so the two genuinely intersect."
+   },
+   "example": {
+    "image": "A lighthouse × a vending machine → a coin slot in the lighthouse door; the beam turns once per coin.",
+    "ideas": "Tool library × vending machine → Street vending machine: lends a drill for a coin and takes the broken one back."
+   },
+   "count": 3,
+   "evidence": "strong",
+   "evidenceNote": "The owner's favorite in the studio's blind picks; collisions beat single-concept moves in every test.",
+   "inputs": 2
+  },
+  {
+   "id": "split_pair",
+   "group": "Collisions",
+   "label": {
+    "image": "Split and pair",
+    "ideas": "Split and pair"
+   },
+   "blurb": {
+    "image": "Breaks both concepts into their parts, picks the two parts that clash best, and collides just those.",
+    "ideas": "Breaks both concepts into their parts, picks the two parts that clash best, and collides just those."
+   },
+   "example": {
+    "image": "A lighthouse × a beehive → the beam's sweep × the swarm's hum: a lighthouse whose light pulses in time with bees.",
+    "ideas": "Tool library × night bakery → lending × the early hours: a 4 a.m. counter where bakers lend their tools to the next shift."
+   },
+   "count": 3,
+   "evidence": "strong",
+   "evidenceNote": "In the studio, choosing what to collide first added non-obviousness; Split and pair then Bisociation was the owner's top recipe.",
+   "inputs": 2
+  },
+  {
+   "id": "blending",
+   "group": "Collisions",
+   "label": {
+    "image": "Conceptual blending",
+    "ideas": "Conceptual blending"
+   },
+   "blurb": {
+    "image": "Finds the structure A and B share, then builds one new thing that takes from both and adds something neither had.",
+    "ideas": "Finds the structure A and B share, then builds one new thing that takes from both and adds something neither had."
+   },
+   "example": {
+    "image": "A lighthouse × a hourglass → a tower whose light drains down into the sea as the night passes.",
+    "ideas": "Tool library × a time bank → Hour library: every tool comes with an hour of its owner's help, repaid in your own hours."
+   },
+   "count": 3,
+   "evidence": "strong",
+   "inputs": 2
+  },
+  {
+   "id": "graft",
+   "group": "Collisions",
+   "label": {
+    "image": "Graft (B into A)",
+    "ideas": "Graft (B into A)"
+   },
+   "blurb": {
+    "image": "Keeps A mostly as it is and plants one charged piece of B inside it, as a single anomaly that takes over.",
+    "ideas": "Keeps A mostly as it is and plants one charged piece of B inside it, as a single anomaly that takes over."
+   },
+   "example": {
+    "image": "A lighthouse, with B = a bird's nest → the lamp room is one enormous nest; the keeper climbs in through twigs.",
+    "ideas": "Tool library, with B = a confessional → the return desk is a booth: you confess what you broke, and nobody fines you."
+   },
+   "count": 3,
+   "evidence": "strong",
+   "evidenceNote": "Strong in the studio's tests; the most reliable second step after another collision.",
+   "inputs": 2
+  },
+  {
+   "id": "collide",
+   "group": "Collisions",
+   "label": {
+    "image": "Collide",
+    "ideas": "Collide"
+   },
+   "blurb": {
+    "image": "Finds where the two concepts' logics meet and grows one new idea there, with both parents still visible.",
+    "ideas": "Finds where the two concepts' logics meet and grows one new idea there, with both parents still visible."
+   },
+   "example": {
+    "image": "A lighthouse × a snow globe → a lighthouse sealed in glass, its beam caught swirling in the snow.",
+    "ideas": "Tool library × a confession booth → Tool return booth: you hand back the tool and confess what you broke with it."
+   },
+   "count": 3,
+   "inputs": 2
+  },
+  {
+   "id": "dialectic",
+   "group": "Collisions",
+   "label": {
+    "image": "Dialectical synthesis",
+    "ideas": "Dialectical synthesis"
+   },
+   "blurb": {
+    "image": "Treats A and B as opposites, finds the real contradiction between them, and resolves it into a third thing.",
+    "ideas": "Treats A and B as opposites, finds the real contradiction between them, and resolves it into a third thing."
+   },
+   "example": {
+    "image": "A lighthouse × a fog bank → a tower that gives off fog instead of light, so ships steer by where it hides.",
+    "ideas": "Tool library × a hoarder's garage → Keep-forever library: you never return a tool, you lend it onward and it keeps a trail."
+   },
+   "count": 3,
+   "evidence": "mixed",
+   "evidenceNote": "Judges disagreed in the studio: last under one, mid-pack under another. It can wander.",
+   "inputs": 2
+  },
+  {
+   "id": "abstraction",
+   "group": "Scale and abstraction",
+   "label": {
+    "image": "Abstraction",
+    "ideas": "Abstraction"
+   },
+   "blurb": {
+    "image": "Climbs from the thing to what it is an example of: its category, its job, the principle behind it.",
+    "ideas": "Climbs from the thing to what it is an example of: its category, its job, the principle behind it."
+   },
+   "example": {
+    "image": "A lighthouse → a single eye kept open all night over a sleeping coast.",
+    "ideas": "A tool library → Shared-capability network: any building on the street can lend whatever it is best equipped for."
+   },
+   "count": 3,
+   "evidence": "drifts",
+   "stackable": true
+  },
+  {
+   "id": "concretization",
+   "group": "Scale and abstraction",
+   "label": {
+    "image": "Concretization",
+    "ideas": "Concretization"
+   },
+   "blurb": {
+    "image": "Climbs down to one specific, named instance in a particular time and place.",
+    "ideas": "Climbs down to one specific, named instance in a particular time and place."
+   },
+   "example": {
+    "image": "A lighthouse → the Eddystone lighthouse in 1759, its lamp a ring of twenty-four tallow candles.",
+    "ideas": "A tool library → the 2010 Berkeley Tool Lending Library: a basement counter, a membership card, a waiting list for the tile saw."
+   },
+   "count": 3,
+   "evidence": "mixed",
+   "evidenceNote": "In the studio it grounded collisions well but cancelled the jolt of a Provocation.",
+   "stackable": true
+  },
+  {
+   "id": "synecdoche",
+   "group": "Substitution",
+   "label": {
+    "image": "Synecdoche",
+    "ideas": "Synecdoche"
+   },
+   "blurb": {
+    "image": "Lets one part stand for the whole, or the whole stand for one part.",
+    "ideas": "Lets one part stand for the whole, or the whole stand for one part."
+   },
+   "example": {
+    "image": "A lighthouse → only the turning lens, alone on the cliff, still throwing its light.",
+    "ideas": "A tool library → Library card: one card that unlocks any garage on the street for a single hour."
+   },
+   "count": 3,
+   "evidence": "mixed"
+  },
+  {
+   "id": "metonymy",
+   "group": "Substitution",
+   "label": {
+    "image": "Metonymy",
+    "ideas": "Metonymy"
+   },
+   "blurb": {
+    "image": "Swaps the thing for something next to it: what it touches, causes, uses or sits beside.",
+    "ideas": "Swaps the thing for something next to it: what it touches, causes, uses or sits beside."
+   },
+   "example": {
+    "image": "A lighthouse → the keeper's logbook open on the table, lit by a beam that sweeps in through the window.",
+    "ideas": "A tool library → Sawdust exchange: the library trades in what tools leave behind, sawdust, offcuts, spare screws."
+   },
+   "count": 3,
+   "evidence": "drifts"
+  },
+  {
+   "id": "metaphor",
+   "group": "Substitution",
+   "label": {
+    "image": "Metaphor",
+    "ideas": "Metaphor"
+   },
+   "blurb": {
+    "image": "Replaces the thing with something from a different world that has the same feeling or job.",
+    "ideas": "Replaces the thing with something from a different world that has the same feeling or job."
+   },
+   "example": {
+    "image": "A lighthouse → an old conductor on a cliff, baton raised, keeping the ships in time.",
+    "ideas": "A tool library → Seed bank for skills: tools are stored like seeds, and each loan must come back with a cutting of what you made."
+   },
+   "count": 3,
+   "evidence": "drifts"
+  },
+  {
+   "id": "etymology",
+   "group": "Linguistic",
+   "label": {
+    "image": "Etymology mining",
+    "ideas": "Etymology mining"
+   },
+   "blurb": {
+    "image": "Digs up the old, literal meaning of a key word and builds the concept on that.",
+    "ideas": "Digs up the old, literal meaning of a key word and builds the concept on that."
+   },
+   "example": {
+    "image": "A lighthouse ('pharos', from the island of Pharos) → an island that is itself the lamp, glowing from the rock up.",
+    "ideas": "A tool library ('library', from Latin liber, the inner bark of a tree) → Bark library: tools lent from a hollow oak in the park."
+   },
+   "count": 3,
+   "evidence": "drifts"
+  },
+  {
+   "id": "translation_drift",
+   "group": "Linguistic",
+   "label": {
+    "image": "Translation drift",
+    "ideas": "Translation drift"
+   },
+   "blurb": {
+    "image": "Carries the concept through other languages and keeps whatever the meaning drifts into.",
+    "ideas": "Carries the concept through other languages and keeps whatever the meaning drifts into."
+   },
+   "example": {
+    "image": "A lighthouse, through Japanese and back → a 'tower of the lamp-guardian': a tower that guards a single lamp from the sea.",
+    "ideas": "A tool library, through German and back → 'Werkzeugleihe', a lending of work: you borrow the job, and the tools come with it."
+   },
+   "count": 3,
+   "field": {
+    "name": "languages",
+    "label": "Via which languages",
+    "max": 80,
+    "optional": true,
+    "placeholder": "via which languages (optional) — Japanese, Arabic…"
+   },
+   "evidence": "drifts"
+  },
+  {
+   "id": "lewitt",
+   "group": "Structural",
+   "label": {
+    "image": "LeWitt instruction",
+    "ideas": "LeWitt instruction"
+   },
+   "blurb": {
+    "image": "Works out the rule that could have produced the concept, then lets the rule make new ones.",
+    "ideas": "Works out the rule that could have produced the concept, then lets the rule make new ones."
+   },
+   "example": {
+    "image": "A lighthouse ([Rule: a tall thing that turns to watch over a dark flat]) → a giraffe at the edge of a night savanna, head slowly sweeping.",
+    "ideas": "A tool library ([Rule: lend what people own but rarely use]) → a wedding-dress library run by a church hall."
+   },
+   "count": 3,
+   "evidence": "drifts"
+  },
+  {
+   "id": "misuse",
+   "group": "Structural",
+   "label": {
+    "image": "Generative misuse",
+    "ideas": "Generative misuse"
+   },
+   "blurb": {
+    "image": "Gets to the concept by misusing a tool, medium or system for something it was never meant to do.",
+    "ideas": "Gets to the concept by misusing a tool, medium or system for something it was never meant to do."
+   },
+   "example": {
+    "image": "A lighthouse → a lighthouse drawn by leaving a long-exposure camera on a ship's mast through one stormy night.",
+    "ideas": "A tool library → Library run on a parcel locker network: tools travel by courier between neighbors, the lockers are the shelves."
+   },
+   "count": 3
+  },
+  {
+   "id": "documentation",
+   "group": "Structural",
+   "label": {
+    "image": "Documentation as work",
+    "ideas": "Documentation as work"
+   },
+   "blurb": {
+    "image": "Recasts the concept as its own paperwork: the receipt, instruction, certificate or trace of something absent.",
+    "ideas": "Recasts the concept as its own paperwork: the receipt, instruction, certificate or trace of something absent."
+   },
+   "example": {
+    "image": "A lighthouse → a keeper's logbook page: 'Lamp lit 18:04. No ships. Lamp lit for no one again.'",
+    "ideas": "A tool library → Loan slips as the archive: every slip records what was built with the tool, and the slips are the exhibit."
+   },
+   "count": 3
+  },
+  {
+   "id": "split",
+   "group": "Structural",
+   "label": {
+    "image": "Split",
+    "ideas": "Split"
+   },
+   "blurb": {
+    "image": "Breaks the concept into its parts and builds on one part at a time.",
+    "ideas": "Breaks the concept into its parts and builds on one part at a time."
+   },
+   "example": {
+    "image": "A lighthouse → just its rhythm: a coastline where every fourth wave breaks in light.",
+    "ideas": "A tool library → just its return date: a service that reminds you what you meant to finish before you borrowed it."
+   },
+   "count": 3
+  },
+  {
+   "id": "constraint_add",
+   "group": "Constraints",
+   "label": {
+    "image": "Impose a constraint",
+    "ideas": "Impose a constraint"
+   },
+   "blurb": {
+    "image": "Imposes one rule the whole concept must obey, and lets obeying it reshape everything.",
+    "ideas": "Imposes one rule the whole concept must obey, and lets obeying it reshape everything."
+   },
+   "example": {
+    "image": "A lighthouse, rule: everything is wet → a lighthouse whose beam is a falling sheet of water lit from within.",
+    "ideas": "A tool library, rule: nothing may leave the building → Repair hall: you bring the broken thing in, the tools never travel."
+   },
+   "count": 3,
+   "field": {
+    "name": "rule",
+    "label": "The rule",
+    "max": 80,
+    "optional": true,
+    "placeholder": "a rule to impose (optional) — everything is wet"
+   },
+   "evidence": "strong"
+  },
+  {
+   "id": "constraint_inversion",
+   "group": "Constraints",
+   "label": {
+    "image": "Refuse the strength",
+    "ideas": "Refuse the strength"
+   },
+   "blurb": {
+    "image": "Finds what the concept or its medium does best, and refuses it.",
+    "ideas": "Finds what the concept or its medium does best, and refuses it."
+   },
+   "example": {
+    "image": "A lighthouse that refuses light: a dark tower ships find by its sound, a slow bell in the fog.",
+    "ideas": "A tool library that refuses lending → Tool museum: you may only watch the tools being used, by their owners."
+   },
+   "count": 3,
+   "evidence": "mixed"
+  },
+  {
+   "id": "oulipo",
+   "group": "Constraints",
+   "label": {
+    "image": "Oulipo",
+    "ideas": "Oulipo"
+   },
+   "blurb": {
+    "image": "Writes the concept under a word game, like no letter E, and keeps the odd idea the game forces.",
+    "ideas": "Writes the concept under a word game, like no letter E, and keeps the odd idea the game forces."
+   },
+   "example": {
+    "image": "A lighthouse without the letter E → a tall stone pillar lit at its top; a gull holds a lamp in its jaws.",
+    "ideas": "A tool library, one vowel only → 'Stock shop of tools': a shop where you swap a tool for a job, not for cash."
+   },
+   "count": 3,
+   "evidence": "mixed"
+  },
+  {
+   "id": "oblique",
+   "group": "Chance and games",
+   "label": {
+    "image": "Oblique Strategies",
+    "ideas": "Oblique Strategies"
+   },
+   "blurb": {
+    "image": "Draws a random card from Eno and Schmidt's deck of oblique directives and applies it to the concept.",
+    "ideas": "Draws a random card from Eno and Schmidt's deck of oblique directives and applies it to the concept."
+   },
+   "example": {
+    "image": "A lighthouse, card 'Water' → a lighthouse standing in a puddle, its whole beam reflected downward.",
+    "ideas": "A tool library, card 'Use an old idea' → the 19th-century lending guild, rebuilt as a phone app."
+   },
+   "count": 3,
+   "field": {
+    "name": "card",
+    "label": "Strategy card",
+    "max": 120,
+    "optional": true
+   },
+   "deck": true
+  },
+  {
+   "id": "surrealist",
+   "group": "Chance and games",
+   "label": {
+    "image": "Surrealist games",
+    "ideas": "Surrealist games"
+   },
+   "blurb": {
+    "image": "Free-associates from the concept like automatic writing, and keeps the strangeness.",
+    "ideas": "Free-associates from the concept like automatic writing, and keeps the strangeness."
+   },
+   "example": {
+    "image": "A lighthouse → the lamp dreams of moths; at dawn the tower is full of them, sleeping in rows on the glass.",
+    "ideas": "A tool library → a hammer goes out on loan and comes back as a key; the library now lends whatever comes back."
+   },
+   "count": 3
+  },
+  {
+   "id": "exquisite_corpse",
+   "group": "Chance and games",
+   "label": {
+    "image": "Exquisite corpse",
+    "ideas": "Exquisite corpse"
+   },
+   "blurb": {
+    "image": "Keeps only the last word or image of the concept and starts a brand-new idea from it.",
+    "ideas": "Keeps only the last word or image of the concept and starts a brand-new idea from it."
+   },
+   "example": {
+    "image": "A lighthouse on a cliff → (cliff) a cliff face lined with doorbells; nobody knows who lives inside.",
+    "ideas": "A library that lends tools instead of books → (books) Books lent by the gram: you pay for what you actually read."
+   },
+   "count": 3,
+   "field": {
+    "name": "anchor",
+    "label": "Anchor",
+    "max": 60,
+    "optional": true,
+    "placeholder": "start from this word instead (optional)"
+   }
+  },
+  {
+   "id": "pov_shift",
+   "group": "Shifts",
+   "label": {
+    "image": "Point of view",
+    "ideas": "Point of view"
+   },
+   "blurb": {
+    "image": "Tells the same concept from someone or something else in it: a witness, an object, an animal.",
+    "ideas": "Tells the same concept from someone or something else in it: a witness, an object, an animal."
+   },
+   "example": {
+    "image": "A lighthouse, as the moth on the glass sees it: a sun that turns away every nine seconds.",
+    "ideas": "A tool library, from the drill's side → Tool diaries: each tool keeps a log of every house it has worked in."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "time_shift",
+   "group": "Shifts",
+   "label": {
+    "image": "Time shift",
+    "ideas": "Time shift"
+   },
+   "blurb": {
+    "image": "Moves the concept to a different era, with that era's objects and logic, keeping its core.",
+    "ideas": "Moves the concept to a different era, with that era's objects and logic, keeping its core."
+   },
+   "example": {
+    "image": "A lighthouse in 1200 → a monk with a fire basket on a church tower, ringing for the fishing boats.",
+    "ideas": "A tool library in 2090 → Fabrication library: you borrow a file, the street's printer makes the tool, then melts it back."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "tonal_shift",
+   "group": "Shifts",
+   "label": {
+    "image": "Tonal shift",
+    "ideas": "Tonal shift"
+   },
+   "blurb": {
+    "image": "Keeps the same concept but changes its feeling: tender to sinister, solemn to comic.",
+    "ideas": "Keeps the same concept but changes its feeling: tender to sinister, solemn to comic."
+   },
+   "example": {
+    "image": "A lighthouse, sinister → the beam pauses on each boat a moment too long, as if counting who is aboard.",
+    "ideas": "A tool library, comic → Tool library with a strict librarian: overdue hammers get a public notice in the newsletter."
+   },
+   "count": 3,
+   "stackable": true
+  },
+  {
+   "id": "compression",
+   "group": "Shifts",
+   "label": {
+    "image": "Compression",
+    "ideas": "Compression"
+   },
+   "blurb": {
+    "image": "Squeezes the concept down to its single essential core, and lets the rest go.",
+    "ideas": "Squeezes the concept down to its single essential core, and lets the rest go."
+   },
+   "example": {
+    "image": "A lighthouse on a cliff → one lit window, high up, in the dark.",
+    "ideas": "A library that lends tools instead of books → Borrow, don't buy: one shared shelf per street."
+   },
+   "count": 3,
+   "field": {
+    "name": "survive",
+    "label": "What must survive",
+    "max": 60,
+    "optional": true,
+    "placeholder": "what must survive (optional)"
    }
   }
  ]

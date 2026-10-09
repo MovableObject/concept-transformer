@@ -57,21 +57,34 @@ def main():
             if '"variants"' not in text:
                 problems.append(f"{mid} ({mode}): prompt does not ask for a variants list")
         count = int(m.get("count", 3))
+        inputs = int(m.get("inputs", 1))
         pub = {"id": mid, "group": m["group"], "label": label, "blurb": blurb, "example": example, "count": count}
-        if "field" in m:
-            pub["field"] = m["field"]
+        for k in ("field", "field2", "evidence", "evidenceNote"):
+            if k in m:
+                pub[k] = m[k]
+        if inputs != 1:
+            pub["inputs"] = inputs
+            if "{concept2}" not in m.get("user_template", ""):
+                problems.append(f"{mid}: takes two inputs but its user template has no {{concept2}}")
+        if m.get("deck"):
+            pub["deck"] = True
+        if m.get("evidence") not in (None, "strong", "mixed", "drifts"):
+            problems.append(f"{mid}: unknown evidence tag {m['evidence']}")
         if m.get("diff") is False:
             pub["diff"] = False
         public_moves.append(pub)
-        priv = {"system": system, "length_rule": m.get("length_rule", True), "count": count}
-        if m["group"] in sp.STACKABLE_GROUPS and "field" not in m and not isinstance(m["system"], dict):
+        priv = {"system": system, "length_rule": m.get("length_rule", True), "count": count, "inputs": inputs}
+        if m.get("deck"):
+            priv["deck"] = True
+        if (m["group"] in sp.STACKABLE_GROUPS and "field" not in m and inputs == 1
+                and not isinstance(m["system"], dict)):
             cut = m["system"].find("\n\nRules:")
             if cut < 0:
                 problems.append(f"{mid}: stackable but has no Rules section to cut at")
             else:
                 priv["method"] = m["system"][:cut].strip()
                 pub["stackable"] = True
-        for k in ("field", "user_template"):
+        for k in ("field", "field2", "user_template"):
             if k in m:
                 priv[k] = m[k]
         private_moves[mid] = priv
@@ -81,7 +94,7 @@ def main():
         "exported": stamp,
         "default_mode": MODE_IDS[0],
         "modes": {k: {f: v[f] for f in ("label", "placeholder", "anchor")} for k, v in sp.MODES.items()},
-        "groups": sp.GROUPS,
+        "groups": [g for g in sp.GROUPS if g not in getattr(sp, "HIDDEN_GROUPS", [])],
         "stack_max": sp.STACK_MAX,
         "moves": public_moves,
     }
@@ -93,8 +106,12 @@ def main():
         "user_template": sp.USER_TEMPLATE,
         "stack": {"intro": sp.STACK_INTRO, "rules": sp.STACK_RULES, "max": sp.STACK_MAX},
         "moves": private_moves,
+        "oblique_deck": list(getattr(sp, "OBLIQUE_DECK", [])),
     }
     pub_text = json.dumps(public)
+    # an example may quote a card or two; the deck as a whole must stay private
+    if sum(card in pub_text for card in getattr(sp, "OBLIQUE_DECK", []) if len(card) > 12) > 2:
+        problems.append("the Oblique deck leaked into the public file")
     if '"system"' in pub_text or '"clause"' in pub_text or "Output ONLY" in pub_text or "RESULT TYPE" in pub_text:
         problems.append("prompt text leaked into the public file")
 
@@ -108,7 +125,7 @@ def main():
     print(f"wrote {PRIVATE_OUT}")
     for m in public_moves:
         names = " / ".join(dict.fromkeys(m["label"].values()))
-        print(f"  {m['group']:<10} {names}")
+        print(f"  {m['group']:<22} {names}  {m.get('evidence', '')}")
     if problems:
         print("PROBLEMS:")
         for p in problems:

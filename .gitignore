@@ -13,3 +13,4 @@ tests/free3.py
 tests/quick10.py
 tests/ideas6.py
 tests/local/php.ini
+.claude/
