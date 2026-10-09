@@ -206,7 +206,10 @@ const CTMap = (() => {
         const label = wrap(n.move, `600 11px ${family()}`, GAP_X - 24, 2);
         const t = sv('text', { x: lx, y: ly - (label.length - 1) * 7 + 4, class: 'mm-move' });
         label.forEach((ln, i) => t.append(sv('tspan', { x: lx, dy: i ? 14 : 0 }, ln)));
-        labels.append(sv('rect', { x: lx - 4, y: ly - label.length * 7 - 3, width: GAP_X - 16, height: label.length * 14 + 6, rx: 3, class: 'mm-move-bg' }), t);
+        // The label's backing is only as wide as its text, so the line stays visible on either side of it.
+        measureCtx.font = `600 11px ${family()}`;
+        const lw = Math.max(...label.map((ln) => measureCtx.measureText(ln).width));
+        labels.append(sv('rect', { x: lx - 4, y: ly - label.length * 7 - 3, width: lw + 8, height: label.length * 14 + 6, rx: 3, class: 'mm-move-bg' }), t);
       }
     }
     for (const id of graph.order) {
