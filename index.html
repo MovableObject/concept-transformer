@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Concept Transformer</title>
 <meta name="description" content="Type a simple scene, press a creative move, get three rewrites.">
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
-<div class="wrap">
+<div class="wrap app">
   <header class="top">
     <div class="brand">
       <h1>Concept Transformer</h1>
-      <p class="sub">Type a concept. Press a move. Get fresh takes on it.</p>
+      <p class="sub">Type a concept, press a move, and grow a map of ideas from it.</p>
     </div>
     <div class="engine">
       <div class="seg" id="engineSeg" role="radiogroup" aria-label="Engine">
@@ -47,55 +47,71 @@
     </div>
   </header>
 
-  <main>
-    <div class="conceptRow">
-      <label class="conceptLabel" for="concept">Your concept</label>
-      <div class="seg" id="modeSeg" role="radiogroup" aria-label="Result type"></div>
-    </div>
-    <textarea id="concept" rows="2" maxlength="500" placeholder="Type a simple scene — a cat asleep on a windowsill"></textarea>
-    <div class="count" id="count"></div>
-
-    <section class="moves" id="moves" aria-label="Moves"></section>
-    <div class="lengthRow">
-      <label for="words">Length</label>
-      <input type="range" id="words" min="5" max="60" step="1">
-      <span id="wordsOut" aria-live="polite"></span>
-      <button type="button" class="link" id="wordsReset">Default</button>
-    </div>
-    <div class="stackRow">
-      <label class="switch"><input type="checkbox" id="stackToggle"> Stack moves</label>
-      <span id="stackHint" class="hint"></span>
-      <button type="button" id="stackGo" hidden disabled>Transform</button>
-    </div>
-
-    <details class="fold" id="explain">
-      <summary>What each move does</summary>
-      <div id="explainBody"></div>
-    </details>
-
-    <div class="resultsBar">
-      <div class="seg" id="viewSeg" role="radiogroup" aria-label="View">
-        <button type="button" role="radio" data-view="list" aria-checked="true">List</button>
-        <button type="button" role="radio" data-view="map" aria-checked="false">Map</button>
+  <div class="layout">
+    <aside id="side" aria-label="Concept and moves">
+      <div class="conceptRow">
+        <label class="conceptLabel" for="concept">New concept</label>
+        <div class="seg" id="modeSeg" role="radiogroup" aria-label="Result type"></div>
       </div>
-      <label class="switch"><input type="checkbox" id="showChanges"> Show changes</label>
-      <button type="button" class="link" id="clearResults" hidden>Clear</button>
-    </div>
-    <section id="results" aria-live="polite"></section>
-    <section id="mapView" hidden aria-label="Mind map">
-      <div class="mapBar">
+      <textarea id="concept" rows="2" maxlength="500" placeholder="Type a simple scene — a cat asleep on a windowsill"></textarea>
+      <div class="plantRow">
+        <button type="button" id="plant">Add to map</button>
+        <span class="count" id="count"></span>
+      </div>
+      <p class="target" id="targetLine" aria-live="polite"></p>
+
+      <section class="moves" id="moves" aria-label="Moves"></section>
+      <div class="lengthRow">
+        <label for="words">Length</label>
+        <input type="range" id="words" min="5" max="60" step="1">
+        <span id="wordsOut" aria-live="polite"></span>
+        <button type="button" class="link" id="wordsReset">Default</button>
+      </div>
+      <div class="stackRow">
+        <label class="switch"><input type="checkbox" id="stackToggle"> Stack moves</label>
+        <button type="button" id="stackGo" hidden disabled>Transform</button>
+        <span id="stackHint" class="hint"></span>
+      </div>
+      <details class="fold" id="explain">
+        <summary>What each move does</summary>
+        <div id="explainBody"></div>
+      </details>
+    </aside>
+
+    <main id="stage">
+      <div class="stageBar">
+        <div class="seg" id="viewSeg" role="radiogroup" aria-label="View">
+          <button type="button" role="radio" data-view="map" aria-checked="true">Map</button>
+          <button type="button" role="radio" data-view="outline" aria-checked="false">Outline</button>
+        </div>
         <button type="button" id="mapFit">Fit</button>
-        <button type="button" id="mapOutline">Copy as outline</button>
+        <button type="button" id="mapTidy">Tidy up</button>
+        <button type="button" id="mapUndo">Undo last press</button>
+        <button type="button" id="mapSave">Save map</button>
+        <button type="button" id="mapOpen">Open map</button>
+        <input type="file" id="mapFile" accept=".json,application/json" hidden>
         <button type="button" id="mapPicture">Download picture</button>
-        <span class="mapHint">Drag to move, scroll or pinch to zoom, click a box to make it the concept.</span>
+        <label class="switch"><input type="checkbox" id="showChanges"> Show changes</label>
+        <button type="button" class="link" id="clearResults">Clear</button>
       </div>
-      <div id="mapInfo" aria-live="polite"></div>
-      <div class="mapWrap">
-        <svg id="mapSvg" role="img" aria-label="Mind map of results"></svg>
-        <p id="mapEmpty">Press a move to start the map. Each result branches from its concept, and "Use this" grows the next branch.</p>
-      </div>
-    </section>
-  </main>
+      <div id="nodePanel" aria-live="polite"></div>
+      <section id="mapView" aria-label="Mind map">
+        <div class="mapWrap">
+          <svg id="mapSvg" role="img" aria-label="Mind map of concepts, transforms and results"></svg>
+          <div id="mapEmpty">
+            <p><b>Start with a concept.</b> Type it on the left and press a move, or "Add to map".</p>
+            <p>Each move adds a transform and its result. Select any result and press another move to keep going.</p>
+          </div>
+          <div id="picker" hidden role="dialog" aria-label="Transform this concept"></div>
+        </div>
+        <p class="mapHint">Click a box to select it. Drag a box to move it, drag empty space to pan, scroll or pinch to zoom. The + on a selected box opens the moves.</p>
+      </section>
+      <section id="outlineView" hidden aria-label="Outline">
+        <div class="outlineBar"><button type="button" id="outlineCopy">Copy all</button></div>
+        <div id="outlineBody"></div>
+      </section>
+    </main>
+  </div>
 
   <footer>
     <p>Free engines may use what you type to improve their models. Don't type anything private.</p>
@@ -109,7 +125,7 @@
     </details>
   </footer>
 </div>
-<script src="app.js?v=9"></script>
-<script src="mindmap.js?v=7"></script>
+<script src="app.js?v=20"></script>
+<script src="mindmap.js?v=20"></script>
 </body>
 </html>

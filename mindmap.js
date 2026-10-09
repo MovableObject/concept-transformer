@@ -1,122 +1,122 @@
-/* Concept Transformer — the mind map.
- * Every press is recorded as a small graph in the visitor's browser: the concept is a node, each
- * result is a child node, and the line between them carries the move that made it. "Use this" (in
- * the list or on the map) makes a result the current concept, so the next results grow out of it.
- * The map view draws that graph as a left-to-right tree in SVG, with no outside code (the page's
- * security policy allows only this site's own scripts). Nothing here is ever sent to the server.
- * Loaded after app.js and uses its helpers ($, el, lsGet, lsSet, TAG_RE, copyText). */
+/* Concept Transformer — the map (version 2: the map is the app).
+ *
+ * Three kinds of box: a CONCEPT (typed, or a result), a TRANSFORM (the move that was applied), and the
+ * results of that transform, which are concepts again and can be transformed in turn. One press makes
+ * one transform node with three results; the transform shows one result at a time and its "1 of 3 ▸"
+ * button rotates through them. Everything lives in the visitor's browser (localStorage); nothing on
+ * this map is ever sent to the server except the one concept a press is about.
+ *
+ * Boxes keep their places: new boxes go into the first free spot beside their parent, so nothing
+ * moves by itself. Dragging a box moves its whole branch. "Tidy up" lays the whole map out again.
+ * Drawn as SVG by this file, no outside code (the page's security policy allows only its own scripts).
+ * Loaded after app.js; uses its helpers ($, el, lsGet, lsSet, TAG_RE, CONFIG, MOVES, state, updateCount)
+ * and calls back into it through window.CTApp. */
 'use strict';
 
 const CTMap = (() => {
-  const KEY = 'ct.map.v1';
-  const MAX_NODES = 400;
-  const NODE_W = 230, LINE_H = 17, PAD_X = 10, PAD_Y = 8, TAG_H = 15;
-  const GAP_X = 150, GAP_Y = 14, ROOT_GAP = 44, MAX_LINES = 3;
+  const KEY = 'ct.map.v2', OLD_KEY = 'ct.map.v1';
+  const MAX_NODES = 900;
+  const C_W = 230, T_W = 150;                     // concept and transform box widths
+  const LINE_H = 17, PAD_X = 10, PAD_Y = 8;
+  const GAP_X = 46;                               // between a box and the next column
+  const GAP_Y = 16, ROOT_GAP = 36, CLEAR = 10;    // vertical spacing; minimum clearance around boxes
+  const MAX_LINES = 3;
 
   // ── the graph ──────────────────────────────────────────────────────────────
-  // {nodes: {id: node}, order: [ids, oldest first], current: id|null}
-  // node: {id, text, plain, tag, parent, press, move, mode, engine, time, folded}
+  // {v: 2, nodes: {id: node}, order: [ids, oldest first], selected: id|null}
+  // concept:   {id, kind: 'concept', parent: transformId|null, rank: null|0|1|2, text, plain, tag, x, y, time}
+  // transform: {id, kind: 'transform', parent: conceptId, move, moveIds, field, mode, words, engine,
+  //             note, status: 'working'|'done'|'error', error, shown, x, y, time}
   let graph = load();
+  const N = () => graph.nodes;
+  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const children = (id) => graph.order.filter((k) => N()[k].parent === id);
+  const roots = () => graph.order.filter((k) => !N()[k].parent);
+  const count = () => graph.order.length;
+  const node = (id) => (id && N()[id]) || null;
+  const results = (tid) => children(tid).filter((k) => N()[k].kind === 'concept').sort((a, b) => (N()[a].rank || 0) - (N()[b].rank || 0));
+  const shownResult = (tid) => { const r = results(tid); const t = N()[tid]; return r[Math.min(t.shown || 0, r.length - 1)] || null; };
 
   function load() {
     try {
       const g = JSON.parse(lsGet(KEY, '') || 'null');
-      if (g && g.nodes && Array.isArray(g.order)) return g;
+      if (g && g.v === 2 && g.nodes && Array.isArray(g.order)) return g;
     } catch { /* fall through */ }
-    return { nodes: {}, order: [], current: null };
+    return migrate() || { v: 2, nodes: {}, order: [], selected: null };
   }
   function save() {
     trim();
     lsSet(KEY, JSON.stringify(graph));
   }
-  const newId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const norm = (t) => String(t || '').replace(TAG_RE, '').trim().replace(/\s+/g, ' ').toLowerCase();
-  const kids = (id) => graph.order.filter((k) => graph.nodes[k].parent === id);
-  // Results come back best first. Each press is ONE node on the map, showing one of its options
-  // (graph.shown[press] = the option's rank; the best, 0, until the visitor rotates it).
-  const shownIndex = (press) => (graph.shown && graph.shown[press]) || 0;
-  const shown = (k) => { const n = graph.nodes[k]; return n.rank == null || n.rank === shownIndex(n.press); };
-  const options = (press) => graph.order.filter((k) => graph.nodes[k].press === press && graph.nodes[k].rank != null);
-  const visibleKids = (id) => kids(id).filter(shown);
-  const roots = () => graph.order.filter((k) => !graph.nodes[k].parent);
-  const count = () => graph.order.length;
 
+  /** Version 1 maps (one node per result, grouped by press) become version 2 (transform nodes).
+   *  Positions are filled in by tidy() once the map is ready (see init). */
+  function migrate() {
+    let g1;
+    try { g1 = JSON.parse(lsGet(OLD_KEY, '') || 'null'); } catch { return null; }
+    if (!g1 || !g1.nodes || !Array.isArray(g1.order) || !g1.order.length) return null;
+    const g = { v: 2, nodes: {}, order: [], selected: null, needsTidy: true };
+    const tOf = {};
+    for (const id of g1.order) {
+      const o = g1.nodes[id];
+      if (!o) continue;
+      if (!o.parent) {
+        g.nodes[id] = { id, kind: 'concept', parent: null, rank: null, text: o.text, plain: o.plain || o.text, tag: '', time: o.time || 0 };
+        g.order.push(id);
+        continue;
+      }
+      let tid = tOf[o.press];
+      if (!tid) {
+        tid = 't' + o.press;
+        tOf[o.press] = tid;
+        g.nodes[tid] = { id: tid, kind: 'transform', parent: o.parent, move: o.move || '', moveIds: [], field: '', mode: o.mode || 'image',
+          words: 0, engine: o.engine || '', note: '', status: 'done', error: '', shown: (g1.shown && g1.shown[o.press]) || 0, time: o.time || 0 };
+        g.order.push(tid);
+      }
+      const rank = o.rank != null ? o.rank : Object.values(g.nodes).filter((n) => n.parent === tid).length;
+      g.nodes[id] = { id, kind: 'concept', parent: tid, rank, text: o.text, plain: o.plain || o.text, tag: o.tag || '', time: o.time || 0 };
+      g.order.push(id);
+    }
+    return g;
+  }
+
+  function descendants(id) {
+    const out = [];
+    const walk = (k) => { for (const c of children(k)) { out.push(c); walk(c); } };
+    walk(id);
+    return out;
+  }
+  function remove(id) {
+    const gone = new Set([id, ...descendants(id)]);
+    graph.order = graph.order.filter((k) => !gone.has(k));
+    for (const k of gone) delete N()[k];
+    if (gone.has(graph.selected)) graph.selected = null;
+  }
   /** Drop whole trees, oldest first, until the map is under its size cap. */
   function trim() {
-    while (graph.order.length > MAX_NODES) {
-      const oldest = roots()[0];
-      if (!oldest) break;
-      const gone = new Set([oldest]);
-      let grew = true;
-      while (grew) {
-        grew = false;
-        for (const k of graph.order) {
-          if (!gone.has(k) && gone.has(graph.nodes[k].parent)) { gone.add(k); grew = true; }
-        }
-      }
-      graph.order = graph.order.filter((k) => !gone.has(k));
-      for (const k of gone) delete graph.nodes[k];
-      if (gone.has(graph.current)) graph.current = null;
-    }
+    while (graph.order.length > MAX_NODES && roots().length > 1) remove(roots()[0]);
   }
 
-  /** The node a press starts from: the current node if it still matches the concept box, else the
-   *  newest node with the same text, else a new root (a freshly typed concept starts a new tree). */
-  function conceptNode(concept, mode) {
-    const want = norm(concept);
-    const cur = graph.nodes[graph.current];
-    if (cur && cur.plain && norm(cur.plain) === want) return cur;
-    for (let i = graph.order.length - 1; i >= 0; i--) {
-      const n = graph.nodes[graph.order[i]];
-      if (norm(n.plain) === want) return n;
-    }
-    const n = { id: newId(), text: concept, plain: concept, tag: '', parent: null, press: null,
-      move: '', mode, engine: '', time: Date.now(), folded: false };
-    graph.nodes[n.id] = n;
-    graph.order.push(n.id);
-    return n;
+  /** The boxes that are drawn: a result only while it is its transform's shown option, and only if
+   *  everything above it is drawn too. */
+  function visibleSet() {
+    const vis = new Set();
+    const walk = (id) => {
+      vis.add(id);
+      if (N()[id].kind === 'transform') { const r = shownResult(id); if (r) walk(r); }
+      else for (const t of children(id)) walk(t);
+    };
+    for (const r of roots()) walk(r);
+    return vis;
   }
 
-  /** Record one press; returns the new result nodes' ids in the order of the variants. */
-  function recordPress({ concept, move, mode, engine, variants }) {
-    const parent = conceptNode(concept, mode);
-    parent.folded = false;
-    const press = newId();
-    const ids = variants.map((v, rank) => {
-      const tag = (v.match(TAG_RE) || [''])[0].trim();
-      const n = { id: newId(), text: v, plain: v.slice((v.match(TAG_RE) || [''])[0].length).trim(), tag,
-        parent: parent.id, press, rank, move, mode, engine, time: Date.now(), folded: false };
-      graph.nodes[n.id] = n;
-      graph.order.push(n.id);
-      return n.id;
-    });
-    graph.current = parent.id;
-    save();
-    if (visible()) draw();
-    return ids;
-  }
-
-  function setCurrent(id) {
-    const n = graph.nodes[id];
-    if (!n) return;
-    graph.current = id;
-    if (n.rank != null) { graph.shown = graph.shown || {}; graph.shown[n.press] = n.rank; }   // the map shows what was chosen
-    save();
-    if (visible()) draw();
-  }
-
-  function clear() {
-    graph = { nodes: {}, order: [], current: null };
-    save();
-    if (visible()) draw();
-  }
-
-  // ── layout ─────────────────────────────────────────────────────────────────
+  // ── sizes and text ─────────────────────────────────────────────────────────
   let measureCtx = null;
+  const family = () => getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim() || 'system-ui, sans-serif';
   function wrap(text, font, width, maxLines) {
     if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
     measureCtx.font = font;
-    const words = String(text).split(/\s+/).filter(Boolean);
+    const words = String(text || '').split(/\s+/).filter(Boolean);
     const lines = [];
     let line = '';
     for (const w of words) {
@@ -126,162 +126,435 @@ const CTMap = (() => {
       if (lines.length === maxLines) break;
     }
     if (lines.length < maxLines && line) lines.push(line);
-    const used = lines.join(' ').split(/\s+/).length;
+    const used = lines.join(' ').split(/\s+/).filter(Boolean).length;
     if (used < words.length && lines.length) {
       let last = lines[lines.length - 1];
       while (last && measureCtx.measureText(last + '…').width > width) last = last.replace(/\s*\S+$/, '');
       lines[lines.length - 1] = last + '…';
     }
-    return lines;
+    return lines.length ? lines : [''];
   }
-  // Measure text in the page's own font (the theme's --font-sans), so wrapped lines fit their boxes.
-  const family = () => getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim() || 'system-ui, sans-serif';
-  let FONT = '13px system-ui, sans-serif', TAG_FONT = '11px system-ui, sans-serif';
+  const sizeCache = new Map();
+  function size(id) {
+    const n = N()[id];
+    if (n.kind === 'transform') {
+      const r = shownResult(id);
+      const tag = r && N()[r].tag ? N()[r].tag.replace(/^\[|\]$/g, '') : '';
+      const status = n.status === 'working' ? 'working…' : n.status === 'error' ? 'failed, select for details' : '';
+      const total = results(id).length;
+      const key = `t|${n.move}|${tag}|${status}|${total}|${family()}`;
+      if (sizeCache.has(key)) return sizeCache.get(key);
+      const lines = wrap(n.move, `600 12px ${family()}`, T_W - PAD_X * 2, 2);
+      const tagLines = tag ? wrap(tag, `11px ${family()}`, T_W - PAD_X * 2, 2) : [];
+      const extra = (status ? 1 : 0) + tagLines.length;
+      const s = { w: T_W, h: PAD_Y * 2 + lines.length * 15 + extra * 14 + (total > 1 ? 20 : 0), lines, tagLines, status };
+      sizeCache.set(key, s);
+      return s;
+    }
+    const key = `c|${n.plain}|${family()}`;
+    if (sizeCache.has(key)) return sizeCache.get(key);
+    const lines = wrap(n.plain || n.text, `13px ${family()}`, C_W - PAD_X * 2, MAX_LINES);
+    const s = { w: C_W, h: PAD_Y * 2 + lines.length * LINE_H, lines };
+    sizeCache.set(key, s);
+    return s;
+  }
+  const rect = (id) => { const n = N()[id], s = size(id); return { x: n.x || 0, y: n.y || 0, w: s.w, h: s.h }; };
 
-  /** Positions every visible node: {id: {x, y, w, h, lines, tagLine}}. */
-  function layout() {
-    FONT = `13px ${family()}`; TAG_FONT = `11px ${family()}`;
-    const box = {};
-    const sizeOf = (id) => {
-      const n = graph.nodes[id];
-      const lines = wrap(n.plain || n.text, FONT, NODE_W - PAD_X * 2, MAX_LINES);
-      const tagLine = n.tag ? wrap(n.tag.replace(/^\[|\]$/g, ''), TAG_FONT, NODE_W - PAD_X * 2, 1)[0] : '';
-      const h = PAD_Y * 2 + lines.length * LINE_H + (tagLine ? TAG_H : 0);
-      return { w: NODE_W, h, lines, tagLine };
-    };
-    const showKids = (id) => (graph.nodes[id].folded ? [] : visibleKids(id));
-    // subtree height
+  // ── placement: new boxes never move old ones ───────────────────────────────
+  function hits(r, ignore) {
+    for (const k of graph.order) {
+      if (ignore.has(k)) continue;
+      if (N()[k].x == null) continue;
+      const o = rect(k);
+      if (r.x < o.x + o.w + CLEAR && o.x < r.x + r.w + CLEAR && r.y < o.y + o.h + CLEAR && o.y < r.y + r.h + CLEAR) return true;
+    }
+    return false;
+  }
+  /** Put a transform (and its results, which share one spot) beside its concept, in the nearest free row. */
+  function placePress(tid) {
+    const t = N()[tid], p = rect(t.parent);
+    const ts = size(tid);
+    const rIds = results(tid);
+    const rs = rIds.length ? size(rIds[0]) : { w: C_W, h: 40 };
+    const tx = p.x + p.w + GAP_X, rx = tx + T_W + GAP_X;
+    const cy = p.y + p.h / 2;
+    const ignore = new Set([tid, ...rIds, ...rIds.flatMap(descendants)]);
+    const laterPress = children(t.parent).filter((k) => k !== tid).length > 0;
+    for (let i = 0; i < 600; i++) {
+      const off = laterPress ? i * 8 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 8;   // a later press goes below the earlier ones
+      const ty = cy + off - ts.h / 2, ry = cy + off - rs.h / 2;
+      if (!hits({ x: tx, y: ty, w: T_W, h: ts.h }, ignore) && !hits({ x: rx, y: ry, w: rs.w, h: rs.h }, ignore)) {
+        t.x = tx; t.y = ty;
+        for (const r of rIds) { N()[r].x = rx; N()[r].y = ry; }
+        return;
+      }
+    }
+    t.x = tx; t.y = cy; for (const r of rIds) { N()[r].x = rx; N()[r].y = cy; }
+  }
+  function placeRoot(id) {
+    const n = N()[id];
+    const others = graph.order.filter((k) => k !== id && N()[k].x != null);
+    if (!others.length) { n.x = 0; n.y = 0; return; }
+    const rootXs = roots().filter((k) => k !== id && N()[k].x != null).map((k) => N()[k].x);
+    n.x = rootXs.length ? Math.min(...rootXs) : 0;
+    n.y = Math.max(...others.map((k) => rect(k).y + rect(k).h)) + ROOT_GAP;
+  }
+
+  /** Lay the whole map out again as tidy left-to-right trees. Hidden options share their shown sibling's spot. */
+  function tidy(redraw = true) {
+    sizeCache.clear();
     const sub = {};
     const measure = (id) => {
-      box[id] = sizeOf(id);
-      const k = showKids(id);
-      const kh = k.reduce((s, c, i) => s + measure(c) + (i ? GAP_Y : 0), 0);
-      sub[id] = Math.max(box[id].h, kh);
+      const n = N()[id], s = size(id);
+      if (n.kind === 'transform') {
+        const r = shownResult(id);
+        for (const o of results(id)) measure(o);
+        sub[id] = Math.max(s.h, r ? sub[r] : 0);
+      } else {
+        const ts = children(id);
+        const kh = ts.reduce((acc, t, i) => acc + measure(t) + (i ? GAP_Y : 0), 0);
+        sub[id] = Math.max(s.h, kh);
+      }
       return sub[id];
     };
     const place = (id, x, top) => {
-      const b = box[id];
-      b.x = x;
-      b.y = top + (sub[id] - b.h) / 2;
-      let y = top + (sub[id] - showKids(id).reduce((s, c, i) => s + sub[c] + (i ? GAP_Y : 0), 0)) / 2;
-      for (const c of showKids(id)) { place(c, x + NODE_W + GAP_X, y); y += sub[c] + GAP_Y; }
+      const n = N()[id], s = size(id);
+      n.x = x; n.y = top + (sub[id] - s.h) / 2;
+      if (n.kind === 'transform') {
+        for (const o of results(id)) place(o, x + T_W + GAP_X, top + (sub[id] - sub[o]) / 2);
+      } else {
+        const ts = children(id);
+        let y = top + (sub[id] - ts.reduce((acc, t, i) => acc + sub[t] + (i ? GAP_Y : 0), 0)) / 2;
+        for (const t of ts) { place(t, x + C_W + GAP_X, y); y += sub[t] + GAP_Y; }
+      }
     };
     let top = 0;
     for (const r of roots()) { measure(r); place(r, 0, top); top += sub[r] + ROOT_GAP; }
-    return box;
+    if (redraw) { save(); draw(); fit(); }
+  }
+
+  // ── presses ────────────────────────────────────────────────────────────────
+  /** The box a move applies to: the selected concept, or a selected transform's shown result
+   *  (or its source while it has none). A freshly typed concept is planted first by ensureTarget. */
+  function target() {
+    const n = node(graph.selected);
+    if (!n) return null;
+    if (n.kind === 'concept') return n;
+    return node(shownResult(n.id)) || node(n.parent);
+  }
+  function ensureTarget() {
+    const typed = $('concept').value.trim();
+    if (typed) return plant(typed);
+    return target();
+  }
+  function plant(text) {
+    const clean = text.replace(/\s+/g, ' ').slice(0, CONFIG.maxConcept);
+    const id = newId('c');
+    N()[id] = { id, kind: 'concept', parent: null, rank: null, text: clean, plain: clean, tag: '', time: Date.now() };
+    graph.order.push(id);
+    placeRoot(id);
+    graph.selected = id;
+    $('concept').value = '';
+    updateCount();
+    save();
+    if (!isMap()) setView('map');
+    draw();
+    centerOn(id, true);
+    return N()[id];
+  }
+  function plantFromBox() {
+    const typed = $('concept').value.trim();
+    if (!typed) { $('concept').focus(); return; }
+    plant(typed);
+  }
+
+  function beginPress(conceptId, info) {
+    const id = newId('t');
+    N()[id] = { id, kind: 'transform', parent: conceptId, move: info.move, moveIds: info.moveIds, field: info.field || '',
+      mode: info.mode, words: info.words || 0, engine: info.engine, note: '', status: 'working', error: '', shown: 0, time: Date.now() };
+    graph.order.push(id);
+    placePress(id);
+    graph.selected = id;
+    closePicker();
+    save();
+    if (!isMap()) setView('map');
+    draw();
+    centerOn(id, true);
+    return id;
+  }
+  function finishPress(tid, { variants, engine, note }) {
+    const t = node(tid);
+    if (!t) return;
+    t.status = 'done'; t.engine = engine || t.engine; t.note = note || '';
+    variants.forEach((v, rank) => {
+      const tagRaw = (v.match(TAG_RE) || [''])[0];
+      const id = newId('c');
+      N()[id] = { id, kind: 'concept', parent: tid, rank, text: v, plain: v.slice(tagRaw.length).trim(), tag: tagRaw.trim(), time: Date.now() };
+      graph.order.push(id);
+    });
+    placePress(tid);                       // placed again now the result's real size is known
+    graph.selected = shownResult(tid);     // ready to chain: the best result is selected
+    save();
+    draw();
+    centerOn(graph.selected, true);
+  }
+  function failPress(tid, message) {
+    const t = node(tid);
+    if (!t) return;
+    t.status = 'error'; t.error = message;
+    graph.selected = tid;
+    save();
+    draw();
+  }
+
+  /** Rotate a transform to its next (or a given) option. If one of its options was selected, the
+   *  newly shown option becomes the selection, so the next move applies to what is on screen. */
+  function show(tid, index) {
+    const t = node(tid);
+    const opts = results(tid);
+    if (!t || opts.length < 2) return;
+    const i = ((index % opts.length) + opts.length) % opts.length;
+    const wasSelected = opts.includes(graph.selected);
+    t.shown = i;
+    if (wasSelected) graph.selected = opts[i];
+    save();
+    draw();
+  }
+  const rotate = (tid) => { const t = node(tid); if (t) show(tid, (t.shown || 0) + 1); };
+
+  function deleteBranch(id) {
+    const n = node(id);
+    if (!n) return;
+    const what = n.kind === 'concept' && n.parent ? n.parent : id;    // a result's branch is its whole press
+    const parent = node(what).parent;
+    if (!window.confirm('Delete this box and everything that grew from it?')) return;
+    remove(what);
+    graph.selected = node(parent) ? parent : null;
+    closePicker();
+    save();
+    draw();
+  }
+  function undoLastPress() {
+    const ts = graph.order.filter((k) => N()[k].kind === 'transform');
+    if (!ts.length) return;
+    const last = ts.reduce((a, b) => (N()[a].time >= N()[b].time ? a : b));
+    const parent = N()[last].parent;
+    remove(last);
+    graph.selected = node(parent) ? parent : null;
+    closePicker();
+    save();
+    draw();
+  }
+  function clear() {
+    graph = { v: 2, nodes: {}, order: [], selected: null };
+    lsSet(OLD_KEY, null);
+    save();
+    closePicker();
+    draw();
   }
 
   // ── drawing ────────────────────────────────────────────────────────────────
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const sv = (tag, attrs = {}, ...kidsEls) => {
+  const sv = (tag, attrs = {}, ...kids) => {
     const n = document.createElementNS(SVGNS, tag);
     for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, String(v));
-    for (const c of kidsEls.flat()) if (c != null) n.append(c);
+    for (const c of kids.flat()) if (c != null) n.append(c);
     return n;
   };
-  let view = { x: 20, y: 20, k: 1 };
-  let boxes = {};
-  const visible = () => !$('mapView').hidden;
+  let view = { x: 40, y: 40, k: 1 };
+  let vis = new Set();
+  const isMap = () => !$('mapView').hidden;
 
   function draw() {
+    refreshTarget();
+    refreshPanel();
+    if (!$('outlineView').hidden) buildOutline();
     const svg = $('mapSvg');
     svg.textContent = '';
     $('mapEmpty').hidden = count() > 0;
-    if (!count()) { $('mapInfo').textContent = ''; return; }
-    boxes = layout();
+    for (const id of graph.order) {
+      const n = N()[id];
+      if (n.x != null) continue;
+      if (n.kind === 'transform') placePress(id); else if (!n.parent) placeRoot(id);
+    }
+    vis = visibleSet();
     const g = sv('g', { id: 'mapViewport' });
     const edges = sv('g', { class: 'mm-edges' });
-    const labels = sv('g', { class: 'mm-labels' });
-    const nodes = sv('g', { class: 'mm-nodes' });
-    // edges, and one move label per press (the three results of one press share it)
-    const pressDone = new Set();
+    const boxes = sv('g', { class: 'mm-nodes' });
     for (const id of graph.order) {
-      const n = graph.nodes[id];
-      if (!n.parent || !boxes[id] || !boxes[n.parent]) continue;
-      const a = boxes[n.parent], b = boxes[id];
+      if (!vis.has(id)) continue;
+      const n = N()[id];
+      if (!n.parent || !vis.has(n.parent)) continue;
+      const a = rect(n.parent), b = rect(id);
       const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2, mx = (x1 + x2) / 2;
       edges.append(sv('path', { d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}` }));
-      if (!pressDone.has(n.press)) {
-        pressDone.add(n.press);
-        const sibs = graph.order.filter((k) => graph.nodes[k].press === n.press && boxes[k]);
-        const ys = sibs.map((k) => boxes[k].y + boxes[k].h / 2);
-        const ly = (Math.min(...ys) + Math.max(...ys)) / 2;
-        const lx = x1 + 12;
-        const label = wrap(n.move, `600 11px ${family()}`, GAP_X - 24, 2);
-        const t = sv('text', { x: lx, y: ly - (label.length - 1) * 7 + 4, class: 'mm-move' });
-        label.forEach((ln, i) => t.append(sv('tspan', { x: lx, dy: i ? 14 : 0 }, ln)));
-        // The label's backing is only as wide as its text, so the line stays visible on either side of it.
-        measureCtx.font = `600 11px ${family()}`;
-        const lw = Math.max(...label.map((ln) => measureCtx.measureText(ln).width));
-        labels.append(sv('rect', { x: lx - 4, y: ly - label.length * 7 - 3, width: lw + 8, height: label.length * 14 + 6, rx: 3, class: 'mm-move-bg' }), t);
-      }
     }
     for (const id of graph.order) {
-      const b = boxes[id];
-      if (!b) continue;
-      const n = graph.nodes[id];
-      const cls = ['mm-node', n.parent ? '' : 'mm-root', id === graph.current ? 'mm-current' : ''].join(' ').trim();
-      const node = sv('g', { class: cls, 'data-id': id, transform: `translate(${b.x},${b.y})`, tabindex: 0, role: 'button' });
-      node.append(sv('rect', { width: b.w, height: b.h, rx: 4 }));
-      const text = sv('text', { x: PAD_X, y: PAD_Y + 13, class: 'mm-text' });
-      b.lines.forEach((ln, i) => text.append(sv('tspan', { x: PAD_X, dy: i ? LINE_H : 0 }, ln)));
-      node.append(text);
-      if (b.tagLine) node.append(sv('text', { x: PAD_X, y: PAD_Y + b.lines.length * LINE_H + 11, class: 'mm-tag' }, b.tagLine));
-      node.append(sv('title', {}, fullInfo(n)));
-      const k = visibleKids(id).length;
-      if (k) {
-        const fx = b.w, fy = b.h / 2;
-        node.append(sv('g', { class: 'mm-fold', 'data-fold': id },
-          sv('circle', { cx: fx, cy: fy, r: 16, class: 'mm-hit' }),
-          sv('circle', { cx: fx, cy: fy, r: 8 }),
-          sv('text', { x: fx, y: fy + 4, 'text-anchor': 'middle' }, n.folded ? String(k) : '–')));
-      }
-      if (n.rank != null) {
-        const total = options(n.press).length;
-        if (total > 1) {
-          // A small button under the box: the next option of this press. Clicking the box itself still selects it.
-          node.append(sv('g', { class: 'mm-rot', 'data-rotate': n.press },
-            sv('title', {}, 'Show the next option from this press'),
-            sv('rect', { x: b.w - 70, y: b.h - 1, width: 62, height: 16, rx: 3 }),
-            sv('text', { x: b.w - 39, y: b.h + 11, 'text-anchor': 'middle' }, `${n.rank + 1} of ${total} ▸`)));
-        }
-      }
-      nodes.append(node);
+      if (!vis.has(id)) continue;
+      boxes.append(N()[id].kind === 'transform' ? drawTransform(id) : drawConcept(id));
     }
-    g.append(edges, labels, nodes);
+    g.append(edges, boxes);
     svg.append(g);
     applyView();
-    showInfo(graph.nodes[graph.current]);
   }
 
-  function fullInfo(n) {
-    if (!n) return '';
-    const how = n.parent ? `${n.move}${n.tag ? ' — ' + n.tag : ''}` : 'Typed concept';
-    const by = n.engine ? `\n${n.engine}` : '';
-    return `${n.plain || n.text}\n\n${how}${by}`;
+  function drawConcept(id) {
+    const n = N()[id], b = rect(id), s = size(id);
+    const cls = ['mm-node', 'mm-concept', n.parent ? 'mm-result' : 'mm-root', id === graph.selected ? 'mm-selected' : ''].join(' ');
+    const gEl = sv('g', { class: cls, 'data-id': id, transform: `translate(${b.x},${b.y})`, tabindex: 0, role: 'button' });
+    gEl.append(sv('rect', { width: b.w, height: b.h, rx: 4 }));
+    const text = sv('text', { x: PAD_X, y: PAD_Y + 13, class: 'mm-text' });
+    s.lines.forEach((ln, i) => text.append(sv('tspan', { x: PAD_X, dy: i ? LINE_H : 0 }, ln)));
+    gEl.append(text, sv('title', {}, n.plain || n.text));
+    if (id === graph.selected) {
+      gEl.append(sv('g', { class: 'mm-plus', 'data-plus': id },
+        sv('title', {}, 'Transform this: open the moves'),
+        sv('rect', { x: b.w + 4, y: b.h / 2 - 11, width: 22, height: 22, rx: 4 }),
+        sv('text', { x: b.w + 15, y: b.h / 2 + 5, 'text-anchor': 'middle' }, '+')));
+    }
+    return gEl;
   }
-  function showInfo(n) {
-    const box = $('mapInfo');
+
+  function drawTransform(id) {
+    const n = N()[id], b = rect(id), s = size(id);
+    const cls = ['mm-node', 'mm-transform', `mm-${n.status}`, id === graph.selected ? 'mm-selected' : ''].join(' ');
+    const gEl = sv('g', { class: cls, 'data-id': id, transform: `translate(${b.x},${b.y})`, tabindex: 0, role: 'button' });
+    gEl.append(sv('rect', { width: b.w, height: b.h, rx: 4 }));
+    let y = PAD_Y + 12;
+    const mv = sv('text', { x: PAD_X, y, class: 'mm-move' });
+    s.lines.forEach((ln, i) => mv.append(sv('tspan', { x: PAD_X, dy: i ? 15 : 0 }, ln)));
+    gEl.append(mv);
+    y += (s.lines.length - 1) * 15 + 14;
+    for (const ln of s.tagLines) { gEl.append(sv('text', { x: PAD_X, y, class: 'mm-tag' }, ln)); y += 14; }
+    if (s.status) gEl.append(sv('text', { x: PAD_X, y, class: 'mm-status' }, s.status));
+    const total = results(id).length;
+    if (total > 1) {
+      gEl.append(sv('g', { class: 'mm-rot', 'data-rotate': id },
+        sv('title', {}, 'Show the next option from this press'),
+        sv('rect', { x: PAD_X - 2, y: b.h - 22, width: 66, height: 17, rx: 3 }),
+        sv('text', { x: PAD_X + 31, y: b.h - 9.5, 'text-anchor': 'middle' }, `${(n.shown || 0) + 1} of ${total} ▸`)));
+    }
+    gEl.append(sv('title', {}, `${n.move}${n.engine ? ' — ' + n.engine : ''}`));
+    return gEl;
+  }
+
+  // ── the panel above the map: the selected box in full, with its actions ───
+  const movesReady = () => typeof MOVES !== 'undefined' && MOVES;
+  function refreshPanel() {
+    const box = $('nodePanel');
     box.textContent = '';
-    if (!n) return;
-    box.append(el('span', { class: 'lbl' }, n.id === graph.current ? 'Current concept: ' : ''), n.plain || n.text);
-    if (n.parent) box.append(el('span', { class: 'how' }, ` · ${n.move}${n.tag ? ' ' + n.tag : ''}`));
+    const n = node(graph.selected);
+    if (!n) {
+      if (count()) box.append(el('span', { class: 'muted' }, 'Select a box to see it in full and to transform it.'));
+      return;
+    }
+    const acts = el('div', { class: 'acts' });
+    if (n.kind === 'concept') {
+      const t = n.parent ? node(n.parent) : null;
+      const src = t ? node(t.parent) : null;
+      const text = el('div', { class: 'text' });
+      CTApp.renderText(text, src ? (src.plain || src.text) : '', n.text, state.showChanges && !!src);
+      box.append(el('div', { class: 'meta' }, t ? `${t.move}${t.engine ? ' · ' + t.engine : ''}` : 'Typed concept'), text);
+      const say = el('button', { type: 'button', class: 'say' }, 'Read aloud');
+      say.addEventListener('click', () => CTApp.speak(n.plain || n.text, say));
+      const copy = el('button', { type: 'button' }, 'Copy');
+      copy.addEventListener('click', () => CTApp.copyText(n.tag ? `${n.plain} ${n.tag}` : (n.plain || n.text), copy));
+      acts.append(el('button', { type: 'button', class: 'primary', onclick: () => openPicker(n.id) }, 'Transform this…'), copy, say);
+      if (t && results(t.id).length > 1) acts.append(el('button', { type: 'button', onclick: () => rotate(t.id) }, `Next option (${(t.shown || 0) + 1} of ${results(t.id).length})`));
+      acts.append(el('button', { type: 'button', class: 'ghost', onclick: () => deleteBranch(n.id) }, 'Delete branch'));
+    } else {
+      const blurbs = movesReady() ? (n.moveIds || []).map((m) => CTApp.moveById(m)).filter(Boolean)
+        .map((m) => (typeof m.blurb === 'object' ? m.blurb[n.mode] : m.blurb)).join(' ') : '';
+      box.append(el('div', { class: 'meta' }, n.engine || 'Transform'), el('div', { class: 'text tmove' }, n.move));
+      if (blurbs) box.append(el('p', { class: 'blurb' }, blurbs));
+      if (n.note) box.append(el('p', { class: 'note' }, n.note));
+      if (n.status === 'error') box.append(el('p', { class: 'err' }, n.error));
+      if (n.status === 'working') box.append(el('p', { class: 'note' }, 'Working…'));
+      if (n.moveIds && n.moveIds.length && movesReady()) acts.append(el('button', { type: 'button', class: 'primary', disabled: n.status === 'working' || busy, onclick: () => CTApp.runAgain(n) }, 'Run again'));
+      if (results(n.id).length > 1) acts.append(el('button', { type: 'button', onclick: () => rotate(n.id) }, `Next option (${(n.shown || 0) + 1} of ${results(n.id).length})`));
+      acts.append(el('button', { type: 'button', class: 'ghost', onclick: () => deleteBranch(n.id) }, 'Delete branch'));
+    }
+    box.append(acts);
   }
 
-  // ── pan, zoom, fit ─────────────────────────────────────────────────────────
+  /** The line on the left that says what the moves will apply to. */
+  function refreshTarget() {
+    const line = $('targetLine');
+    if (!line) return;
+    const typed = $('concept').value.trim();
+    const t = target();
+    line.textContent = '';
+    if (typed) line.append('A move adds this as a new concept on the map and transforms it.');
+    else if (t) {
+      const txt = t.plain || t.text;
+      line.append('Moves apply to: ', el('b', {}, txt.length > 90 ? txt.slice(0, 90) + '…' : txt));
+    } else line.append('Type a concept above, or select a box on the map.');
+  }
+
+  // ── the "+" picker on a box ────────────────────────────────────────────────
+  let pickerFor = null;
+  function openPicker(id) {
+    if (!node(id)) return;
+    graph.selected = id;
+    pickerFor = id;
+    if (!isMap()) setView('map');
+    save();
+    draw();
+    const p = $('picker');
+    CTApp.buildPicker(p);
+    p.hidden = false;
+    positionPicker();
+    const first = p.querySelector('button[data-move]:not(:disabled)');
+    if (first) first.focus({ preventScroll: true });
+  }
+  function closePicker() { pickerFor = null; const p = $('picker'); if (p) p.hidden = true; }
+  function refreshPicker() { if (pickerFor && !$('picker').hidden) CTApp.buildPicker($('picker')); }
+  function positionPicker() {
+    const p = $('picker');
+    if (!pickerFor || p.hidden) return;
+    if (!node(pickerFor)) { closePicker(); return; }
+    if (window.matchMedia('(max-width: 700px)').matches) { p.style.left = ''; p.style.top = ''; return; }   // phone: a bottom sheet
+    const r = rect(pickerFor), svg = $('mapSvg');
+    const W = svg.clientWidth, H = svg.clientHeight;
+    const pw = p.offsetWidth || 330, ph = p.offsetHeight || 300;
+    let left = view.x + (r.x + r.w + 34) * view.k, top = view.y + r.y * view.k - 10;
+    if (left + pw > W - 8) left = Math.max(8, view.x + r.x * view.k - pw - 12);
+    top = Math.max(8, Math.min(top, H - ph - 8));
+    p.style.left = `${Math.round(left)}px`;
+    p.style.top = `${Math.round(top)}px`;
+  }
+
+  // ── pan, zoom, fit, select, drag ───────────────────────────────────────────
   function applyView() {
     const g = $('mapViewport');
     if (g) g.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`);
+    positionPicker();
+  }
+  function bounds(ids) {
+    const rs = ids.map(rect);
+    return { minX: Math.min(...rs.map((r) => r.x)), minY: Math.min(...rs.map((r) => r.y)),
+      maxX: Math.max(...rs.map((r) => r.x + r.w)), maxY: Math.max(...rs.map((r) => r.y + r.h)) };
   }
   function fit() {
-    const ids = Object.keys(boxes);
+    const ids = [...vis];
     if (!ids.length) return;
     const svg = $('mapSvg');
     const W = svg.clientWidth || 800, H = svg.clientHeight || 500;
-    const minX = Math.min(...ids.map((i) => boxes[i].x)), minY = Math.min(...ids.map((i) => boxes[i].y));
-    const maxX = Math.max(...ids.map((i) => boxes[i].x + boxes[i].w)), maxY = Math.max(...ids.map((i) => boxes[i].y + boxes[i].h));
-    const k = Math.min(1.2, Math.max(0.2, Math.min((W - 40) / (maxX - minX + 20), (H - 40) / (maxY - minY + 20))));
-    view = { k, x: (W - (maxX - minX) * k) / 2 - minX * k, y: (H - (maxY - minY) * k) / 2 - minY * k };
+    const b = bounds(ids);
+    const k = Math.min(1.15, Math.max(0.2, Math.min((W - 70) / (b.maxX - b.minX + 40), (H - 60) / (b.maxY - b.minY + 30))));
+    view = { k, x: (W - (b.maxX - b.minX) * k) / 2 - b.minX * k, y: (H - (b.maxY - b.minY) * k) / 2 - b.minY * k };
+    applyView();
+  }
+  /** Bring a box into view if it is off screen (without changing the zoom). */
+  function centerOn(id, onlyIfHidden = false) {
+    if (!node(id) || !isMap()) return;
+    const svg = $('mapSvg');
+    const W = svg.clientWidth || 800, H = svg.clientHeight || 500;
+    const r = rect(id);
+    const sx = view.x + r.x * view.k, sy = view.y + r.y * view.k, sw = r.w * view.k, sh = r.h * view.k;
+    if (onlyIfHidden && sx > 20 && sy > 20 && sx + sw < W - 40 && sy + sh < H - 20) return;
+    view.x = W / 2 - (r.x + r.w / 2) * view.k;
+    view.y = H / 2 - (r.y + r.h / 2) * view.k;
     applyView();
   }
   function zoomAt(px, py, factor) {
@@ -291,156 +564,212 @@ const CTMap = (() => {
     applyView();
   }
 
-  function wirePanZoom() {
+  function select(id) {
+    if (!node(id)) return;
+    graph.selected = id;
+    if (pickerFor && pickerFor !== id) closePicker();
+    save();
+    draw();
+  }
+
+  function wirePointer() {
     const svg = $('mapSvg');
     const pts = new Map();
-    let last = null, pinch = null, moved = false, downTarget = null;
+    let mode = null;           // 'pan' | 'drag' | 'pinch'
+    let start = null, last = null, pinch = null, moved = false, downTarget = null, dragOrig = null;
     svg.addEventListener('pointerdown', (e) => {
-      if (pts.size === 0) downTarget = e.target;   // what was pressed, before capture redirects events
+      if (pts.size === 0) downTarget = e.target;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       svg.setPointerCapture(e.pointerId);
       moved = false;
-      if (pts.size === 1) last = { x: e.clientX, y: e.clientY };
+      if (pts.size === 1) {
+        start = last = { x: e.clientX, y: e.clientY };
+        const box = downTarget.closest && downTarget.closest('.mm-node');
+        const onButton = downTarget.closest && downTarget.closest('[data-rotate],[data-plus]');
+        if (box && !onButton) {
+          mode = 'drag';
+          const id = box.getAttribute('data-id');
+          dragOrig = [id, ...descendants(id)].map((k) => ({ k, x: N()[k].x, y: N()[k].y }));
+        } else mode = 'pan';
+      }
       if (pts.size === 2) {
         const [a, b] = [...pts.values()];
         pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: view.k };
+        mode = 'pinch';
+        if (dragOrig) { for (const o of dragOrig) { N()[o.k].x = o.x; N()[o.k].y = o.y; } dragOrig = null; draw(); }
       }
     });
     svg.addEventListener('pointermove', (e) => {
       if (!pts.has(e.pointerId)) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pts.size === 2 && pinch) {
+      if (mode === 'pinch' && pts.size === 2 && pinch) {
         const [a, b] = [...pts.values()];
         const r = svg.getBoundingClientRect();
-        const d = Math.hypot(a.x - b.x, a.y - b.y);
-        zoomAt((a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top, (pinch.k * d / pinch.d) / view.k);
+        zoomAt((a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top, (pinch.k * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d) / view.k);
         moved = true;
-      } else if (pts.size === 1 && last) {
-        const dx = e.clientX - last.x, dy = e.clientY - last.y;
-        if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
-        view.x += dx; view.y += dy; last = { x: e.clientX, y: e.clientY };
+        return;
+      }
+      if (!last) return;
+      if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 4) return;
+      const dx = e.clientX - last.x, dy = e.clientY - last.y;
+      moved = true;
+      last = { x: e.clientX, y: e.clientY };
+      if (mode === 'drag' && dragOrig) {
+        const tx = (e.clientX - start.x) / view.k, ty = (e.clientY - start.y) / view.k;
+        for (const o of dragOrig) { N()[o.k].x = o.x + tx; N()[o.k].y = o.y + ty; }
+        draw();
+      } else if (mode === 'pan') {
+        view.x += dx; view.y += dy;
         applyView();
       }
     });
-    const up = (e) => {
+    const end = (e) => {
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
-      if (!pts.size) last = null;
+      if (!pts.size) {
+        const wasDrag = mode === 'drag' && moved && dragOrig;
+        mode = null; last = null; dragOrig = null;
+        if (wasDrag) save();
+      }
     };
     svg.addEventListener('pointerup', (e) => {
-      up(e);
-      if (moved) return;
-      // a click (not a drag): fold toggle, or a node
-      const target = downTarget && downTarget.closest ? downTarget : null;
+      const t = downTarget && downTarget.closest ? downTarget : null;
+      const wasMoved = moved;
+      end(e);
       downTarget = null;
-      const fold = target && target.closest('[data-fold]');
-      if (fold) { toggleFold(fold.getAttribute('data-fold')); return; }
-      const rot = target && target.closest('[data-rotate]');
+      if (wasMoved || !t) return;
+      const rot = t.closest('[data-rotate]');
       if (rot) { rotate(rot.getAttribute('data-rotate')); return; }
-      const node = target && target.closest('.mm-node');
-      if (node) useNode(node.getAttribute('data-id'));
+      const plus = t.closest('[data-plus]');
+      if (plus) { openPicker(plus.getAttribute('data-plus')); return; }
+      const box = t.closest('.mm-node');
+      if (box) select(box.getAttribute('data-id'));
+      else if (pickerFor) closePicker();
     });
-    svg.addEventListener('pointercancel', up);
+    svg.addEventListener('pointercancel', end);
     svg.addEventListener('wheel', (e) => {
       e.preventDefault();
       const r = svg.getBoundingClientRect();
       zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
     }, { passive: false });
-    svg.addEventListener('pointerover', (e) => {
-      const node = e.target.closest && e.target.closest('.mm-node');
-      if (node) showInfo(graph.nodes[node.getAttribute('data-id')]);
+    svg.addEventListener('dblclick', (e) => {
+      const box = e.target.closest && e.target.closest('.mm-concept');
+      if (box) openPicker(box.getAttribute('data-id'));
     });
     svg.addEventListener('keydown', (e) => {
-      const node = e.target.closest && e.target.closest('.mm-node');
-      if (node && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); useNode(node.getAttribute('data-id')); }
+      const box = e.target.closest && e.target.closest('.mm-node');
+      if (!box) return;
+      const id = box.getAttribute('data-id');
+      if (e.key === 'Enter') { e.preventDefault(); if (graph.selected === id && N()[id].kind === 'concept') openPicker(id); else select(id); }
+      else if (e.key === ' ') { e.preventDefault(); select(id); }
+      else if (e.key === 'Delete') { e.preventDefault(); deleteBranch(id); }
     });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pickerFor) closePicker(); });
   }
 
-  /** Show one option of a press (shared with the list). If the press's node was the current concept,
-   *  the newly shown option takes over as the current concept. */
-  function show(press, index, { silent = false } = {}) {
-    const opts = options(press);
-    if (!opts.length) return;
-    const i = ((index % opts.length) + opts.length) % opts.length;
-    graph.shown = graph.shown || {};
-    graph.shown[press] = i;
-    const wasCurrent = opts.includes(graph.current);
-    if (wasCurrent) {
-      graph.current = opts[i];
-      const c = $('concept');
-      c.value = (graph.nodes[opts[i]].plain || graph.nodes[opts[i]].text).slice(0, CONFIG.maxConcept);
-      updateCount();
-    }
-    save();
-    if (visible()) draw();
-    if (!silent) window.dispatchEvent(new CustomEvent('ct-shown', { detail: { press, index: i } }));
-  }
-  const rotate = (press) => show(press, shownIndex(press) + 1);
-  const pressOf = (id) => (graph.nodes[id] ? graph.nodes[id].press : null);
-
-  function toggleFold(id) {
-    const n = graph.nodes[id];
-    if (!n) return;
-    n.folded = !n.folded;
-    save();
-    draw();
-  }
-
-  /** Clicking a node makes it the current concept, like "Use this", without leaving the map. */
-  function useNode(id) {
-    const n = graph.nodes[id];
-    if (!n) return;
-    const c = $('concept');
-    c.value = (n.plain || n.text).slice(0, CONFIG.maxConcept);
-    updateCount();
-    setCurrent(id);
-  }
-
-  // ── exports ────────────────────────────────────────────────────────────────
-  function outline() {
-    const out = [];
+  // ── outline, save and open, picture ────────────────────────────────────────
+  function outlineLines() {
+    const lines = [];
     const walk = (id, depth) => {
-      const n = graph.nodes[id];
-      const pad = '  '.repeat(depth);
-      if (!n.parent) out.push(`${pad}- ${n.plain || n.text}`);
-      else out.push(`${pad}- ${n.plain}${n.tag ? ' ' + n.tag : ''} (${n.move})`);
-      for (const k of kids(id)) walk(k, depth + 1);
+      const n = N()[id];
+      if (n.kind === 'concept') {
+        lines.push({ depth, id, kind: 'concept', text: n.plain || n.text });
+        for (const t of children(id)) walk(t, depth + 1);
+      } else {
+        const opts = results(id).length;
+        const r = shownResult(id);
+        const tag = r && N()[r].tag ? N()[r].tag.replace(/^\[|\]$/g, '') : '';
+        lines.push({ depth, id, kind: 'transform', text: n.move, tag: [tag, opts > 1 ? `option ${(n.shown || 0) + 1} of ${opts}` : ''].filter(Boolean).join(' · ') });
+        if (r) walk(r, depth + 1);
+      }
     };
     for (const r of roots()) walk(r, 0);
-    return out.join('\n');
+    return lines;
+  }
+  const outlineText = () => outlineLines()
+    .map((l) => `${'  '.repeat(l.depth)}${l.kind === 'transform' ? '→ ' : '- '}${l.text}${l.tag ? ` (${l.tag})` : ''}`).join('\n');
+  function buildOutline() {
+    const body = $('outlineBody');
+    body.textContent = '';
+    const lines = outlineLines();
+    if (!lines.length) { body.append(el('p', { class: 'muted' }, 'Nothing on the map yet.')); return; }
+    for (const l of lines) {
+      const row = el('div', { class: `oline o-${l.kind}${l.id === graph.selected ? ' o-selected' : ''}` });
+      row.style.paddingLeft = `${l.depth * 22}px`;
+      const txt = el('span', { class: 'otext', role: 'button', tabindex: 0 }, l.kind === 'transform' ? `→ ${l.text}` : l.text);
+      txt.addEventListener('click', () => { graph.selected = l.id; save(); draw(); });
+      row.append(txt);
+      if (l.tag) row.append(el('span', { class: 'otag' }, l.tag));
+      if (l.kind === 'concept') {
+        const copy = el('button', { type: 'button', class: 'mini' }, 'Copy');
+        copy.addEventListener('click', () => CTApp.copyText(l.text, copy));
+        const say = el('button', { type: 'button', class: 'mini say' }, 'Read aloud');
+        say.addEventListener('click', () => CTApp.speak(l.text, say));
+        row.append(copy, say);
+      }
+      body.append(row);
+    }
   }
 
-  /** The picture export carries its own copy of the map's colors, read from the page's theme. */
+  function saveFile() {
+    if (!count()) return;
+    const data = JSON.stringify({ app: 'concept-transformer', v: 2, saved: new Date().toISOString(), graph }, null, 1);
+    const a = el('a', { href: 'data:application/json;charset=utf-8,' + encodeURIComponent(data), download: `concept-map-${new Date().toISOString().slice(0, 10)}.json` });
+    document.body.append(a); a.click(); a.remove();
+  }
+  function openFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const d = JSON.parse(String(reader.result));
+        const g = d && d.graph;
+        const ok = g && g.v === 2 && g.nodes && Array.isArray(g.order)
+          && g.order.every((k) => g.nodes[k] && (g.nodes[k].kind === 'concept' || g.nodes[k].kind === 'transform'));
+        if (!ok) throw new Error('not a map');
+        if (count() && !window.confirm('Replace the map on screen with the one in this file?')) return;
+        for (const k of g.order) {     // keep only plain values; nothing from the file runs
+          const n = g.nodes[k];
+          for (const f of ['text', 'plain', 'tag', 'move', 'engine', 'note', 'error', 'field', 'mode']) if (n[f] != null) n[f] = String(n[f]);
+          for (const f of ['x', 'y', 'shown', 'rank', 'words', 'time']) if (n[f] != null) n[f] = Number(n[f]) || 0;
+          n.moveIds = Array.isArray(n.moveIds) ? n.moveIds.map(String) : [];
+        }
+        graph = { v: 2, nodes: g.nodes, order: g.order, selected: null };
+        sizeCache.clear();
+        save();
+        draw();
+        fit();
+      } catch {
+        window.alert('That file is not a Concept Transformer map.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function pngStyle() {
     const v = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return `
     .mm-edges path{fill:none;stroke:${v('--input')};stroke-width:1.2}
-    .mm-move{fill:${v('--chart-1')};font:600 11px system-ui,sans-serif}
-    .mm-move-bg{fill:${v('--background')}}
-    .mm-node rect{fill:${v('--card')};stroke:${v('--input')}}
+    .mm-concept rect{fill:${v('--card')};stroke:${v('--input')}}
     .mm-root rect{fill:${v('--secondary')};stroke:${v('--muted-foreground')}}
-    .mm-current rect{stroke:${v('--primary')};stroke-width:1.6}
+    .mm-transform>rect{fill:${v('--background')};stroke:${v('--chart-3')};stroke-dasharray:4 3}
+    .mm-selected>rect{stroke:${v('--primary')};stroke-width:1.8;stroke-dasharray:none}
     .mm-text{fill:${v('--foreground')};font:13px system-ui,sans-serif}
-    .mm-tag{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}
-    .mm-fold circle{fill:${v('--background')};stroke:${v('--muted-foreground')}}
-    .mm-fold circle.mm-hit{fill:transparent;stroke:none}
-    .mm-fold text{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}
-    .mm-rot rect{fill:${v('--background')};stroke:${v('--input')}}
+    .mm-move{fill:${v('--chart-1')};font:600 12px system-ui,sans-serif}
+    .mm-tag,.mm-status{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}
+    .mm-rot rect{fill:${v('--card')};stroke:${v('--input')}}
     .mm-rot text{fill:${v('--muted-foreground')};font:10px system-ui,sans-serif}`;
   }
-
   function downloadPicture(btn) {
-    const ids = Object.keys(boxes);
+    const ids = [...vis];
     if (!ids.length) return;
-    const minX = Math.min(...ids.map((i) => boxes[i].x)) - 20, minY = Math.min(...ids.map((i) => boxes[i].y)) - 20;
-    const maxX = Math.max(...ids.map((i) => boxes[i].x + boxes[i].w)) + 30, maxY = Math.max(...ids.map((i) => boxes[i].y + boxes[i].h)) + 20;
-    const w = maxX - minX, h = maxY - minY, scale = 2;
+    const b = bounds(ids);
+    const minX = b.minX - 20, minY = b.minY - 20, w = b.maxX - b.minX + 50, h = b.maxY - b.minY + 40, scale = 2;
     const clone = $('mapViewport').cloneNode(true);
     clone.setAttribute('transform', `translate(${-minX},${-minY})`);
-    clone.querySelectorAll('title').forEach((t) => t.remove());
+    clone.querySelectorAll('title, .mm-plus').forEach((t) => t.remove());
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
     const svg = sv('svg', { xmlns: SVGNS, width: w, height: h, viewBox: `0 0 ${w} ${h}` },
-      sv('style', {}, pngStyle()), sv('rect', { width: w, height: h, fill: getComputedStyle(document.documentElement).getPropertyValue('--background').trim() }), clone);
-    const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+      sv('style', {}, pngStyle()), sv('rect', { width: w, height: h, fill: bg }), clone);
     const img = new Image();
     img.onload = () => {
       const c = document.createElement('canvas');
@@ -452,30 +781,40 @@ const CTMap = (() => {
       document.body.append(a); a.click(); a.remove();
       if (btn) { btn.textContent = 'Saved'; setTimeout(() => { btn.textContent = 'Download picture'; }, 1200); }
     };
-    img.src = data;
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
   }
 
   // ── wiring ─────────────────────────────────────────────────────────────────
   function setView(which) {
-    const map = which === 'map';
-    $('results').hidden = map;
+    const map = which !== 'outline';
     $('mapView').hidden = !map;
-    document.querySelectorAll('#viewSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.view === which)));
-    lsSet('ct.view', which);
-    if (map) { draw(); fit(); }
+    $('outlineView').hidden = map;
+    document.querySelectorAll('#viewSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.view === (map ? 'map' : 'outline'))));
+    ['mapFit', 'mapTidy', 'mapPicture'].forEach((id) => { $(id).disabled = !map; });
+    lsSet('ct.view2', map ? 'map' : 'outline');
+    if (map) draw(); else { closePicker(); buildOutline(); }
   }
 
   function init() {
+    if (graph.needsTidy) { delete graph.needsTidy; tidy(false); save(); }
     document.querySelectorAll('#viewSeg button').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
     $('mapFit').addEventListener('click', fit);
-    $('mapOutline').addEventListener('click', (e) => copyText(outline(), e.currentTarget, 'Copy as outline'));
+    $('mapTidy').addEventListener('click', () => tidy(true));
+    $('mapUndo').addEventListener('click', undoLastPress);
+    $('mapSave').addEventListener('click', saveFile);
+    $('mapOpen').addEventListener('click', () => $('mapFile').click());
+    $('mapFile').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) openFile(f); e.target.value = ''; });
     $('mapPicture').addEventListener('click', (e) => downloadPicture(e.currentTarget));
-    wirePanZoom();
-    setView(lsGet('ct.view', 'list') === 'map' ? 'map' : 'list');
-    window.addEventListener('resize', () => { if (visible()) fit(); });
+    $('outlineCopy').addEventListener('click', (e) => CTApp.copyText(outlineText(), e.currentTarget, 'Copy all'));
+    wirePointer();
+    setView(lsGet('ct.view2', 'map') === 'outline' ? 'outline' : 'map');
+    if (count()) requestAnimationFrame(fit);
+    window.addEventListener('resize', positionPicker);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { sizeCache.clear(); draw(); });
   }
 
-  return { init, recordPress, setCurrent, show, shownIndex, pressOf, clear, count, outline, graph: () => graph };
+  return { init, node, target, ensureTarget, plantFromBox, beginPress, finishPress, failPress, show, rotate,
+    clear, count, refreshPanel, refreshTarget, refreshPicker, closePicker, openPicker, tidy, outlineText, graph: () => graph };
 })();
 
 window.CTMap = CTMap;

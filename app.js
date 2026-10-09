@@ -1,4 +1,4 @@
-/* Concept Transformer — a public, stripped-down copy of Hyper Studio's Develop tab.
+/* Concept Transformer — type a concept, press creative moves, and grow a map of ideas from it.
  * Every press goes through relay.php, which holds the move prompts and the owner's free keys.
  * A visitor's own key rides along with their press, is used for that one request, and is never stored there.
  * This page only knows the move names, descriptions and examples (moves.json). */
@@ -125,9 +125,10 @@ async function fetchJson(url, init, who) {
 }
 
 // ownProvider: null for the free engines, else the visitor's provider (their key goes with this one press).
-async function callRelay(move, concept, field, ownProvider) {
-  const body = { engine: ownProvider ? `own:${ownProvider}` : state.engine, move: move.id, mode: state.mode, concept };
-  const words = wordsFor(state.mode);
+async function callRelay(move, concept, field, ownProvider, opts = {}) {
+  const mode = opts.mode || state.mode;
+  const body = { engine: ownProvider ? `own:${ownProvider}` : state.engine, move: move.id, mode, concept };
+  const words = opts.words != null ? opts.words : wordsFor(mode);
   if (words) body.words = words;
   if (field) body.field = field;
   if (move.moves) body.moves = move.moves;
@@ -152,10 +153,11 @@ const T = (m, key) => (m[key] && typeof m[key] === 'object' ? m[key][state.mode]
 function tip(m) { return `${T(m, 'blurb')}\n\ne.g. ${T(m, 'example')}`; }
 
 const fieldInputs = {};
+const pick = (m) => (state.stacking ? toggleStack(m) : run(m));
 function moveControl(m) {
   const btn = el('button', {
     type: 'button', title: tip(m), 'data-move': m.id,
-    onclick: () => (state.stacking ? toggleStack(m) : run(m)),
+    onclick: () => pick(m),
   }, T(m, 'label'));
   if (state.stack.includes(m.id)) { btn.classList.add('picked'); btn.setAttribute('aria-pressed', 'true'); }
   if (!m.field) return btn;
@@ -163,7 +165,7 @@ function moveControl(m) {
     type: 'text', class: 'field', maxlength: String(m.field.max || 100), placeholder: m.field.placeholder || '',
     'aria-label': m.field.label, 'data-field': m.id,
   });
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(m); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') pick(m); });
   if (fieldInputs[m.id]) input.value = fieldInputs[m.id].value;   // keep what was typed across mode switches
   fieldInputs[m.id] = input;
   return el('span', { class: 'withField' }, btn, input);
@@ -235,8 +237,42 @@ function openKeyPanel(open = true) {
 
 function setBusy(b) {
   busy = b;
-  document.querySelectorAll('#moves button').forEach((x) => { x.disabled = b; });
+  document.querySelectorAll('#moves button, #picker button[data-move]').forEach((x) => { x.disabled = b; });
   applyStackUI();
+}
+
+/** The move list again, inside the "+" picker on a map node: same buttons, same stacking, same settings. */
+function buildPicker(box) {
+  box.textContent = '';
+  const target = window.CTMap ? CTMap.target() : null;
+  box.append(el('div', { class: 'pickHead' },
+    el('span', { class: 'pickTitle' }, target ? 'Transform this' : 'Pick a move'),
+    el('span', { class: 'pickMode' }, `${MOVES.modes[state.mode].label} · ${$('wordsOut').textContent}`),
+    el('button', { type: 'button', class: 'pickClose', 'aria-label': 'Close', onclick: () => CTMap.closePicker() }, '×')));
+  for (const g of MOVES.groups) {
+    const row = el('div', { class: 'btns' });
+    for (const m of MOVES.moves.filter((x) => x.group === g)) {
+      const b = el('button', { type: 'button', title: tip(m), 'data-move': m.id }, T(m, 'label'));
+      if (state.stack.includes(m.id)) b.classList.add('picked');
+      if (state.stacking && !m.stackable) b.disabled = true;
+      b.addEventListener('click', () => {
+        if (m.field && !state.stacking) {
+          const input = fieldInputs[m.id];
+          if (!input.value.trim()) { CTMap.closePicker(); input.focus(); input.scrollIntoView({ block: 'center' }); return; }
+        }
+        pick(m);
+        if (state.stacking) buildPicker(box); else CTMap.closePicker();
+      });
+      row.append(b);
+    }
+    box.append(el('div', { class: 'pickGroup' }, el('h3', {}, g), row));
+  }
+  if (state.stacking) {
+    const go = el('button', { type: 'button', class: 'pickGo', disabled: state.stack.length < 2 }, state.stack.length >= 2 ? `Transform with ${state.stack.length} moves` : 'Pick two or three moves');
+    go.addEventListener('click', () => { CTMap.closePicker(); runStack(); });
+    box.append(go);
+  }
+  if (busy) box.querySelectorAll('button[data-move]').forEach((x) => { x.disabled = true; });
 }
 
 // ── Stacking ──
@@ -273,6 +309,12 @@ function runStack() {
   for (const mode of Object.keys(MOVES.modes)) label[mode] = parts.map((m) => (typeof m.label === 'object' ? m.label[mode] : m.label)).join(' + ');
   run({ id: 'stack', label, count: 3, moves: [...state.stack] });
 }
+const stackMove = (ids) => {
+  const parts = ids.map(moveById).filter(Boolean);
+  const label = {};
+  for (const mode of Object.keys(MOVES.modes)) label[mode] = parts.map((m) => (typeof m.label === 'object' ? m.label[mode] : m.label)).join(' + ');
+  return { id: 'stack', label, count: 3, moves: [...ids] };
+};
 
 let speaking = null;
 function speak(text, btn) {
@@ -301,97 +343,45 @@ async function copyText(text, btn, label = 'Copy') {
   setTimeout(() => { btn.textContent = label; }, 1200);
 }
 
-function useThis(text, nodeId) {
-  if (nodeId && window.CTMap) CTMap.setCurrent(nodeId);
-  const c = $('concept');
-  c.value = text.replace(TAG_RE, '').slice(0, CONFIG.maxConcept);
-  updateCount();
-  c.focus();
-  c.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function renderCard(v, before, nodeId, option) {
-  const text = el('div', { class: 'text' });
-  text.dataset.before = before; text.dataset.after = v;
-  renderText(text, before, v, state.showChanges);
-  const say = el('button', { type: 'button', class: 'say' }, 'Read aloud');
-  say.addEventListener('click', () => speak(v, say));
-  const copy = el('button', { type: 'button' }, 'Copy');
-  copy.addEventListener('click', () => { const t = (v.match(TAG_RE) || [''])[0]; copyText(t ? `${v.slice(t.length)} ${t.trim()}` : v, copy); });
-  const acts = el('div', { class: 'acts' }, copy, say, el('button', { type: 'button', onclick: () => useThis(v, nodeId) }, 'Use this'));
-  if (option) acts.append(el('button', { type: 'button', class: 'link nextOpt', onclick: option.next }, `Next option · ${option.label}`));
-  return el('div', { class: 'card' }, text, acts);
-}
-
-// Results arrive best first. Each press shows ONE result; "Next option" rotates through the three,
-// in step with the map (the same press shows the same option in both views).
-const pressHolders = {};
-function renderCards(box, before, variants, nodeIds = []) {
-  if (!variants.length) return;
-  const press = nodeIds[0] && window.CTMap ? CTMap.pressOf(nodeIds[0]) : null;
-  let i = press ? CTMap.shownIndex(press) : 0;
-  const holder = el('div');
-  const show = (index) => {
-    i = ((index % variants.length) + variants.length) % variants.length;
-    holder.textContent = '';
-    holder.append(renderCard(variants[i], before, nodeIds[i], variants.length > 1 ? {
-      label: `${i + 1} of ${variants.length}`,
-      next: () => { if (press) CTMap.show(press, i + 1); else show(i + 1); },
-    } : null));
-  };
-  show(i);
-  if (press) pressHolders[press] = show;
-  box.append(holder);
-}
-window.addEventListener('ct-shown', (e) => { const f = pressHolders[e.detail.press]; if (f) f(e.detail.index); });
-
-async function run(move) {
-  if (busy) return;
-  const concept = $('concept').value.trim().replace(/\s+/g, ' ');
-  if (!concept) { $('concept').focus(); return; }
-  const field = move.field ? fieldInputs[move.id].value.trim().replace(/\s+/g, ' ') : '';
+/** One press on the map: the move is applied to the target node (the selected concept or result, or a
+ *  freshly typed concept), a transform node appears at once, and its results fill in when they arrive.
+ *  spec (Run again): {conceptId, field, mode, words} from the stored press. */
+async function run(move, spec = null) {
+  if (busy || !window.CTMap) return;
+  const target = spec ? CTMap.node(spec.conceptId) : CTMap.ensureTarget();
+  if (!target) { $('concept').focus(); $('targetLine').textContent = 'Type a concept first, or select a box on the map.'; return; }
+  const mode = spec ? spec.mode : state.mode;
+  const field = spec ? (spec.field || '') : (move.field ? fieldInputs[move.id].value.trim().replace(/\s+/g, ' ') : '');
   if (move.field && !field) { fieldInputs[move.id].focus(); return; }
+  const words = spec ? spec.words : wordsFor(mode);
   const ownProvider = state.useOwn && ownKey(state.useOwnProvider || state.provider) ? (state.useOwnProvider || state.provider) : null;
   const engineName = (ownProvider ? `your ${CONFIG.own[ownProvider].label} key` : CONFIG.shared[state.engine].label)
-    + ` · ${MOVES.modes[state.mode].label}`;
-  const label = T(move, 'label');
-  const box = el('div', { class: 'run' },
-    el('div', { class: 'head' }, el('span', { class: 'mv' }, move.field ? `${label.replace(/ with$/, '')} · ${field}` : label),
-      el('span', { class: 'from' }, concept), el('span', { class: 'eng' }, engineName)));
-  const working = el('div', { class: 'working' }, 'Working…');
-  box.append(working);
-  $('results').prepend(box);
-  $('clearResults').hidden = false;
+    + ` · ${MOVES.modes[mode].label}`;
+  const baseLabel = (typeof move.label === 'object' ? move.label[mode] : move.label) || move.id;
+  const label = move.field ? `${baseLabel.replace(/ with$/, '')} → ${field}` : baseLabel;
+  const tid = CTMap.beginPress(target.id, {
+    move: label, moveIds: move.moves ? [...move.moves] : [move.id], field, mode, words, engine: engineName,
+  });
   setBusy(true);
   try {
-    const { variants, engine, note } = await callRelay(move, concept, field, ownProvider);
-    working.remove();
-    // The free engines may hand a press to Groq when Gemini is out for the day: name who answered.
-    if (!ownProvider && CONFIG.shared[engine] && engine !== state.engine) {
-      box.querySelector('.eng').textContent = `${CONFIG.shared[engine].label} · ${MOVES.modes[state.mode].label}`;
-    }
-    if (note) box.append(el('div', { class: 'note' }, note));
-    const answeredBy = box.querySelector('.eng').textContent;
-    const moveLabel = move.field ? `${label.replace(/ with$/, '')} → ${field}` : label;
-    const nodeIds = window.CTMap ? CTMap.recordPress({ concept, move: moveLabel, mode: state.mode, engine: answeredBy, variants }) : [];
-    renderCards(box, move.diff === false ? '' : concept, variants, nodeIds);
+    const r = await callRelay(move, target.plain || target.text, field, ownProvider, { mode, words });
+    const answered = !ownProvider && CONFIG.shared[r.engine] ? `${CONFIG.shared[r.engine].label} · ${MOVES.modes[mode].label}` : engineName;
+    CTMap.finishPress(tid, { variants: r.variants, engine: answered, note: r.note });
   } catch (e) {
-    working.remove();
     const msg = e instanceof FriendlyError ? e.message : 'Something went wrong. Press the move again.';
-    const err = el('div', { class: 'err' }, msg);
-    if (e.openKey && !ownProvider) {
-      err.append(' ', el('a', { href: CONFIG.keyLink, target: '_blank', rel: 'noopener' }, 'Get a free Gemini key'), '.');
-      openKeyPanel(true);
-    } else if (e.openKey) openKeyPanel(true);
-    box.append(err);
+    CTMap.failPress(tid, msg);
+    if (e.openKey) openKeyPanel(true);
     if (!(e instanceof FriendlyError)) console.error(e);
   } finally {
     setBusy(false);
   }
 }
 
-function rerenderAll() {
-  document.querySelectorAll('.card .text').forEach((t) => renderText(t, t.dataset.before, t.dataset.after, state.showChanges));
+/** Run a stored press again on the same concept, with the same move(s), mode, length and second box. */
+function runAgain(t) {
+  const move = t.moveIds.length > 1 ? stackMove(t.moveIds) : moveById(t.moveIds[0]);
+  if (!move) return;
+  run(move, { conceptId: t.parent, field: t.field, mode: t.mode, words: t.words });
 }
 
 function updateCount() {
@@ -432,18 +422,20 @@ function wire() {
   });
   $('showChanges').checked = state.showChanges;
   $('showChanges').addEventListener('change', (e) => {
-    state.showChanges = e.target.checked; lsSet(LS.changes, state.showChanges ? '1' : '0'); rerenderAll();
+    state.showChanges = e.target.checked; lsSet(LS.changes, state.showChanges ? '1' : '0');
+    if (window.CTMap) CTMap.refreshPanel();
   });
   $('clearResults').addEventListener('click', () => {
-    const mapNodes = window.CTMap ? CTMap.count() : 0;
-    if (mapNodes && !window.confirm('Clear the results and the map?')) return;
+    if (window.CTMap && CTMap.count() && !window.confirm('Clear the whole map?')) return;
     window.speechSynthesis?.cancel();
-    $('results').textContent = '';
-    for (const k of Object.keys(pressHolders)) delete pressHolders[k];
     if (window.CTMap) CTMap.clear();
-    $('clearResults').hidden = true;
   });
-  $('concept').addEventListener('input', updateCount);
+  $('concept').addEventListener('input', () => { updateCount(); if (window.CTMap) CTMap.refreshTarget(); });
+  // Enter adds the typed concept to the map (Shift+Enter makes a new line).
+  $('concept').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (window.CTMap) CTMap.plantFromBox(); }
+  });
+  $('plant').addEventListener('click', () => { if (window.CTMap) CTMap.plantFromBox(); });
   $('words').addEventListener('input', (e) => {
     lsSet('ct.words.' + state.mode, e.target.value);
     showWords();
@@ -485,6 +477,7 @@ function setMode(id) {
   showWords();
   buildMoves();
   if (busy) setBusy(true);
+  if (window.CTMap) CTMap.refreshPicker();
 }
 
 async function init() {
@@ -492,15 +485,18 @@ async function init() {
   wire();
   updateEngineUI();
   showKeyHelp();
-  if (lsGet('ct.map.v1', '')) $('clearResults').hidden = false;
   try {
     const r = await fetch('moves.json', { cache: 'no-cache' });
     MOVES = await r.json();
     if (!MOVES.modes[state.mode]) state.mode = MOVES.default_mode;
     buildModes();
     setMode(state.mode);
+    if (window.CTMap) { CTMap.refreshTarget(); CTMap.refreshPanel(); }
   } catch {
     $('moves').textContent = 'The moves did not load. Reload the page.';
   }
 }
+
+// The map (mindmap.js) calls back into the page through this.
+window.CTApp = { run, runAgain, buildPicker, speak, copyText, renderText, moveById };
 init();
