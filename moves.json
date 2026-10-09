@@ -1,5 +1,5 @@
 {
- "exported": "2026-10-08T22:47:05",
+ "exported": "2026-10-09T13:40:20",
  "default_mode": "image",
  "modes": {
   "image": {
@@ -15,10 +15,7 @@
  },
  "groups": [
   "SCAMPER",
-  "Transforms",
-  "Utilities",
-  "Map",
-  "Workbench"
+  "Transforms"
  ],
  "stack_max": 3,
  "moves": [
@@ -239,42 +236,8 @@
    "stackable": true
   },
   {
-   "id": "visualize",
-   "group": "Utilities",
-   "label": {
-    "image": "Visualize",
-    "ideas": "Make concrete"
-   },
-   "blurb": {
-    "image": "Turns an abstract or poetic idea into a plain picture you could actually draw or photograph.",
-    "ideas": "Turns an abstract or vague idea into a specific instance you could point at."
-   },
-   "example": {
-    "image": "\"loneliness, as a lighthouse\" → One lit window in a lighthouse, a single chair turned to face the sea.",
-    "ideas": "\"generosity, as a public service\" → Tool library with no sign-up: take what you need and chalk your name on the board."
-   },
-   "count": 3
-  },
-  {
-   "id": "extract",
-   "group": "Utilities",
-   "label": {
-    "image": "Extract",
-    "ideas": "Distill"
-   },
-   "blurb": {
-    "image": "Strips all the style words out of a finished image prompt and leaves just the bare picture.",
-    "ideas": "Strips the dressing off a long pitch or paragraph and leaves just the bare idea."
-   },
-   "example": {
-    "image": "\"a lighthouse on a cliff, moody oil painting, teal and ochre, dramatic chiaroscuro\" → A lighthouse on a cliff.",
-    "ideas": "\"a warm, community-first space reimagining what a library can be by sharing tools\" → Tool library: lends tools instead of books."
-   },
-   "count": 3
-  },
-  {
    "id": "domain_transfer",
-   "group": "Map",
+   "group": "Transforms",
    "label": {
     "image": "Domain transfer",
     "ideas": "Domain transfer"
@@ -294,47 +257,6 @@
     "max": 60,
     "placeholder": "target domain — architecture, gardening, weather…"
    }
-  },
-  {
-   "id": "vary",
-   "group": "Workbench",
-   "label": {
-    "image": "Vary ×5",
-    "ideas": "Vary ×5"
-   },
-   "blurb": {
-    "image": "Five close siblings of the same concept: same level, different concrete choices. Options, not improvements.",
-    "ideas": "Five close siblings of the same concept: same level, different concrete choices. Options, not improvements."
-   },
-   "example": {
-    "image": "A lighthouse on a sea stack at low tide · A lighthouse keeper's kitchen lit by the beam · …",
-    "ideas": "Seed library: borrow seeds, return seeds from the harvest · Instrument library: lend by the week · …"
-   },
-   "count": 5
-  },
-  {
-   "id": "collide",
-   "group": "Workbench",
-   "label": {
-    "image": "Collide ×3 with",
-    "ideas": "Collide ×3 with"
-   },
-   "blurb": {
-    "image": "Merges your concept with a second one you type into a single new idea that comes from both.",
-    "ideas": "Merges your concept with a second one you type into a single new idea that comes from both."
-   },
-   "example": {
-    "image": "× \"a snow globe\": a lighthouse sealed in glass, its beam caught swirling in the snow.",
-    "ideas": "× \"a confession booth\": Tool return booth: you hand back the tool and confess what you broke with it, no fines."
-   },
-   "count": 3,
-   "field": {
-    "name": "partner",
-    "label": "Partner concept",
-    "max": 300,
-    "placeholder": "a second concept to collide with — a snow globe"
-   },
-   "diff": false
   }
  ]
 }
