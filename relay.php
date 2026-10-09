@@ -17,6 +17,7 @@
  */
 
 declare(strict_types=1);
+@set_time_limit(150);   // a slow engine plus retries can pass PHP's default 30 seconds
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');

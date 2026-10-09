@@ -310,18 +310,37 @@ function useThis(text, nodeId) {
   c.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+function renderCard(v, before, nodeId) {
+  const text = el('div', { class: 'text' });
+  text.dataset.before = before; text.dataset.after = v;
+  renderText(text, before, v, state.showChanges);
+  const say = el('button', { type: 'button', class: 'say' }, 'Read aloud');
+  say.addEventListener('click', () => speak(v, say));
+  const copy = el('button', { type: 'button' }, 'Copy');
+  copy.addEventListener('click', () => { const t = (v.match(TAG_RE) || [''])[0]; copyText(t ? `${v.slice(t.length)} ${t.trim()}` : v, copy); });
+  return el('div', { class: 'card' }, text,
+    el('div', { class: 'acts' }, copy, say, el('button', { type: 'button', onclick: () => useThis(v, nodeId) }, 'Use this')));
+}
+
+// Results arrive best first: show the best, keep the rest behind a "more" link (shared with the map).
 function renderCards(box, before, variants, nodeIds = []) {
-  for (const [i, v] of variants.entries()) {
-    const text = el('div', { class: 'text' });
-    text.dataset.before = before; text.dataset.after = v;
-    renderText(text, before, v, state.showChanges);
-    const say = el('button', { type: 'button', class: 'say' }, 'Read aloud');
-    say.addEventListener('click', () => speak(v, say));
-    const copy = el('button', { type: 'button' }, 'Copy');
-    copy.addEventListener('click', () => { const t = (v.match(TAG_RE) || [''])[0]; copyText(t ? `${v.slice(t.length)} ${t.trim()}` : v, copy); });
-    box.append(el('div', { class: 'card' }, text,
-      el('div', { class: 'acts' }, copy, say, el('button', { type: 'button', onclick: () => useThis(v, nodeIds[i]) }, 'Use this'))));
-  }
+  if (!variants.length) return;
+  box.append(renderCard(variants[0], before, nodeIds[0]));
+  const rest = variants.slice(1);
+  if (!rest.length) return;
+  const more = el('div', { class: 'more' });
+  rest.forEach((v, i) => more.append(renderCard(v, before, nodeIds[i + 1])));
+  const press = nodeIds[0] && window.CTMap ? CTMap.pressOf(nodeIds[0]) : null;
+  const opened = !!(press && CTMap.graph().open && CTMap.graph().open[press]);
+  more.hidden = !opened;
+  const label = (open) => (open ? 'Hide the other results' : `${rest.length} more`);
+  const toggle = el('button', { type: 'button', class: 'link moreToggle' }, label(opened));
+  toggle.addEventListener('click', () => {
+    more.hidden = !more.hidden;
+    toggle.textContent = label(!more.hidden);
+    if (press) CTMap.setOpen(press, !more.hidden);
+  });
+  box.append(toggle, more);
 }
 
 async function run(move) {

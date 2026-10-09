@@ -32,6 +32,10 @@ const CTMap = (() => {
   const newId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const norm = (t) => String(t || '').replace(TAG_RE, '').trim().replace(/\s+/g, ' ').toLowerCase();
   const kids = (id) => graph.order.filter((k) => graph.nodes[k].parent === id);
+  // Results come back best first; the map shows each press's best one until that press is opened.
+  const isOpen = (press) => !!(graph.open && graph.open[press]);
+  const shown = (k) => { const n = graph.nodes[k]; return !n.rank || isOpen(n.press); };
+  const visibleKids = (id) => kids(id).filter(shown);
   const roots = () => graph.order.filter((k) => !graph.nodes[k].parent);
   const count = () => graph.order.length;
 
@@ -76,10 +80,10 @@ const CTMap = (() => {
     const parent = conceptNode(concept, mode);
     parent.folded = false;
     const press = newId();
-    const ids = variants.map((v) => {
+    const ids = variants.map((v, rank) => {
       const tag = (v.match(TAG_RE) || [''])[0].trim();
       const n = { id: newId(), text: v, plain: v.slice((v.match(TAG_RE) || [''])[0].length).trim(), tag,
-        parent: parent.id, press, move, mode, engine, time: Date.now(), folded: false };
+        parent: parent.id, press, rank, move, mode, engine, time: Date.now(), folded: false };
       graph.nodes[n.id] = n;
       graph.order.push(n.id);
       return n.id;
@@ -141,7 +145,7 @@ const CTMap = (() => {
       const h = PAD_Y * 2 + lines.length * LINE_H + (tagLine ? TAG_H : 0);
       return { w: NODE_W, h, lines, tagLine };
     };
-    const showKids = (id) => (graph.nodes[id].folded ? [] : kids(id));
+    const showKids = (id) => (graph.nodes[id].folded ? [] : visibleKids(id));
     // subtree height
     const sub = {};
     const measure = (id) => {
@@ -217,13 +221,22 @@ const CTMap = (() => {
       node.append(text);
       if (b.tagLine) node.append(sv('text', { x: PAD_X, y: PAD_Y + b.lines.length * LINE_H + 11, class: 'mm-tag' }, b.tagLine));
       node.append(sv('title', {}, fullInfo(n)));
-      const k = kids(id).length;
+      const k = visibleKids(id).length;
       if (k) {
         const fx = b.w, fy = b.h / 2;
         node.append(sv('g', { class: 'mm-fold', 'data-fold': id },
           sv('circle', { cx: fx, cy: fy, r: 16, class: 'mm-hit' }),
           sv('circle', { cx: fx, cy: fy, r: 8 }),
           sv('text', { x: fx, y: fy + 4, 'text-anchor': 'middle' }, n.folded ? String(k) : '–')));
+      }
+      if (n.parent && !n.rank) {
+        const others = graph.order.filter((x) => graph.nodes[x].press === n.press && graph.nodes[x].rank).length;
+        if (others) {
+          const open = isOpen(n.press);
+          node.append(sv('g', { class: 'mm-more', 'data-more': n.press },
+            sv('rect', { x: b.w - 62, y: b.h - 1, width: 54, height: 16, rx: 3 }),
+            sv('text', { x: b.w - 35, y: b.h + 11, 'text-anchor': 'middle' }, open ? 'hide' : `+${others} more`)));
+        }
       }
       nodes.append(node);
     }
@@ -314,6 +327,8 @@ const CTMap = (() => {
       downTarget = null;
       const fold = target && target.closest('[data-fold]');
       if (fold) { toggleFold(fold.getAttribute('data-fold')); return; }
+      const more = target && target.closest('[data-more]');
+      if (more) { setOpen(more.getAttribute('data-more'), !isOpen(more.getAttribute('data-more'))); return; }
       const node = target && target.closest('.mm-node');
       if (node) useNode(node.getAttribute('data-id'));
     });
@@ -332,6 +347,15 @@ const CTMap = (() => {
       if (node && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); useNode(node.getAttribute('data-id')); }
     });
   }
+
+  /** Show or hide a press's other results (shared by the list's "more" link and the map). */
+  function setOpen(press, open) {
+    graph.open = graph.open || {};
+    if (open) graph.open[press] = true; else delete graph.open[press];
+    save();
+    if (visible()) draw();
+  }
+  const pressOf = (id) => (graph.nodes[id] ? graph.nodes[id].press : null);
 
   function toggleFold(id) {
     const n = graph.nodes[id];
@@ -379,7 +403,9 @@ const CTMap = (() => {
     .mm-tag{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}
     .mm-fold circle{fill:${v('--background')};stroke:${v('--muted-foreground')}}
     .mm-fold circle.mm-hit{fill:transparent;stroke:none}
-    .mm-fold text{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}`;
+    .mm-fold text{fill:${v('--muted-foreground')};font:11px system-ui,sans-serif}
+    .mm-more rect{fill:${v('--background')};stroke:${v('--input')}}
+    .mm-more text{fill:${v('--muted-foreground')};font:10px system-ui,sans-serif}`;
   }
 
   function downloadPicture(btn) {
@@ -428,7 +454,7 @@ const CTMap = (() => {
     window.addEventListener('resize', () => { if (visible()) fit(); });
   }
 
-  return { init, recordPress, setCurrent, clear, count, outline, graph: () => graph };
+  return { init, recordPress, setCurrent, setOpen, pressOf, clear, count, outline, graph: () => graph };
 })();
 
 window.CTMap = CTMap;
