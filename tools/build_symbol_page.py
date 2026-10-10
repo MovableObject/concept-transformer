@@ -561,7 +561,7 @@ __SECTIONS__
                  + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
   const SHAPES = new Set(['path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon', 'g']);
   const ATTRS = new Set(['d', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'width', 'height', 'x1', 'y1', 'x2', 'y2', 'points',
-                         'transform', 'stroke-dasharray', 'stroke-dashoffset', 'fill', 'fill-rule']);
+                         'transform', 'stroke-dasharray', 'stroke-dashoffset', 'fill', 'fill-rule', 'stroke-linejoin']);
   // Keep only plain drawing elements and geometry attributes; anything else Claude wrote is dropped.
   function cleanIcon(markup) {
     if (!markup || markup.length > 20000) return '';
@@ -578,10 +578,16 @@ __SECTIONS__
           const k = a.name.toLowerCase(), v = a.value;
           if (!ATTRS.has(k) || v.length > 4000 || /[<>"]/.test(v) || /url\s*\(|javascript:/i.test(v)) continue;
           if (k === 'fill' && !/^(none|currentColor)$/.test(v)) continue;
+          if (k === 'stroke-linejoin' && !/^(miter|round|bevel)$/.test(v)) continue;
+          // Squares and rectangles keep sharp corners (owner, 2026-10-10): no rounding, mitred joins.
+          if (name === 'rect' && (k === 'rx' || k === 'ry' || k === 'stroke-linejoin')) continue;
           attrs.push(k + '="' + v + '"');
         }
         if (name === 'g') { out.push('<g ' + attrs.filter(a => a.startsWith('transform')).join(' ') + '>'); walk(c, depth + 1); out.push('</g>') }
-        else out.push('<' + name + (attrs.length ? ' ' + attrs.join(' ') : '') + '/>');
+        else {
+          if (name === 'rect') attrs.push('stroke-linejoin="miter"');
+          out.push('<' + name + (attrs.length ? ' ' + attrs.join(' ') : '') + '/>');
+        }
       }
     };
     walk(root, 0);
@@ -683,7 +689,10 @@ __SECTIONS__
       '  corner radii and offsets. Before replying, check each mirrored pair coordinate by coordinate; a lopsided result is wrong.',
       '  Say in "why" which symmetry you applied.',
       '- No feature smaller than 2 units across (a notch, a neck, a gap inside a shape); widen it or leave it out.',
-      '- Rectangles get rx="1" unless the sketch is clearly sharp. Use whole or half units where you can.',
+      '- Squares and rectangles have SHARP corners: draw each one as a <rect> with no rx or ry (the page gives rects mitred',
+      '  corners). Never round a square off, and never draw a square as a rounded path. Circles stay circles.',
+      '- A path with square corners (a block, a bracket, a stepped outline) gets stroke-linejoin="miter" so its corners stay sharp.',
+      '- Use whole or half units where you can.',
       '- A dotted outline is stroke-dasharray="0 N" (zero-length dashes make round dots), with N chosen so the dots space evenly.',
       '- Few elements; simple, readable at 24 pixels.',
       '',
