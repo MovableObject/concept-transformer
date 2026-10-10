@@ -51,7 +51,8 @@ def svg(name: str) -> str:
 CUSTOM = os.path.join(ROOT, "tools", "custom_icons")
 
 # The drawing pad's background: the icons' 24-unit grid, with the 2-unit safe margin marked.
-PAD_GRID = ('<g class="grid">' + "".join(f'<path d="M{i} 0v24M0 {i}h24"/>' for i in range(2, 24, 2))
+PAD_GRID = ('<g class="grid">' + "".join(f'<path class="{"major" if i % 4 == 0 else "minor"}" d="M{i} 0v24M0 {i}h24"/>'
+                                        for i in range(1, 24))
             + '</g><rect class="safe" x="2" y="2" width="20" height="20" rx="1"/>')
 
 
@@ -106,7 +107,9 @@ def main():
                 f'<div class="note" hidden><label for="note-{mid}">How should the symbol look?</label>'
                 f'<textarea id="note-{mid}" rows="3" data-move="{mid}" '
                 f'placeholder="Describe the symbol you want for {html.escape(label)}"></textarea>'
-                f'<div class="sketchrow"><div class="sketchwrap"><span class="sk-label">Sketch it (optional)</span>'
+                f'<div class="sketchrow"><div class="sketchwrap padwrap"><span class="sk-label">Sketch it (optional)</span>'
+                '<span class="sk-hint wide">The icon set’s own 24 by 24 grid. Lines draw at the icons’ thickness, '
+                'and the dashed square is the 2-square margin they keep clear.</span>'
                 f'<svg class="pad" data-move="{mid}" viewBox="0 0 24 24" role="img" '
                 f'aria-label="Drawing pad for the {html.escape(label)} symbol">{PAD_GRID}<g class="ink"></g></svg>'
                 f'<div class="sk-tools"><button type="button" class="sk-btn" data-act="pen" aria-pressed="true">Pen</button>'
@@ -195,11 +198,17 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .note textarea:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:1px}
 .sketchrow{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
 .sketchwrap{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sketchwrap.padwrap{flex:1 1 100%}
+.move.wide{grid-column:1/-1}
+.move.wide .sketchwrap.padwrap{flex:0 1 auto}
+.move.wide .pad{width:min(480px,100%)}
 .sk-label{font-size:13px;font-weight:700}
-.pad{width:min(216px,100%);aspect-ratio:1;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:4px;touch-action:none;cursor:crosshair;display:block}
-.pad .grid path{stroke:var(--line);stroke-width:.06;fill:none}
+.pad{width:min(420px,100%);aspect-ratio:1;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:4px;touch-action:none;cursor:crosshair;display:block}
+.pad .grid path{fill:none}
+.pad .grid .minor{stroke:var(--line);stroke-width:.04}
+.pad .grid .major{stroke:var(--line);stroke-width:.1}
 .pad .safe{fill:none;stroke:var(--muted);stroke-width:.06;stroke-dasharray:.4 .4}
-.pad .ink path{fill:none;stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h));stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.pad .ink path{fill:none;stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .85);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sk-tools{display:flex;gap:6px;flex-wrap:wrap}
 .sk-btn[aria-pressed="true"]{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h));background:oklch(var(--tint-l) var(--tint-c) var(--h))}
 .pad.erasing{cursor:cell}
@@ -209,6 +218,7 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .sk-preview{display:flex;gap:12px;align-items:flex-end;color:var(--fg)}
 .sk-preview svg{width:48px;height:48px;border:1px solid var(--line);border-radius:4px;padding:6px;box-sizing:content-box;background:var(--surface)}
 .sk-hint{font-size:12px;color:var(--muted);max-width:22ch}
+.sk-hint.wide{max-width:60ch}
 .drop{width:min(216px,100%);aspect-ratio:1;border:2px dashed var(--line);border-radius:4px;display:grid;place-items:center;text-align:center;
   padding:10px;box-sizing:border-box;color:var(--muted);font-size:13px;cursor:pointer;background:var(--bg);overflow:hidden}
 .drop:hover,.drop.over{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h))}
@@ -263,6 +273,7 @@ __SECTIONS__
     drawInk(id);
     showRef(id);
     card.classList.toggle('chosen', !!st.choice);
+    card.classList.toggle('wide', st.choice === 'none');   // room for a big drawing pad
     const badge = card.querySelector('.badge');
     if (!badge.dataset.orig) badge.dataset.orig = badge.innerHTML;
     if (st.choice === 'none') badge.innerHTML = '<span class="nonebox"></span>';
