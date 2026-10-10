@@ -44,7 +44,7 @@ def svg(name: str) -> str:
     for tag, attrs in re.findall(r'\[\s*"(\w+)",\s*\{(.*?)\}\s*\]', node, re.S):
         kv = re.findall(r'(\w+):\s*"([^"]*)"', attrs)
         parts.append(f"<{tag} " + " ".join(f'{k}="{html.escape(v)}"' for k, v in kv if k != "key") + "/>")
-    return ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" '
+    return ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" '
             'stroke-linejoin="round" aria-hidden="true">' + "".join(parts) + "</svg>")
 
 
@@ -119,7 +119,7 @@ def main():
                 f'<button type="button" class="sk-btn" data-act="clear" data-move="{mid}">Clear</button></div></div>'
                 f'<div class="sketchwrap"><span class="sk-label">In the icon style</span>'
                 f'<div class="sk-preview" data-move="{mid}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                f'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="ink"></g></svg></div>'
+                f'stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="ink"></g></svg></div>'
                 f'<span class="sk-hint">Your lines at button size, with the icons\' line weight.</span></div>'
                 f'<div class="sketchwrap"><span class="sk-label">Reference image (optional)</span>'
                 f'<label class="drop" data-move="{mid}" for="file-{mid}" tabindex="0">'
@@ -220,7 +220,7 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .pad .grid .minor{stroke:var(--line);stroke-width:.04}
 .pad .grid .major{stroke:var(--line);stroke-width:.1}
 .pad .safe{fill:none;stroke:var(--muted);stroke-width:.06;stroke-dasharray:.4 .4}
-.pad .ink path.ghost{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .16);stroke-width:1.5}
+.pad .ink path.ghost{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .16);stroke-width:1}
 .pad .ink path.line{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h));stroke-width:.45}
 .pad .ink path{fill:none;stroke-linecap:round;stroke-linejoin:round}
 .sk-tools{display:flex;gap:6px;flex-wrap:wrap}
@@ -557,7 +557,7 @@ __SECTIONS__
   // ── Make the icon: Claude turns the sketch, description and reference image into an icon in the set's style ──
   let sampler = null;
   const running = {};                                   // move id -> AbortController
-  const SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
+  const SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" '
                  + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
   const SHAPES = new Set(['path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon', 'g']);
   const ATTRS = new Set(['d', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'width', 'height', 'x1', 'y1', 'x2', 'y2', 'points',
@@ -672,13 +672,22 @@ __SECTIONS__
       '',
       'Style rules, all required:',
       '- viewBox 0 0 24 24. Every shape stays inside x 2 to 22 and y 2 to 22.',
-      '- Lines only, 1.5 units thick, round ends and joins, no fill. A filled shape only for a tiny dot or a deliberate solid accent.',
-      '- Separate shapes keep at least 2 units between their centerlines, so a visible gap stays between them at this thickness.',
+      '- Lines only, 1 unit thick, round ends and joins, no fill. A filled shape only for a tiny dot or a deliberate solid accent.',
+      '- Separate shapes keep at least 1.75 units between their centerlines, so a visible gap stays between them at this thickness.',
+      '- Make it even: snap every coordinate to the half-unit grid, give parts that play the same role the same size and',
+      '  thickness, keep matching gaps equal, and centre the whole drawing in the 2 to 22 box. The sketch is hand-drawn, so',
+      '  treat small wobbles and size differences as accidents, not intent.',
+      '- SYMMETRY IS REQUIRED wherever it is obvious. If the sketch is roughly symmetric left to right (or top to bottom), or two',
+      '  parts plainly mirror each other, make them EXACT mirrors about the centre line x = 12 (or y = 12): build one half, then',
+      '  write the other with every x replaced by 24 - x (or every y by 24 - y). Matching parts get identical widths, heights,',
+      '  corner radii and offsets. Before replying, check each mirrored pair coordinate by coordinate; a lopsided result is wrong.',
+      '  Say in "why" which symmetry you applied.',
+      '- No feature smaller than 2 units across (a notch, a neck, a gap inside a shape); widen it or leave it out.',
       '- Rectangles get rx="1" unless the sketch is clearly sharp. Use whole or half units where you can.',
       '- A dotted outline is stroke-dasharray="0 N" (zero-length dashes make round dots), with N chosen so the dots space evenly.',
       '- Few elements; simple, readable at 24 pixels.',
       '',
-      'These are the icon set\'s own icons for this move, for style only (they are drawn at thickness 1.5, like yours):',
+      'These are the icon set\'s own icons for this move, for style only (they are drawn at thickness 1, like yours):',
       examples,
       '',
       'Reply with only a JSON object: {"elements": "<the SVG child elements only, no <svg> wrapper>", "why": "one short sentence on what you kept from the sketch"}',

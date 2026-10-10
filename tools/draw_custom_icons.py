@@ -1,4 +1,4 @@
-"""Draw the custom move symbols in the Lucide style (24 grid, 1.5-unit round strokes as the site uses, no fill unless noted).
+"""Draw the custom move symbols in the Lucide style (24 grid, 1-unit round strokes as the site uses, no fill unless noted).
 
 Each entry is the inner SVG markup for one move, drawn from its description in tools/symbol_picks.py.
 Writes tools/custom_icons/<move id>.svg (Substitute was drawn by hand first and is left as it is).
@@ -9,7 +9,7 @@ import os
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "custom_icons")
 HEAD = ('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" '
-        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">')
+        'stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">')
 DASH = 'stroke-dasharray="2 3"'
 
 ICONS = {
@@ -65,7 +65,7 @@ ICONS = {
     "rule_break": '<path d="M3 6h18"/><path d="M3 18h18"/><path d="M3 12h7"/><path d="M13.5 9l3 3H21"/>',
     # A speech bubble holding an upside-down exclamation mark (a wedge, wide at the bottom)
     "provocation": '<path d="M22 17a2 2 0 0 1-2 2H6.8a2 2 0 0 0-1.4.6l-2.2 2.2a.7.7 0 0 1-1.2-.5V5a2 2 0 0 1 2-2h16'
-                   'a2 2 0 0 1 2 2z"/><path d="M12 7h.01"/><path d="M11.6 10.5h.8l.6 4.5h-2z" fill="currentColor" stroke-width="1.5"/>',
+                   'a2 2 0 0 1 2 2z"/><path d="M12 7h.01"/><path d="M11.6 10.5h.8l.6 4.5h-2z" fill="currentColor" stroke-width="1"/>',
 
     # ── Scale and abstraction ──
     # A tiny house on the rim of a giant cup
