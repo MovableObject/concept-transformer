@@ -41,7 +41,7 @@ def svg(name: str) -> str:
         raise ValueError(f"could not read the icon {name}")
     node = m.group(1)
     parts = []
-    for tag, attrs in re.findall(r'\["(\w+)",\s*\{(.*?)\}\]', node, re.S):
+    for tag, attrs in re.findall(r'\[\s*"(\w+)",\s*\{(.*?)\}\s*\]', node, re.S):
         kv = re.findall(r'(\w+):\s*"([^"]*)"', attrs)
         parts.append(f"<{tag} " + " ".join(f'{k}="{html.escape(v)}"' for k, v in kv if k != "key") + "/>")
     return ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
