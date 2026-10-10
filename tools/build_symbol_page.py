@@ -50,6 +50,10 @@ def svg(name: str) -> str:
 
 CUSTOM = os.path.join(ROOT, "tools", "custom_icons")
 
+# The drawing pad's background: the icons' 24-unit grid, with the 2-unit safe margin marked.
+PAD_GRID = ('<g class="grid">' + "".join(f'<path d="M{i} 0v24M0 {i}h24"/>' for i in range(2, 24, 2))
+            + '</g><rect class="safe" x="2" y="2" width="20" height="20" rx="1"/>')
+
 
 def custom_svgs(move_id: str) -> list[tuple[str, str]]:
     """Drawn custom symbols for a move: tools/custom_icons/<id>.svg and <id>-<variant>.svg, as (name, inline svg)."""
@@ -101,7 +105,24 @@ def main():
                 f'<div class="icons">{drawn_opts}{none_opt}</div>'
                 f'<div class="note" hidden><label for="note-{mid}">How should the symbol look?</label>'
                 f'<textarea id="note-{mid}" rows="3" data-move="{mid}" '
-                f'placeholder="Describe the symbol you want for {html.escape(label)}"></textarea></div></article>')
+                f'placeholder="Describe the symbol you want for {html.escape(label)}"></textarea>'
+                f'<div class="sketchrow"><div class="sketchwrap"><span class="sk-label">Sketch it (optional)</span>'
+                f'<svg class="pad" data-move="{mid}" viewBox="0 0 24 24" role="img" '
+                f'aria-label="Drawing pad for the {html.escape(label)} symbol">{PAD_GRID}<g class="ink"></g></svg>'
+                f'<div class="sk-tools"><button type="button" class="sk-btn" data-act="undo" data-move="{mid}">Undo</button>'
+                f'<button type="button" class="sk-btn" data-act="clear" data-move="{mid}">Clear</button></div></div>'
+                f'<div class="sketchwrap"><span class="sk-label">In the icon style</span>'
+                f'<div class="sk-preview" data-move="{mid}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="ink"></g></svg></div>'
+                f'<span class="sk-hint">Your lines at button size, with the icons\' line weight.</span></div>'
+                f'<div class="sketchwrap"><span class="sk-label">Reference image (optional)</span>'
+                f'<label class="drop" data-move="{mid}" for="file-{mid}" tabindex="0">'
+                f'<span class="drop-empty">Drop an image here, paste one, or click to choose</span>'
+                f'<img class="drop-img" alt="Reference image for the {html.escape(label)} symbol" hidden></label>'
+                f'<input type="file" id="file-{mid}" class="drop-file" data-move="{mid}" accept="image/*" hidden>'
+                f'<div class="sk-tools"><button type="button" class="sk-btn" data-act="noimg" data-move="{mid}">Remove image</button></div>'
+                f'</div></div>'
+                f'</div></article>')
         hue = GROUP_HUES[g]
         sections.append(
             f'<section class="group" style="--h:{hue}"><div class="ghead"><span class="swatch"></span>'
@@ -114,7 +135,7 @@ def main():
     print("wrote", OUT)
 
 
-PAGE = """<title>Move Symbols</title>
+PAGE = r"""<title>Move Symbols</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -170,6 +191,28 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .note label{font-size:13px;font-weight:700}
 .note textarea{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;resize:vertical;min-height:64px}
 .note textarea:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:1px}
+.sketchrow{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.sketchwrap{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sk-label{font-size:13px;font-weight:700}
+.pad{width:min(216px,100%);aspect-ratio:1;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:4px;touch-action:none;cursor:crosshair;display:block}
+.pad .grid path{stroke:var(--line);stroke-width:.06;fill:none}
+.pad .safe{fill:none;stroke:var(--muted);stroke-width:.06;stroke-dasharray:.4 .4}
+.pad .ink path{fill:none;stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h));stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.sk-tools{display:flex;gap:6px}
+.sk-btn{font:inherit;font-size:13px;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+.sk-btn:hover{border-color:var(--muted)}
+.sk-btn:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:2px}
+.sk-preview{display:flex;gap:12px;align-items:flex-end;color:var(--fg)}
+.sk-preview svg{width:48px;height:48px;border:1px solid var(--line);border-radius:4px;padding:6px;box-sizing:content-box;background:var(--surface)}
+.sk-hint{font-size:12px;color:var(--muted);max-width:22ch}
+.drop{width:min(216px,100%);aspect-ratio:1;border:2px dashed var(--line);border-radius:4px;display:grid;place-items:center;text-align:center;
+  padding:10px;box-sizing:border-box;color:var(--muted);font-size:13px;cursor:pointer;background:var(--bg);overflow:hidden}
+.drop:hover,.drop.over{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h))}
+.drop.over{background:oklch(var(--tint-l) var(--tint-c) var(--h))}
+.drop:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:2px}
+.drop.has{padding:0;border-style:solid}
+.drop-img{width:100%;height:100%;object-fit:contain;display:block}
+.drop-img[hidden],.drop-empty[hidden]{display:none}
 .state{margin-left:auto;font:400 11px var(--mono);color:var(--muted);white-space:nowrap}
 .move.chosen{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .55)}
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-block:10px;margin-top:16px;display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap;font-size:14px}
@@ -213,6 +256,8 @@ __SECTIONS__
     note.hidden = st.choice !== 'none';
     const ta = note.querySelector('textarea');
     if (document.activeElement !== ta) ta.value = st.note || '';
+    drawInk(id);
+    showRef(id);
     card.classList.toggle('chosen', !!st.choice);
     const badge = card.querySelector('.badge');
     if (!badge.dataset.orig) badge.dataset.orig = badge.innerHTML;
@@ -231,7 +276,9 @@ __SECTIONS__
     if (!db) { status(id, 'Saved in this browser'); return }
     status(id, 'Saving…');
     try {
-      await db.collection('choices').doc(id).set({ choice: st.choice || '', note: st.note || '', updated: new Date().toISOString() });
+      await db.collection('choices').doc(id).set({ choice: st.choice || '', note: st.note || '',
+        sketch: Array.isArray(st.sketch) ? st.sketch : [], ref: typeof st.ref === 'string' ? st.ref : '',
+        updated: new Date().toISOString() });
       status(id, 'Saved');
     } catch (e) {
       status(id, 'Saved in this browser only');
@@ -250,6 +297,140 @@ __SECTIONS__
     render(id); saveSoon(id, 0);
     if (st.choice === 'none') setTimeout(() => document.getElementById('note-' + id)?.focus(), 30);
   });
+  // ── Sketch pad: strokes kept as polylines in the icons' 24-unit grid, so Claude can read and redraw them ──
+  let drawing = null;                                   // {id, pad, stroke}
+  function cleanSketch(v) {
+    if (!Array.isArray(v)) return [];
+    return v.filter(s => Array.isArray(s) && s.length >= 2 && s.length <= 2000 && s.every(n => typeof n === 'number' && isFinite(n)))
+            .slice(0, 60);
+  }
+  const pathOf = s => {
+    let d = 'M' + s[0] + ' ' + s[1];
+    for (let i = 2; i < s.length; i += 2) d += 'L' + s[i] + ' ' + s[i + 1];
+    if (s.length === 2) d += 'h.01';                    // a tap is a dot
+    return d;
+  };
+  function drawInk(id) {
+    const st = state[id] || {};
+    const ink = (st.sketch || []).map(s => '<path d="' + pathOf(s) + '"/>').join('');
+    document.querySelectorAll('#m-' + id + ' .ink').forEach(g => { g.innerHTML = ink });
+  }
+  function padPoint(pad, e) {
+    const r = pad.getBoundingClientRect();
+    const x = Math.min(24, Math.max(0, (e.clientX - r.left) / r.width * 24));
+    const y = Math.min(24, Math.max(0, (e.clientY - r.top) / r.height * 24));
+    return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+  }
+  document.addEventListener('pointerdown', e => {
+    const pad = e.target.closest && e.target.closest('svg.pad'); if (!pad) return;
+    e.preventDefault();
+    const id = pad.dataset.move;
+    const st = state[id] = { ...(state[id] || {}) };
+    st.sketch = [...(st.sketch || []), padPoint(pad, e)];
+    if (st.sketch.length > 60) st.sketch = st.sketch.slice(-60);
+    drawing = { id, pad, stroke: st.sketch[st.sketch.length - 1] };
+    try { pad.setPointerCapture(e.pointerId) } catch {}
+    drawInk(id);
+  });
+  document.addEventListener('pointermove', e => {
+    if (!drawing) return;
+    const [x, y] = padPoint(drawing.pad, e);
+    const s = drawing.stroke, lx = s[s.length - 2], ly = s[s.length - 1];
+    if (Math.hypot(x - lx, y - ly) < 0.35 || s.length >= 2000) return;
+    s.push(x, y);
+    drawInk(drawing.id);
+  });
+  const endStroke = () => {
+    if (!drawing) return;
+    const id = drawing.id; drawing = null;
+    status(id, 'Sketch changed'); saveSoon(id, 500);
+  };
+  document.addEventListener('pointerup', endStroke);
+  document.addEventListener('pointercancel', endStroke);
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button.sk-btn[data-act="undo"], button.sk-btn[data-act="clear"]'); if (!b) return;
+    const id = b.dataset.move;
+    const st = state[id] = { ...(state[id] || {}) };
+    st.sketch = b.dataset.act === 'clear' ? [] : (st.sketch || []).slice(0, -1);
+    drawInk(id); saveSoon(id, 300);
+  });
+
+  // ── Reference image: shrunk in the browser and kept with the pick, so Claude can look at it ──
+  const cleanRef = v => (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : '');
+  function showRef(id) {
+    const card = document.getElementById('m-' + id); if (!card) return;
+    const ref = cleanRef((state[id] || {}).ref);
+    const drop = card.querySelector('.drop'), img = card.querySelector('.drop-img'), empty = card.querySelector('.drop-empty');
+    if (!drop) return;
+    if (ref) { if (img.getAttribute('src') !== ref) img.src = ref; img.hidden = false; empty.hidden = true; drop.classList.add('has') }
+    else { img.removeAttribute('src'); img.hidden = true; empty.hidden = false; drop.classList.remove('has') }
+  }
+  function shrink(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = () => {
+        URL.revokeObjectURL(url);
+        let side = 512, out = '';
+        for (let tries = 0; tries < 5; tries++) {
+          const k = Math.min(1, side / Math.max(im.naturalWidth, im.naturalHeight));
+          const c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+          const g = c.getContext('2d');
+          g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+          g.drawImage(im, 0, 0, c.width, c.height);
+          out = c.toDataURL('image/jpeg', 0.82);
+          if (out.length < 180000) break;
+          side = Math.round(side * 0.75);
+        }
+        resolve(out);
+      };
+      im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('not an image')) };
+      im.src = url;
+    });
+  }
+  async function takeImage(id, file) {
+    if (!file || !/^image\//.test(file.type)) { status(id, 'That file is not an image'); return }
+    status(id, 'Reading image…');
+    try {
+      const ref = await shrink(file);
+      state[id] = { ...(state[id] || {}), ref };
+      showRef(id); saveSoon(id, 0);
+    } catch { status(id, 'Could not read that image') }
+  }
+  document.addEventListener('dragover', e => {
+    const d = e.target.closest && e.target.closest('.drop'); if (!d) return;
+    e.preventDefault(); d.classList.add('over');
+  });
+  document.addEventListener('dragleave', e => {
+    const d = e.target.closest && e.target.closest('.drop'); if (d && !d.contains(e.relatedTarget)) d.classList.remove('over');
+  });
+  document.addEventListener('drop', e => {
+    const d = e.target.closest && e.target.closest('.drop'); if (!d) return;
+    e.preventDefault(); d.classList.remove('over');
+    takeImage(d.dataset.move, e.dataTransfer && e.dataTransfer.files[0]);
+  });
+  document.addEventListener('change', e => {
+    const f = e.target.closest && e.target.closest('input.drop-file'); if (!f) return;
+    takeImage(f.dataset.move, f.files[0]); f.value = '';
+  });
+  document.addEventListener('keydown', e => {
+    const d = e.target.closest && e.target.closest('.drop');
+    if (d && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); document.getElementById('file-' + d.dataset.move)?.click() }
+  });
+  document.addEventListener('paste', e => {
+    const card = (document.activeElement && document.activeElement.closest('.move')) || null;
+    const file = [...((e.clipboardData && e.clipboardData.files) || [])].find(f => /^image\//.test(f.type));
+    if (!card || !file || card.querySelector('.note').hidden) return;
+    e.preventDefault(); takeImage(card.dataset.move, file);
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button.sk-btn[data-act="noimg"]'); if (!b) return;
+    const id = b.dataset.move;
+    state[id] = { ...(state[id] || {}), ref: '' };
+    showRef(id); saveSoon(id, 0);
+  });
+
   document.addEventListener('input', e => {
     const ta = e.target.closest('textarea[data-move]'); if (!ta) return;
     const id = ta.dataset.move;
@@ -274,7 +455,9 @@ __SECTIONS__
         const id = d.id;
         if (pending[id]) return;               // a local edit is on its way
         const v = d.data() || {};
-        state[id] = { choice: typeof v.choice === 'string' ? v.choice : '', note: typeof v.note === 'string' ? v.note : '' };
+        if (drawing && drawing.id === id) return;   // mid-stroke: keep the local lines
+        state[id] = { choice: typeof v.choice === 'string' ? v.choice : '', note: typeof v.note === 'string' ? v.note : '',
+                      sketch: cleanSketch(v.sketch), ref: cleanRef(v.ref) };
         render(id);
       });
       lsWrite();
