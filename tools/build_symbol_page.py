@@ -108,7 +108,7 @@ def main():
                 f'<textarea id="note-{mid}" rows="3" data-move="{mid}" '
                 f'placeholder="Describe the symbol you want for {html.escape(label)}"></textarea>'
                 f'<div class="sketchrow"><div class="sketchwrap padwrap"><span class="sk-label">Sketch it (optional)</span>'
-                '<span class="sk-hint wide">The icon set’s own 24 by 24 grid. Lines draw at the icons’ thickness, '
+                '<span class="sk-hint wide">The icon set’s own 24 by 24 grid. Your pen draws a thin line; the faint band around it is the icons’ real thickness, '
                 'and the dashed square is the 2-square margin they keep clear.</span>'
                 f'<svg class="pad" data-move="{mid}" viewBox="0 0 24 24" role="img" '
                 f'aria-label="Drawing pad for the {html.escape(label)} symbol">{PAD_GRID}<g class="ink"></g></svg>'
@@ -208,7 +208,9 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .pad .grid .minor{stroke:var(--line);stroke-width:.04}
 .pad .grid .major{stroke:var(--line);stroke-width:.1}
 .pad .safe{fill:none;stroke:var(--muted);stroke-width:.06;stroke-dasharray:.4 .4}
-.pad .ink path{fill:none;stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .85);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pad .ink path.ghost{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .16);stroke-width:2}
+.pad .ink path.line{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h));stroke-width:.45}
+.pad .ink path{fill:none;stroke-linecap:round;stroke-linejoin:round}
 .sk-tools{display:flex;gap:6px;flex-wrap:wrap}
 .sk-btn[aria-pressed="true"]{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h));background:oklch(var(--tint-l) var(--tint-c) var(--h))}
 .pad.erasing{cursor:cell}
@@ -328,7 +330,11 @@ __SECTIONS__
   function drawInk(id) {
     const st = state[id] || {};
     const ink = (st.sketch || []).map(s => '<path d="' + pathOf(s) + '"/>').join('');
-    document.querySelectorAll('#m-' + id + ' .ink').forEach(g => { g.innerHTML = ink });
+    // On the pad: a thin pen line over a faint band at the icons' real thickness. The preview shows the real thing.
+    const padInk = (st.sketch || []).map(s => '<path class="ghost" d="' + pathOf(s) + '"/>').join('')
+                 + (st.sketch || []).map(s => '<path class="line" d="' + pathOf(s) + '"/>').join('');
+    document.querySelectorAll('#m-' + id + ' .pad .ink').forEach(g => { g.innerHTML = padInk });
+    document.querySelectorAll('#m-' + id + ' .sk-preview .ink').forEach(g => { g.innerHTML = ink });
   }
   function padPoint(pad, e) {
     const r = pad.getBoundingClientRect();
