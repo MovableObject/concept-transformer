@@ -94,7 +94,8 @@ def main():
 
             lucide = "".join(option("lucide:" + n, n, svg(n), str(i + 1)) for i, n in enumerate(icons))
             drawn_opts = "".join(option(n.replace(" ", "-"), n, sv) for n, sv in drawn)
-            none_opt = option("none", "none, describe it", '<span class="nonebox"></span>')
+            none_opt = (option("generated", "made from sketch", "").replace('class="ic"', 'class="ic gen-opt" hidden', 1)
+                        + option("none", "none, describe it", '<span class="nonebox"></span>'))
             cards.append(
                 f'<article class="move" id="m-{mid}" data-move="{mid}"><header><div class="badge">'
                 f'{drawn[0][1] if drawn else svg(icons[0])}</div><h3>{html.escape(label)}</h3>'
@@ -127,6 +128,15 @@ def main():
                 f'<input type="file" id="file-{mid}" class="drop-file" data-move="{mid}" accept="image/*" hidden>'
                 f'<div class="sk-tools"><button type="button" class="sk-btn" data-act="noimg" data-move="{mid}">Remove image</button></div>'
                 f'</div></div>'
+                f'<div class="make" data-move="{mid}"><div class="make-row">'
+                f'<button type="button" class="make-btn" data-move="{mid}">Make the icon</button>'
+                f'<button type="button" class="sk-btn make-stop" data-move="{mid}" hidden>Stop</button>'
+                f'<span class="make-status" aria-live="polite"></span></div>'
+                f'<div class="make-result" hidden><div class="gen-glyph"></div><div class="gen-glyph big"></div>'
+                f'<div class="make-side"><p class="gen-why"></p><div class="sk-tools">'
+                f'<button type="button" class="sk-btn" data-act="usegen" data-move="{mid}">Use this icon</button></div></div></div>'
+                f'<p class="make-hint">Claude turns your sketch, description and image into an icon in the same style and line '
+                f'weight as the others. Change the drawing and press it again to remake it.</p></div>'
                 f'</div></article>')
         hue = GROUP_HUES[g]
         sections.append(
@@ -229,6 +239,22 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .drop.has{padding:0;border-style:solid}
 .drop-img{width:100%;height:100%;object-fit:contain;display:block}
 .drop-img[hidden],.drop-empty[hidden]{display:none}
+body:not(.can-make) .make{display:none}
+.make{display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--line);padding-top:10px}
+.make-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.make-btn{font:inherit;font-weight:700;font-size:14px;color:oklch(0.99 0 0);background:oklch(0.5 0.17 var(--h));border:0;border-radius:4px;padding:7px 14px;cursor:pointer}
+.make-btn:hover{background:oklch(0.45 0.17 var(--h))}
+.make-btn:disabled{opacity:.55;cursor:default}
+.make-btn:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:2px}
+.make-status{font-size:13px;color:var(--muted)}
+.make-result{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.make-result[hidden],.make-stop[hidden],.gen-opt[hidden]{display:none}
+.gen-glyph{width:24px;height:24px;color:oklch(var(--glyph-l) var(--glyph-c) var(--h))}
+.gen-glyph.big{width:72px;height:72px;border:1px solid var(--line);border-radius:4px;padding:8px;box-sizing:content-box;background:var(--surface)}
+.gen-glyph svg{width:100%;height:100%;display:block}
+.make-side{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 220px}
+.gen-why{margin:0;font-size:13px;color:var(--muted)}
+.make-hint{margin:0;font-size:12px;color:var(--muted);max-width:70ch}
 .state{margin-left:auto;font:400 11px var(--mono);color:var(--muted);white-space:nowrap}
 .move.chosen{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .55)}
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-block:10px;margin-top:16px;display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap;font-size:14px}
@@ -274,6 +300,7 @@ __SECTIONS__
     if (document.activeElement !== ta) ta.value = st.note || '';
     drawInk(id);
     showRef(id);
+    showGenerated(id);
     card.classList.toggle('chosen', !!st.choice);
     card.classList.toggle('wide', st.choice === 'none');   // room for a big drawing pad
     const badge = card.querySelector('.badge');
@@ -295,6 +322,7 @@ __SECTIONS__
     try {
       await db.collection('choices').doc(id).set({ choice: st.choice || '', note: st.note || '',
         sketch: Array.isArray(st.sketch) ? st.sketch : [], ref: typeof st.ref === 'string' ? st.ref : '',
+        generated: typeof st.generated === 'string' ? st.generated : '', genWhy: typeof st.genWhy === 'string' ? st.genWhy : '',
         updated: new Date().toISOString() });
       status(id, 'Saved');
     } catch (e) {
@@ -520,6 +548,179 @@ __SECTIONS__
     showRef(id); saveSoon(id, 0);
   });
 
+  // ── Make the icon: Claude turns the sketch, description and reference image into an icon in the set's style ──
+  let sampler = null;
+  const running = {};                                   // move id -> AbortController
+  const SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
+                 + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  const SHAPES = new Set(['path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon', 'g']);
+  const ATTRS = new Set(['d', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'width', 'height', 'x1', 'y1', 'x2', 'y2', 'points',
+                         'transform', 'stroke-dasharray', 'stroke-dashoffset', 'fill', 'fill-rule']);
+  // Keep only plain drawing elements and geometry attributes; anything else Claude wrote is dropped.
+  function cleanIcon(markup) {
+    if (!markup || markup.length > 20000) return '';
+    const doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + markup + '</svg>', 'image/svg+xml');
+    const root = doc.documentElement;
+    if (!root || root.querySelector('parsererror') || root.nodeName === 'parsererror') return '';
+    const out = [];
+    const walk = (el, depth) => {
+      for (const c of [...el.children]) {
+        const name = c.localName;
+        if (!SHAPES.has(name) || depth > 3) continue;
+        const attrs = [];
+        for (const a of [...c.attributes]) {
+          const k = a.name.toLowerCase(), v = a.value;
+          if (!ATTRS.has(k) || v.length > 4000 || /[<>"]/.test(v) || /url\s*\(|javascript:/i.test(v)) continue;
+          if (k === 'fill' && !/^(none|currentColor)$/.test(v)) continue;
+          attrs.push(k + '="' + v + '"');
+        }
+        if (name === 'g') { out.push('<g ' + attrs.filter(a => a.startsWith('transform')).join(' ') + '>'); walk(c, depth + 1); out.push('</g>') }
+        else out.push('<' + name + (attrs.length ? ' ' + attrs.join(' ') : '') + '/>');
+      }
+    };
+    walk(root, 0);
+    const s = out.join('');
+    return /<(path|circle|ellipse|rect|line|polyline|polygon)/.test(s) ? s : '';
+  }
+  function showGenerated(id) {
+    const card = document.getElementById('m-' + id); if (!card) return;
+    const st = state[id] || {};
+    const g = cleanIcon(st.generated || '');
+    const opt = card.querySelector('.gen-opt'), res = card.querySelector('.make-result');
+    if (!opt || !res) return;
+    opt.hidden = !g; res.hidden = !g;
+    if (!g) return;
+    const full = SVG_OPEN + g + '</svg>';
+    const glyph = opt.querySelector('.glyph');
+    if (glyph.dataset.src !== g) { glyph.innerHTML = full; glyph.dataset.src = g }
+    card.querySelectorAll('.gen-glyph').forEach(el => { if (el.dataset.src !== g) { el.innerHTML = full; el.dataset.src = g } });
+    card.querySelector('.gen-why').textContent = st.genWhy || '';
+  }
+  // The sketch as a picture, for Claude to look at alongside the coordinates.
+  function sketchPng(sketch) {
+    return new Promise(resolve => {
+      const S = 16, c = document.createElement('canvas');
+      c.width = c.height = 24 * S;
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      g.strokeStyle = '#e5e5e5'; g.lineWidth = 1;
+      for (let i = 1; i < 24; i++) { g.beginPath(); g.moveTo(i * S, 0); g.lineTo(i * S, c.height); g.moveTo(0, i * S); g.lineTo(c.width, i * S); g.stroke() }
+      g.strokeStyle = '#111'; g.lineWidth = 0.6 * S; g.lineCap = g.lineJoin = 'round';
+      for (const s of sketch) {
+        g.beginPath(); g.moveTo(s[0] * S, s[1] * S);
+        for (let i = 2; i < s.length; i += 2) g.lineTo(s[i] * S, s[i + 1] * S);
+        if (s.length === 2) g.lineTo(s[0] * S + 0.1, s[1] * S);
+        g.stroke();
+      }
+      c.toBlob(b => resolve(b), 'image/png');
+    });
+  }
+  function dataUrlBlob(u) {
+    const m = /^data:([^;]+);base64,(.*)$/.exec(u || ''); if (!m) return null;
+    const bin = atob(m[2]), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: m[1] });
+  }
+  const round1 = n => Math.round(n * 10) / 10;
+  function sketchText(sketch) {
+    return sketch.map((s, i) => {
+      const pts = [];
+      const step = s.length > 80 ? Math.ceil(s.length / 80) * 2 : 2;     // keep long strokes readable
+      for (let k = 0; k < s.length; k += step) pts.push(round1(s[k]) + ',' + round1(s[k + 1]));
+      if ((s.length - 2) % step !== 0) pts.push(round1(s[s.length - 2]) + ',' + round1(s[s.length - 1]));
+      return 'stroke ' + (i + 1) + ': ' + pts.join(' ');
+    }).join('\n');
+  }
+  function buildPrompt(id, hasSketchPic, hasRef) {
+    const card = document.getElementById('m-' + id);
+    const st = state[id] || {};
+    const name = card.querySelector('h3').textContent;
+    const what = card.querySelector('.what').textContent;
+    const examples = [...card.querySelectorAll('button.ic[data-choice^="lucide:"] .glyph svg')].slice(0, 3)
+      .map(s => s.innerHTML.replace(/\s+/g, ' ')).join('\n');
+    return [
+      'Draw one small UI icon as SVG markup, in the exact style of the Lucide icon set as this site uses it.',
+      '',
+      'The icon is for a creative move called "' + name + '": ' + what,
+      st.note ? 'What the person wants the icon to show: ' + st.note : '',
+      st.sketch && st.sketch.length
+        ? 'They sketched it on the icon grid (24 by 24 units, x to the right, y down). Their strokes, as x,y points:\n' + sketchText(st.sketch)
+          + (hasSketchPic ? '\nThe first image is the same sketch drawn on the grid.' : '')
+        : '',
+      hasRef ? 'The ' + (hasSketchPic ? 'second' : 'first') + ' image is a reference picture they chose. Borrow its idea, not its detail.' : '',
+      '',
+      'Follow the sketch: keep its shapes, their count, their sizes relative to each other and where they sit. Clean it up into',
+      'crisp geometry: straight lines straight, circles round, matching shapes the same size, things that should line up lined up.',
+      '',
+      'Style rules, all required:',
+      '- viewBox 0 0 24 24. Every shape stays inside x 2 to 22 and y 2 to 22.',
+      '- Lines only, 1.5 units thick, round ends and joins, no fill. A filled shape only for a tiny dot or a deliberate solid accent.',
+      '- Separate shapes keep at least 2 units between their centerlines, so a visible gap stays between them at this thickness.',
+      '- Rectangles get rx="1" unless the sketch is clearly sharp. Use whole or half units where you can.',
+      '- A dotted outline is stroke-dasharray="0 N" (zero-length dashes make round dots), with N chosen so the dots space evenly.',
+      '- Few elements; simple, readable at 24 pixels.',
+      '',
+      'These are the icon set\'s own icons for this move, for style only (they are drawn at thickness 1.5, like yours):',
+      examples,
+      '',
+      'Reply with only a JSON object: {"elements": "<the SVG child elements only, no <svg> wrapper>", "why": "one short sentence on what you kept from the sketch"}',
+      'Allowed elements: path, circle, ellipse, rect, line, polyline, polygon, g. Do not set stroke, stroke-width, stroke-linecap or color; the wrapper sets them.',
+    ].filter(Boolean).join('\n');
+  }
+  async function makeIcon(id) {
+    const card = document.getElementById('m-' + id);
+    const st = state[id] || {};
+    const statusEl = card.querySelector('.make-status'), btn = card.querySelector('.make-btn'), stop = card.querySelector('.make-stop');
+    if (!sampler) return;
+    if (!(st.sketch && st.sketch.length) && !st.note && !st.ref) { statusEl.textContent = 'Sketch it or describe it first.'; return }
+    if (running[id]) return;
+    const ctl = running[id] = new AbortController();
+    btn.disabled = true; stop.hidden = false; statusEl.textContent = 'Drawing… this takes up to a minute.';
+    try {
+      const images = [];
+      if (st.sketch && st.sketch.length) images.push(await sketchPng(st.sketch));
+      const refBlob = dataUrlBlob(st.ref);
+      if (refBlob) images.push(refBlob);
+      let canImages = false;
+      try { canImages = !!(await sampler.limits()).images } catch {}
+      const sendImages = canImages ? images : [];
+      const hasSketchPic = canImages && !!(st.sketch && st.sketch.length);
+      const prompt = buildPrompt(id, hasSketchPic, canImages && !!refBlob);
+      const reply = await sampler.json(prompt, { signal: ctl.signal, modelTier: 'complex', cache: false,
+                                                 ...(sendImages.length ? { images: sendImages } : {}) });
+      const g = cleanIcon(reply && typeof reply.elements === 'string' ? reply.elements : '');
+      if (!g) { statusEl.textContent = 'That came back without a usable drawing. Press Make the icon to try again.'; return }
+      state[id] = { ...(state[id] || {}), generated: g, genWhy: reply && typeof reply.why === 'string' ? reply.why.slice(0, 400) : '' };
+      showGenerated(id);
+      statusEl.textContent = 'Done. Use it below, or change the sketch and make it again.';
+      saveSoon(id, 0);
+    } catch (e) {
+      const code = e && e.code;
+      statusEl.textContent =
+        code === 'cancelled' ? 'Stopped.' :
+        code === 'not_granted' || code === 'sampling_disabled' ? 'Claude is not allowed on this page, so icons cannot be made here.' :
+        code === 'rate_limited' ? 'Too many requests just now. Wait a little and press it again.' :
+        code === 'invalid_json' ? 'That came back without a usable drawing. Press Make the icon to try again.' :
+        code === 'refused' ? 'Claude declined this one. Try a different description.' :
+        'Something went wrong. Press Make the icon to try again.';
+    } finally {
+      delete running[id];
+      btn.disabled = false; stop.hidden = true;
+    }
+  }
+  document.addEventListener('click', e => {
+    const mk = e.target.closest && e.target.closest('button.make-btn');
+    if (mk) { makeIcon(mk.dataset.move); return }
+    const sp = e.target.closest && e.target.closest('button.make-stop');
+    if (sp) { running[sp.dataset.move]?.abort(); return }
+    const use = e.target.closest && e.target.closest('button.sk-btn[data-act="usegen"]');
+    if (use) {
+      const id = use.dataset.move;
+      state[id] = { ...(state[id] || {}), choice: 'generated' };
+      render(id); saveSoon(id, 0);
+    }
+  });
+
   document.addEventListener('input', e => {
     const ta = e.target.closest('textarea[data-move]'); if (!ta) return;
     const id = ta.dataset.move;
@@ -536,6 +737,8 @@ __SECTIONS__
   where.textContent = 'Picks are kept in this browser.';
 
   (async () => {
+    try { sampler = window.claude && window.claude.use ? await window.claude.use('sample') : null } catch { sampler = null }
+    if (sampler) document.body.classList.add('can-make');
     try { db = window.claude && window.claude.use ? await window.claude.use('db') : null } catch { db = null }
     if (!db) return;
     where.textContent = 'Picks save as you click, and Claude can read them.';
@@ -546,7 +749,9 @@ __SECTIONS__
         const v = d.data() || {};
         if (drawing && drawing.id === id) return;   // mid-stroke: keep the local lines
         state[id] = { choice: typeof v.choice === 'string' ? v.choice : '', note: typeof v.note === 'string' ? v.note : '',
-                      sketch: cleanSketch(v.sketch), ref: cleanRef(v.ref) };
+                      sketch: cleanSketch(v.sketch), ref: cleanRef(v.ref),
+                      generated: cleanIcon(typeof v.generated === 'string' ? v.generated : ''),
+                      genWhy: typeof v.genWhy === 'string' ? v.genWhy.slice(0, 400) : '' };
         render(id);
       });
       lsWrite();
