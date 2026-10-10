@@ -132,6 +132,8 @@ def main():
                 f'<button type="button" class="make-btn" data-move="{mid}">Make the icon</button>'
                 f'<button type="button" class="sk-btn make-stop" data-move="{mid}" hidden>Stop</button>'
                 f'<span class="make-status" aria-live="polite"></span></div>'
+                f'<label class="fallback"><input type="checkbox" class="use-idea" data-move="{mid}"> '
+                f'When I haven’t written a description, use the written idea above instead</label>'
                 f'<div class="make-result" hidden><div class="gen-glyph"></div><div class="gen-glyph big"></div>'
                 f'<div class="make-side"><p class="gen-why"></p><div class="sk-tools">'
                 f'<button type="button" class="sk-btn" data-act="usegen" data-move="{mid}">Use this icon</button></div></div></div>'
@@ -254,6 +256,8 @@ body:not(.can-make) .make{display:none}
 .gen-glyph svg{width:100%;height:100%;display:block}
 .make-side{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 220px}
 .gen-why{margin:0;font-size:13px;color:var(--muted)}
+.fallback{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;max-width:70ch}
+.fallback input{margin-top:3px;accent-color:oklch(0.5 0.17 var(--h));width:15px;height:15px;flex:none}
 .make-hint{margin:0;font-size:12px;color:var(--muted);max-width:70ch}
 .state{margin-left:auto;font:400 11px var(--mono);color:var(--muted);white-space:nowrap}
 .move.chosen{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .55)}
@@ -301,6 +305,7 @@ __SECTIONS__
     drawInk(id);
     showRef(id);
     showGenerated(id);
+    showFallback(id);
     card.classList.toggle('chosen', !!st.choice);
     card.classList.toggle('wide', st.choice === 'none');   // room for a big drawing pad
     const badge = card.querySelector('.badge');
@@ -323,6 +328,7 @@ __SECTIONS__
       await db.collection('choices').doc(id).set({ choice: st.choice || '', note: st.note || '',
         sketch: Array.isArray(st.sketch) ? st.sketch : [], ref: typeof st.ref === 'string' ? st.ref : '',
         generated: typeof st.generated === 'string' ? st.generated : '', genWhy: typeof st.genWhy === 'string' ? st.genWhy : '',
+        useIdea: !!st.useIdea,
         updated: new Date().toISOString() });
       status(id, 'Saved');
     } catch (e) {
@@ -596,6 +602,16 @@ __SECTIONS__
     card.querySelectorAll('.gen-glyph').forEach(el => { if (el.dataset.src !== g) { el.innerHTML = full; el.dataset.src = g } });
     card.querySelector('.gen-why').textContent = st.genWhy || '';
   }
+  function showFallback(id) {
+    const box = document.querySelector('#m-' + id + ' input.use-idea');
+    if (box) box.checked = !!(state[id] || {}).useIdea;
+  }
+  document.addEventListener('change', e => {
+    const box = e.target.closest && e.target.closest('input.use-idea'); if (!box) return;
+    const id = box.dataset.move;
+    state[id] = { ...(state[id] || {}), useIdea: box.checked };
+    saveSoon(id, 0);
+  });
   // The sketch as a picture, for Claude to look at alongside the coordinates.
   function sketchPng(sketch) {
     return new Promise(resolve => {
@@ -642,7 +658,9 @@ __SECTIONS__
       'Draw one small UI icon as SVG markup, in the exact style of the Lucide icon set as this site uses it.',
       '',
       'The icon is for a creative move called "' + name + '": ' + what,
-      st.note ? 'What the person wants the icon to show: ' + st.note : '',
+      st.note ? 'What the person wants the icon to show: ' + st.note
+        : st.useIdea ? 'An idea for what the icon could show (a suggestion; where the sketch differs, follow the sketch): '
+                       + card.querySelector('.desc').textContent : '',
       st.sketch && st.sketch.length
         ? 'They sketched it on the icon grid (24 by 24 units, x to the right, y down). Their strokes, as x,y points:\n' + sketchText(st.sketch)
           + (hasSketchPic ? '\nThe first image is the same sketch drawn on the grid.' : '')
@@ -672,7 +690,9 @@ __SECTIONS__
     const st = state[id] || {};
     const statusEl = card.querySelector('.make-status'), btn = card.querySelector('.make-btn'), stop = card.querySelector('.make-stop');
     if (!sampler) return;
-    if (!(st.sketch && st.sketch.length) && !st.note && !st.ref) { statusEl.textContent = 'Sketch it or describe it first.'; return }
+    if (!(st.sketch && st.sketch.length) && !st.note && !st.ref && !st.useIdea) {
+      statusEl.textContent = 'Sketch it, describe it, or tick the box to use the written idea.'; return
+    }
     if (running[id]) return;
     const ctl = running[id] = new AbortController();
     btn.disabled = true; stop.hidden = false; statusEl.textContent = 'Drawing… this takes up to a minute.';
@@ -751,7 +771,7 @@ __SECTIONS__
         state[id] = { choice: typeof v.choice === 'string' ? v.choice : '', note: typeof v.note === 'string' ? v.note : '',
                       sketch: cleanSketch(v.sketch), ref: cleanRef(v.ref),
                       generated: cleanIcon(typeof v.generated === 'string' ? v.generated : ''),
-                      genWhy: typeof v.genWhy === 'string' ? v.genWhy.slice(0, 400) : '' };
+                      genWhy: typeof v.genWhy === 'string' ? v.genWhy.slice(0, 400) : '', useIdea: v.useIdea === true };
         render(id);
       });
       lsWrite();
