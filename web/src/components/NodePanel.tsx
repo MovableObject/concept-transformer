@@ -1,6 +1,6 @@
 // The selected box in full, with what can be done to it.
 import { useState } from 'react'
-import { Copy, Flag, Pencil, Plus, RotateCw, ThumbsDown, ThumbsUp, Trash2, Volume2, Repeat } from 'lucide-react'
+import { Copy, Pencil, Plus, RotateCw, ThumbsDown, ThumbsUp, Trash2, Volume2, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { labelOf, moveById, useMoves } from '@/lib/api'
@@ -10,6 +10,7 @@ import { resultsOf, useGraph } from '@/store/graph'
 import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
 import { ChangeView } from './ChangeView'
+import { MoveIcon } from './MoveIcon'
 
 let speaking: string | null = null
 function speak(text: string, key: string, set: (k: string | null) => void) {
@@ -65,7 +66,7 @@ export function NodePanel() {
     return (
       <div className="space-y-1.5 border-b border-border px-4 py-3">
         <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t.engine || 'Transform'}</div>
-        <div className="text-base font-semibold text-chart-1">{t.move}</div>
+        <div className="flex items-center gap-2 text-base font-semibold text-chart-1">{t.moveIds.map((mid) => <MoveIcon key={mid} id={mid} className="size-6" />)}<span>{t.move}</span></div>
         {blurb && <p className="text-[13px] text-muted-foreground">{blurb}</p>}
         {t.note && <p className="text-[13px] text-muted-foreground">{t.note}</p>}
         {t.status === 'error' && <p className="text-[13px] text-destructive">{t.error}</p>}
@@ -114,7 +115,7 @@ export function NodePanel() {
           <>
             {finisher && (
               <Button size="sm" variant="secondary" disabled={busy} title={finisher.blurb[mode]}
-                onClick={() => void runMove('visualize', { parents: [n.id] })}><Flag />{labelOf(finisher, mode)}</Button>
+                onClick={() => void runMove('visualize', { parents: [n.id] })}><MoveIcon id="visualize" />{labelOf(finisher, mode)}</Button>
             )}
             <Button size="sm" variant={n.verdict === 'kept' ? 'default' : 'outline'} title="Keep: the engine aims for ideas like this"
               onClick={() => store.setVerdict(n.id, n.verdict === 'kept' ? undefined : 'kept')}><ThumbsUp />{n.verdict === 'kept' ? 'Kept' : 'Keep'}</Button>

@@ -8,6 +8,7 @@ import { pick } from '@/lib/press'
 import type { MoveDef } from '@/lib/types'
 import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
+import { GroupDot, MoveIcon } from './MoveIcon'
 
 const EVIDENCE: Record<string, string> = {
   strong: 'Tested strong in the studio’s blind tests.',
@@ -50,11 +51,11 @@ export function MoveButton({ m, compact, onDone }: { m: MoveDef; compact?: boole
       <TooltipTrigger asChild>
         <Button
           variant="outline" size="sm" disabled={disabled} data-move={m.id}
-          className={cn('h-7 px-2.5 text-[13px] font-medium', compact && 'h-7', picked && 'border-primary bg-primary/20',
+          className={cn('h-7 gap-1.5 px-2 text-[13px] font-medium', compact && 'h-7', picked && 'border-primary bg-primary/20',
             m.inputs === 2 && 'border-dashed')}
           onClick={() => { pick(m); if (!useSettings.getState().stacking) onDone?.() }}
         >
-          {labelOf(m, mode)}
+          <MoveIcon id={m.id} />{labelOf(m, mode)}
         </Button>
       </TooltipTrigger>
       <TooltipContent side="right"><MoveTip m={m} /></TooltipContent>
@@ -87,7 +88,7 @@ export function MoveGroups({ compact, onDone, only }: { compact?: boolean; onDon
           <div key={g}>
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
-                <h3 className="mb-1.5 w-fit cursor-help text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{g}</h3>
+                <h3 className="mb-1.5 flex w-fit cursor-help items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"><GroupDot group={g} />{g}</h3>
               </TooltipTrigger>
               {GROUP_TIPS[g] && <TooltipContent side="right" className="max-w-72 normal-case">{GROUP_TIPS[g]}</TooltipContent>}
             </Tooltip>

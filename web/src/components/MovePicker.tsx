@@ -7,6 +7,7 @@ import { nodeOf, useGraph } from '@/store/graph'
 import { DEFAULT_WORDS, useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
 import { FieldInput, MoveGroups, MoveTip } from './MoveGroups'
+import { MoveIcon } from './MoveIcon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 export function MovePicker({ onDone }: { onDone?: () => void }) {
@@ -66,7 +67,7 @@ export function CollisionDialog() {
             {two.map((m) => (
               <Tooltip key={m.id} delayDuration={400}>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={busy} onClick={() => void runMove(m.id, { parents: [pair.a, pair.b] })}>{labelOf(m, mode)}</Button>
+                  <Button variant="outline" size="sm" disabled={busy} onClick={() => void runMove(m.id, { parents: [pair.a, pair.b] })}><MoveIcon id={m.id} />{labelOf(m, mode)}</Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom"><MoveTip m={m} /></TooltipContent>
               </Tooltip>

@@ -8,6 +8,7 @@ import { C_W, S_W, T_W } from '@/lib/layout'
 import { resultsOf, shownResult, useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
 import { MovePicker } from '../MovePicker'
+import { MoveIcon } from '../MoveIcon'
 
 const handleCls = '!opacity-0 group-hover:!opacity-100 [.selected_&]:!opacity-100'
 
@@ -77,7 +78,10 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
       n.status === 'error' ? 'border-destructive' : n.status === 'working' ? 'border-muted-foreground' : 'border-chart-3',
       n.parent2 && 'border-chart-2', selected && '!border-solid !border-primary ring-1 ring-primary')} style={{ width: T_W }}>
       <Handle type="target" position={Position.Left} className="!opacity-0" isConnectable={false} />
-      <div className="text-[12px] font-semibold leading-tight text-chart-1 line-clamp-3">{n.move}</div>
+      <div className="flex items-start gap-1.5">
+        {n.moveIds.length > 0 && <span className="mt-[-1px] flex shrink-0 gap-0.5">{n.moveIds.map((mid) => <MoveIcon key={mid} id={mid} className="size-5" />)}</span>}
+        <div className="text-[12px] font-semibold leading-tight text-chart-1 line-clamp-3">{n.move}</div>
+      </div>
       {shownTag && <div className="mt-1 text-[11px] leading-tight text-muted-foreground line-clamp-2">{shownTag}</div>}
       {n.status === 'working' && <div className="mt-1 flex items-center gap-1 text-[11px] italic text-muted-foreground"><Loader2 className="size-3 animate-spin" />working…</div>}
       {n.status === 'error' && <div className="mt-1 text-[11px] italic text-destructive">failed, select for details</div>}
