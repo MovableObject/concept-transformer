@@ -1,4 +1,4 @@
-"""Draw the custom move symbols in the Lucide style (24 grid, 2-unit round strokes, no fill unless noted).
+"""Draw the custom move symbols in the Lucide style (24 grid, 1.5-unit round strokes as the site uses, no fill unless noted).
 
 Each entry is the inner SVG markup for one move, drawn from its description in tools/symbol_picks.py.
 Writes tools/custom_icons/<move id>.svg (Substitute was drawn by hand first and is left as it is).
@@ -9,7 +9,7 @@ import os
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "custom_icons")
 HEAD = ('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" '
-        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">')
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">')
 DASH = 'stroke-dasharray="2 3"'
 
 ICONS = {

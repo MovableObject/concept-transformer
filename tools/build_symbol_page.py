@@ -44,7 +44,7 @@ def svg(name: str) -> str:
     for tag, attrs in re.findall(r'\[\s*"(\w+)",\s*\{(.*?)\}\s*\]', node, re.S):
         kv = re.findall(r'(\w+):\s*"([^"]*)"', attrs)
         parts.append(f"<{tag} " + " ".join(f'{k}="{html.escape(v)}"' for k, v in kv if k != "key") + "/>")
-    return ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    return ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" '
             'stroke-linejoin="round" aria-hidden="true">' + "".join(parts) + "</svg>")
 
 
@@ -118,7 +118,7 @@ def main():
                 f'<button type="button" class="sk-btn" data-act="clear" data-move="{mid}">Clear</button></div></div>'
                 f'<div class="sketchwrap"><span class="sk-label">In the icon style</span>'
                 f'<div class="sk-preview" data-move="{mid}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="ink"></g></svg></div>'
+                f'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="ink"></g></svg></div>'
                 f'<span class="sk-hint">Your lines at button size, with the icons\' line weight.</span></div>'
                 f'<div class="sketchwrap"><span class="sk-label">Reference image (optional)</span>'
                 f'<label class="drop" data-move="{mid}" for="file-{mid}" tabindex="0">'
@@ -208,7 +208,7 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .pad .grid .minor{stroke:var(--line);stroke-width:.04}
 .pad .grid .major{stroke:var(--line);stroke-width:.1}
 .pad .safe{fill:none;stroke:var(--muted);stroke-width:.06;stroke-dasharray:.4 .4}
-.pad .ink path.ghost{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .16);stroke-width:2}
+.pad .ink path.ghost{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .16);stroke-width:1.5}
 .pad .ink path.line{stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h));stroke-width:.45}
 .pad .ink path{fill:none;stroke-linecap:round;stroke-linejoin:round}
 .sk-tools{display:flex;gap:6px;flex-wrap:wrap}
