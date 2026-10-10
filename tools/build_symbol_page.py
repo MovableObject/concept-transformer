@@ -48,6 +48,25 @@ def svg(name: str) -> str:
             'stroke-linejoin="round" aria-hidden="true">' + "".join(parts) + "</svg>")
 
 
+CUSTOM = os.path.join(ROOT, "tools", "custom_icons")
+
+
+def custom_svgs(move_id: str) -> list[tuple[str, str]]:
+    """Drawn custom symbols for a move: tools/custom_icons/<id>.svg and <id>-<variant>.svg, as (name, inline svg)."""
+    if not os.path.isdir(CUSTOM):
+        return []
+    out = []
+    for f in sorted(os.listdir(CUSTOM), key=lambda f: (f[:-4] != move_id, f)):
+        stem = f[:-4]
+        if f.endswith(".svg") and (stem == move_id or stem.startswith(move_id + "-")):
+            src = open(os.path.join(CUSTOM, f), encoding="utf-8").read().strip()
+            src = re.sub(r'\s(width|height)="24"', "", src).replace('xmlns="http://www.w3.org/2000/svg" ', "")
+            src = src.replace("<svg ", '<svg aria-hidden="true" ', 1)
+            label = "drawn" if stem == move_id else "drawn " + stem[len(move_id) + 1:]
+            out.append((label, src))
+    return out
+
+
 def main():
     data = json.load(open(os.path.join(ROOT, "moves.json"), encoding="utf-8"))
     groups = data["groups"] + ["Finish"]
@@ -64,11 +83,18 @@ def main():
                 f'<figure class="ic{" first" if i == 0 else ""}"><div class="glyph">{svg(n)}</div>'
                 f'<figcaption><span class="rank">{i + 1}</span>{html.escape(n)}</figcaption></figure>'
                 for i, n in enumerate(icons))
+            drawn = custom_svgs(m["id"])
+            drawn_html = ""
+            if drawn:
+                drawn_html = '<div class="drawn">' + "".join(
+                    f'<figure class="ic first"><div class="glyph">{s}</div><figcaption>{html.escape(n)}</figcaption></figure>'
+                    for n, s in drawn) + "</div>"
             cards.append(
-                f'<article class="move"><header><div class="badge">{svg(icons[0])}</div><h3>{html.escape(label)}</h3></header>'
+                f'<article class="move"><header><div class="badge">{drawn[0][1] if drawn else svg(icons[0])}</div>'
+                f'<h3>{html.escape(label)}</h3></header>'
                 f'<p class="what">{html.escape(m["blurb"]["ideas"])}</p>'
                 f'<div class="icons">{chips}</div>'
-                f'<p class="custom"><span>Custom symbol</span>{html.escape(custom)}</p></article>')
+                f'<div class="custom"><span>Custom symbol</span>{html.escape(custom)}{drawn_html}</div></article>')
         hue = GROUP_HUES[g]
         sections.append(
             f'<section class="group" style="--h:{hue}"><div class="ghead"><span class="swatch"></span>'
@@ -127,7 +153,9 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 figcaption{font:400 11px/1.3 var(--mono);color:var(--muted);text-align:center;overflow-wrap:anywhere;display:flex;gap:4px;align-items:baseline}
 .rank{font-weight:500;color:var(--fg)}
 .custom{margin:0;font-size:14px;border-top:1px dashed var(--line);padding-top:8px}
-.custom span{display:block;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px}
+.drawn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.drawn .glyph{width:30px;height:30px}
+.custom > span{display:block;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px}
 </style>
 <div class="wrap">
 <div class="intro">
