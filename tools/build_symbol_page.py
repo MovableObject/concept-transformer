@@ -77,24 +77,31 @@ def main():
             continue
         cards = []
         for m in moves:
-            icons, custom = PICKS[m["id"]]
+            mid = m["id"]
+            icons, custom = PICKS[mid]
             label = " / ".join(dict.fromkeys(m["label"].values()))
-            chips = "".join(
-                f'<figure class="ic{" first" if i == 0 else ""}"><div class="glyph">{svg(n)}</div>'
-                f'<figcaption><span class="rank">{i + 1}</span>{html.escape(n)}</figcaption></figure>'
-                for i, n in enumerate(icons))
-            drawn = custom_svgs(m["id"])
-            drawn_html = ""
-            if drawn:
-                drawn_html = '<div class="drawn">' + "".join(
-                    f'<figure class="ic first"><div class="glyph">{s}</div><figcaption>{html.escape(n)}</figcaption></figure>'
-                    for n, s in drawn) + "</div>"
+            drawn = custom_svgs(mid)
+
+            def option(choice, name, glyph, rank=""):
+                r = f'<span class="rank">{rank}</span>' if rank else ""
+                return (f'<button type="button" class="ic" data-move="{mid}" data-choice="{html.escape(choice)}" '
+                        f'aria-pressed="false"><div class="glyph">{glyph}</div><span class="cap">{r}{html.escape(name)}</span></button>')
+
+            lucide = "".join(option("lucide:" + n, n, svg(n), str(i + 1)) for i, n in enumerate(icons))
+            drawn_opts = "".join(option(n.replace(" ", "-"), n, sv) for n, sv in drawn)
+            none_opt = option("none", "none, describe it", '<span class="nonebox"></span>')
             cards.append(
-                f'<article class="move"><header><div class="badge">{drawn[0][1] if drawn else svg(icons[0])}</div>'
-                f'<h3>{html.escape(label)}</h3></header>'
+                f'<article class="move" id="m-{mid}" data-move="{mid}"><header><div class="badge">'
+                f'{drawn[0][1] if drawn else svg(icons[0])}</div><h3>{html.escape(label)}</h3>'
+                f'<span class="state" aria-live="polite"></span></header>'
                 f'<p class="what">{html.escape(m["blurb"]["ideas"])}</p>'
-                f'<div class="icons">{chips}</div>'
-                f'<div class="custom"><span>Custom symbol</span>{html.escape(custom)}{drawn_html}</div></article>')
+                f'<div class="optlabel">From the icon set</div><div class="icons">{lucide}</div>'
+                f'<div class="optlabel">Drawn from the description</div>'
+                f'<p class="desc">{html.escape(custom)}</p>'
+                f'<div class="icons">{drawn_opts}{none_opt}</div>'
+                f'<div class="note" hidden><label for="note-{mid}">How should the symbol look?</label>'
+                f'<textarea id="note-{mid}" rows="3" data-move="{mid}" '
+                f'placeholder="Describe the symbol you want for {html.escape(label)}"></textarea></div></article>')
         hue = GROUP_HUES[g]
         sections.append(
             f'<section class="group" style="--h:{hue}"><div class="ghead"><span class="swatch"></span>'
@@ -142,28 +149,139 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .badge{width:34px;height:34px;flex:none;border-radius:4px;display:grid;place-items:center;
   background:oklch(var(--tint-l) var(--tint-c) var(--h));color:oklch(var(--glyph-l) var(--glyph-c) var(--h))}
 .badge svg{width:20px;height:20px}
+.badge .nonebox{width:18px;height:18px}
 .move h3{font:700 17px/1.2 var(--display);margin:0;text-wrap:balance}
 .what{margin:0;color:var(--muted);font-size:14px}
-.icons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.ic{margin:0;border:1px solid var(--line);border-radius:4px;padding:10px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
-.ic.first{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h));background:oklch(var(--tint-l) var(--tint-c) var(--h))}
-.glyph{width:30px;height:30px;color:var(--fg)}
-.ic.first .glyph{color:oklch(var(--glyph-l) var(--glyph-c) var(--h))}
+.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.ic{margin:0;border:1px solid var(--line);border-radius:4px;padding:10px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;
+  background:transparent;color:inherit;font:inherit;cursor:pointer;position:relative;transition:border-color .12s,background .12s}
+.ic:hover{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .6)}
+.ic:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:2px}
+.ic[aria-pressed="true"]{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h));background:oklch(var(--tint-l) var(--tint-c) var(--h));box-shadow:inset 0 0 0 1px oklch(var(--glyph-l) var(--glyph-c) var(--h))}
+.ic[aria-pressed="true"]::after{content:"";position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:oklch(var(--glyph-l) var(--glyph-c) var(--h))}
+.glyph{width:30px;height:30px;color:var(--fg);display:grid;place-items:center}
+.ic[aria-pressed="true"] .glyph{color:oklch(var(--glyph-l) var(--glyph-c) var(--h))}
+.nonebox{display:block;width:22px;height:22px;border:2px dashed var(--muted);border-radius:4px}
+.cap{font:400 11px/1.3 var(--mono);color:var(--muted);text-align:center;overflow-wrap:anywhere;display:flex;gap:4px;align-items:baseline;justify-content:center}
+.optlabel{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px}
+.desc{margin:0;font-size:14px}
+.note{display:flex;flex-direction:column;gap:6px}
+.note[hidden]{display:none}
+.note label{font-size:13px;font-weight:700}
+.note textarea{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;resize:vertical;min-height:64px}
+.note textarea:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:1px}
+.state{margin-left:auto;font:400 11px var(--mono);color:var(--muted);white-space:nowrap}
+.move.chosen{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h) / .55)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-block:10px;margin-top:16px;display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap;font-size:14px}
+.bar b{font-variant-numeric:tabular-nums}
+.bar .where{color:var(--muted);font-size:13px}
 .glyph svg{width:100%;height:100%}
-figcaption{font:400 11px/1.3 var(--mono);color:var(--muted);text-align:center;overflow-wrap:anywhere;display:flex;gap:4px;align-items:baseline}
 .rank{font-weight:500;color:var(--fg)}
 .custom{margin:0;font-size:14px;border-top:1px dashed var(--line);padding-top:8px}
-.drawn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
-.drawn .glyph{width:30px;height:30px}
 .custom > span{display:block;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px}
 </style>
 <div class="wrap">
 <div class="intro">
 <h1>Move Symbols</h1>
-<p>Every move on Concept Transformer, with three icons from the Lucide set the site already uses, best fit first, and a sketch in words of a custom symbol. Colors follow the move's group.</p>
+<p>Pick the symbol for each move: one of three icons from the Lucide set the site already uses, best fit first, or the symbol drawn in the same style from its description. Choose <b>none</b> to describe the symbol you want instead. Click a picked symbol again to clear it. Colors follow the move's group.</p>
 </div>
+<div class="bar"><span><b id="count">0</b> of <b id="total">0</b> moves have a symbol picked</span><span class="where" id="where">Connecting…</span></div>
 __SECTIONS__
 </div>
+<script>
+(() => {
+  const cards = [...document.querySelectorAll('.move')];
+  const state = {};                       // move id -> {choice, note}
+  let db = null;
+  const where = document.getElementById('where');
+  document.getElementById('total').textContent = cards.length;
+
+  const LS = 'move-symbol-choices';
+  const lsRead = () => { try { return JSON.parse(localStorage.getItem(LS) || '{}') } catch { return {} } };
+  const lsWrite = () => { try { localStorage.setItem(LS, JSON.stringify(state)) } catch {} };
+
+  function render(id) {
+    const card = document.getElementById('m-' + id); if (!card) return;
+    const st = state[id] || {};
+    let picked = null;
+    card.querySelectorAll('button.ic').forEach(b => {
+      const on = !!st.choice && b.dataset.choice === st.choice;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (on) picked = b;
+    });
+    const note = card.querySelector('.note');
+    note.hidden = st.choice !== 'none';
+    const ta = note.querySelector('textarea');
+    if (document.activeElement !== ta) ta.value = st.note || '';
+    card.classList.toggle('chosen', !!st.choice);
+    const badge = card.querySelector('.badge');
+    if (!badge.dataset.orig) badge.dataset.orig = badge.innerHTML;
+    if (st.choice === 'none') badge.innerHTML = '<span class="nonebox"></span>';
+    else if (picked) badge.innerHTML = picked.querySelector('.glyph').innerHTML;
+    else badge.innerHTML = badge.dataset.orig;
+    document.getElementById('count').textContent = Object.values(state).filter(v => v && v.choice).length;
+  }
+  const status = (id, text) => { const el = document.querySelector('#m-' + id + ' .state'); if (el) el.textContent = text };
+
+  const pending = {};
+  async function save(id) {
+    delete pending[id];
+    const st = state[id] || {};
+    lsWrite();
+    if (!db) { status(id, 'Saved in this browser'); return }
+    status(id, 'Saving…');
+    try {
+      await db.collection('choices').doc(id).set({ choice: st.choice || '', note: st.note || '', updated: new Date().toISOString() });
+      status(id, 'Saved');
+    } catch (e) {
+      status(id, 'Saved in this browser only');
+    }
+  }
+  function saveSoon(id, ms) {
+    clearTimeout(pending[id]);
+    pending[id] = setTimeout(() => save(id), ms);
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button.ic'); if (!b) return;
+    const id = b.dataset.move, choice = b.dataset.choice;
+    const st = state[id] = { ...(state[id] || {}) };
+    st.choice = st.choice === choice ? '' : choice;
+    render(id); saveSoon(id, 0);
+    if (st.choice === 'none') setTimeout(() => document.getElementById('note-' + id)?.focus(), 30);
+  });
+  document.addEventListener('input', e => {
+    const ta = e.target.closest('textarea[data-move]'); if (!ta) return;
+    const id = ta.dataset.move;
+    state[id] = { ...(state[id] || {}), note: ta.value };
+    status(id, 'Typing…'); saveSoon(id, 900);
+  });
+  document.addEventListener('focusout', e => {
+    const ta = e.target.closest && e.target.closest('textarea[data-move]');
+    if (ta && pending[ta.dataset.move]) { clearTimeout(pending[ta.dataset.move]); save(ta.dataset.move) }
+  });
+
+  Object.assign(state, lsRead());
+  cards.forEach(c => render(c.dataset.move));
+  where.textContent = 'Picks are kept in this browser.';
+
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use('db') : null } catch { db = null }
+    if (!db) return;
+    where.textContent = 'Picks save as you click, and Claude can read them.';
+    db.collection('choices').onSnapshot(snap => {
+      snap.docs.forEach(d => {
+        const id = d.id;
+        if (pending[id]) return;               // a local edit is on its way
+        const v = d.data() || {};
+        state[id] = { choice: typeof v.choice === 'string' ? v.choice : '', note: typeof v.note === 'string' ? v.note : '' };
+        render(id);
+      });
+      lsWrite();
+    }, () => { db = null; where.textContent = 'Saving to the page stopped; picks are kept in this browser.' });
+  })();
+})();
+</script>
 """
 
 if __name__ == "__main__":
