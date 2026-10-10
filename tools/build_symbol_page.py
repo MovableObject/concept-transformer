@@ -109,7 +109,9 @@ def main():
                 f'<div class="sketchrow"><div class="sketchwrap"><span class="sk-label">Sketch it (optional)</span>'
                 f'<svg class="pad" data-move="{mid}" viewBox="0 0 24 24" role="img" '
                 f'aria-label="Drawing pad for the {html.escape(label)} symbol">{PAD_GRID}<g class="ink"></g></svg>'
-                f'<div class="sk-tools"><button type="button" class="sk-btn" data-act="undo" data-move="{mid}">Undo</button>'
+                f'<div class="sk-tools"><button type="button" class="sk-btn" data-act="pen" aria-pressed="true">Pen</button>'
+                f'<button type="button" class="sk-btn" data-act="eraser" aria-pressed="false">Eraser</button>'
+                f'<button type="button" class="sk-btn" data-act="undo" data-move="{mid}">Undo</button>'
                 f'<button type="button" class="sk-btn" data-act="clear" data-move="{mid}">Clear</button></div></div>'
                 f'<div class="sketchwrap"><span class="sk-label">In the icon style</span>'
                 f'<div class="sk-preview" data-move="{mid}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
@@ -198,7 +200,9 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .pad .grid path{stroke:var(--line);stroke-width:.06;fill:none}
 .pad .safe{fill:none;stroke:var(--muted);stroke-width:.06;stroke-dasharray:.4 .4}
 .pad .ink path{fill:none;stroke:oklch(var(--glyph-l) var(--glyph-c) var(--h));stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
-.sk-tools{display:flex;gap:6px}
+.sk-tools{display:flex;gap:6px;flex-wrap:wrap}
+.sk-btn[aria-pressed="true"]{border-color:oklch(var(--glyph-l) var(--glyph-c) var(--h));background:oklch(var(--tint-l) var(--tint-c) var(--h))}
+.pad.erasing{cursor:cell}
 .sk-btn{font:inherit;font-size:13px;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
 .sk-btn:hover{border-color:var(--muted)}
 .sk-btn:focus-visible{outline:2px solid oklch(var(--glyph-l) var(--glyph-c) var(--h));outline-offset:2px}
@@ -321,24 +325,90 @@ __SECTIONS__
     const y = Math.min(24, Math.max(0, (e.clientY - r.top) / r.height * 24));
     return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
   }
+  // Pen or eraser, one setting for every pad on the page. Undo steps back through whole strokes and erasures.
+  let erasing = false;
+  const history = {};                                   // move id -> earlier sketches
+  const ERASE_R = 1.3;                                  // eraser radius, in grid units
+  function setTool(er) {
+    erasing = er;
+    document.querySelectorAll('button.sk-btn[data-act="pen"]').forEach(b => b.setAttribute('aria-pressed', er ? 'false' : 'true'));
+    document.querySelectorAll('button.sk-btn[data-act="eraser"]').forEach(b => b.setAttribute('aria-pressed', er ? 'true' : 'false'));
+    document.querySelectorAll('svg.pad').forEach(p => p.classList.toggle('erasing', er));
+  }
+  // Rub out everything within the eraser's reach. Strokes are resampled finely first, so a long straight line
+  // with only two points still breaks where the eraser crosses it; what is left stays as separate strokes.
+  function eraseAt(sketch, x, y) {
+    const out = [];
+    let changed = false;
+    for (const s of sketch) {
+      const pts = [];
+      for (let i = 0; i < s.length; i += 2) {
+        if (i === 0) { pts.push([s[0], s[1]]); continue }
+        const ax = s[i - 2], ay = s[i - 1], bx = s[i], by = s[i + 1];
+        const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 0.3));
+        for (let k = 1; k <= n; k++) pts.push([ax + (bx - ax) * k / n, ay + (by - ay) * k / n]);
+      }
+      if (!pts.some(([px, py]) => Math.hypot(px - x, py - y) <= ERASE_R)) { out.push(s); continue }
+      changed = true;
+      let run = [];
+      const flush = () => { if (run.length >= 2) out.push(simplify(run)); run = [] };
+      for (const [px, py] of pts) {
+        if (Math.hypot(px - x, py - y) <= ERASE_R) flush();
+        else run.push(px, py);
+      }
+      flush();
+    }
+    return changed ? out.slice(0, 60) : sketch;
+  }
+  // Drop resampled points that sit on a straight line, so erased strokes stay small; round to tenths.
+  function simplify(flat) {
+    const p = [];
+    for (let i = 0; i < flat.length; i += 2) p.push([Math.round(flat[i] * 10) / 10, Math.round(flat[i + 1] * 10) / 10]);
+    const keep = [p[0]];
+    for (let i = 1; i < p.length - 1; i++) {
+      const [ax, ay] = keep[keep.length - 1], [bx, by] = p[i], [cx, cy] = p[i + 1];
+      const cross = Math.abs((bx - ax) * (cy - ay) - (by - ay) * (cx - ax));
+      if (cross > 0.05) keep.push(p[i]);
+    }
+    if (p.length > 1) keep.push(p[p.length - 1]);
+    return keep.flat();
+  }
   document.addEventListener('pointerdown', e => {
     const pad = e.target.closest && e.target.closest('svg.pad'); if (!pad) return;
     e.preventDefault();
     const id = pad.dataset.move;
     const st = state[id] = { ...(state[id] || {}) };
-    st.sketch = [...(st.sketch || []), padPoint(pad, e)];
-    if (st.sketch.length > 60) st.sketch = st.sketch.slice(-60);
-    drawing = { id, pad, stroke: st.sketch[st.sketch.length - 1] };
+    (history[id] = history[id] || []).push((st.sketch || []).map(s => s.slice()));
+    if (history[id].length > 50) history[id].shift();
+    const pt = padPoint(pad, e);
+    if (erasing) {
+      st.sketch = eraseAt(st.sketch || [], pt[0], pt[1]);
+      drawing = { id, pad, erase: true };
+    } else {
+      st.sketch = [...(st.sketch || []), pt];
+      if (st.sketch.length > 60) st.sketch = st.sketch.slice(-60);
+      drawing = { id, pad, stroke: st.sketch[st.sketch.length - 1] };
+    }
     try { pad.setPointerCapture(e.pointerId) } catch {}
     drawInk(id);
   });
   document.addEventListener('pointermove', e => {
     if (!drawing) return;
     const [x, y] = padPoint(drawing.pad, e);
+    if (drawing.erase) {
+      const st = state[drawing.id];
+      const next = eraseAt(st.sketch || [], x, y);
+      if (next !== st.sketch) { st.sketch = next; drawInk(drawing.id) }
+      return;
+    }
     const s = drawing.stroke, lx = s[s.length - 2], ly = s[s.length - 1];
     if (Math.hypot(x - lx, y - ly) < 0.35 || s.length >= 2000) return;
     s.push(x, y);
     drawInk(drawing.id);
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button.sk-btn[data-act="pen"], button.sk-btn[data-act="eraser"]'); if (!b) return;
+    setTool(b.dataset.act === 'eraser');
   });
   const endStroke = () => {
     if (!drawing) return;
@@ -351,7 +421,9 @@ __SECTIONS__
     const b = e.target.closest && e.target.closest('button.sk-btn[data-act="undo"], button.sk-btn[data-act="clear"]'); if (!b) return;
     const id = b.dataset.move;
     const st = state[id] = { ...(state[id] || {}) };
-    st.sketch = b.dataset.act === 'clear' ? [] : (st.sketch || []).slice(0, -1);
+    const h = history[id] = history[id] || [];
+    if (b.dataset.act === 'clear') { h.push((st.sketch || []).map(s => s.slice())); st.sketch = [] }
+    else st.sketch = h.length ? h.pop() : (st.sketch || []).slice(0, -1);
     drawInk(id); saveSoon(id, 300);
   });
 
