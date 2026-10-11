@@ -3,7 +3,7 @@
 import dagre from '@dagrejs/dagre'
 import type { Graph, MapBox, MoveDef, TransformBox } from './types'
 
-export const C_W = 220, S_W = 240, T_W = 250, N_W = 200   // concept, source, transform and note widths
+export const C_W = 220, S_W = 240, T_W = 290, N_W = 200   // concept, source, transform and note widths
 const GAP_Y = 56, CLEAR = 14
 
 export const newId = (p: string) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)

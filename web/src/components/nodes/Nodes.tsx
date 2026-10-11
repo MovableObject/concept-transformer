@@ -2,7 +2,7 @@
 // Graphs run top to bottom: wires go from the dot under a node (its output) into a dot on top of a transform (its inputs).
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertTriangle, EyeOff, Loader2, Play, Quote, RotateCw, StickyNote, Trash2, Volume2, VolumeX } from 'lucide-react'
+import { AlertTriangle, EyeOff, Loader2, Play, Quote, RotateCw, StickyNote, ThumbsDown, ThumbsUp, Trash2, Volume2, VolumeX } from 'lucide-react'
 import { labelOf, moveById } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
@@ -186,6 +186,15 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
         ))}
         <span className="ml-auto">
           <NodeTools id={id} text={n.bypass ? '' : (r ? (r.tag ? `${r.plain} ${r.tag}` : r.plain) : '')}>
+            {r && !n.bypass && (['kept', 'discarded'] as const).map((v) => (
+              <button key={v} className={cn('nodrag flex size-6 items-center justify-center rounded-[3px] hover:bg-accent',
+                r.verdict === v ? (v === 'kept' ? 'text-primary' : 'text-destructive') : 'text-muted-foreground hover:text-foreground')}
+                title={v === 'kept' ? 'Keep: later runs aim for ideas like this (K)' : 'Discard: later runs steer away from ideas like this (X)'}
+                aria-label={v === 'kept' ? 'Keep' : 'Discard'} aria-pressed={r.verdict === v}
+                onClick={(e) => { e.stopPropagation(); useGraph.getState().setVerdict(id, r.verdict === v ? undefined : v) }}>
+                {v === 'kept' ? <ThumbsUp className="size-3.5" /> : <ThumbsDown className="size-3.5" />}
+              </button>
+            ))}
             <button className={cn('nodrag flex h-6 items-center gap-1 rounded-[3px] px-1.5 text-[10.5px] font-medium',
               n.bypass ? 'bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/50' : 'text-muted-foreground hover:bg-accent hover:text-foreground')}
               role="switch" aria-checked={!!n.bypass} title="Bypass: pass the input straight through without this move (B)"
