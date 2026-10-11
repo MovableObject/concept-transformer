@@ -1,4 +1,5 @@
-// The map: the node graph drawn by React Flow. Wires go from a node's output (right) into a transform's input (left).
+// The map: the node graph drawn by React Flow, top to bottom as in Houdini. Wires go from a node's output (the dot
+// underneath) into a transform's input (the dot on top). The mouse wheel scrolls; Ctrl with the wheel zooms.
 // Tab or right-click opens the add menu at the pointer; double-click on empty space adds a concept to type into;
 // dropping a wire on empty space opens the menu wired to it; dropping it onto another box offers the collisions.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -151,7 +152,7 @@ export function MapView() {
         connectionMode={ConnectionMode.Strict} connectionRadius={30}
         onPaneClick={() => useUI.getState().set({ tabMenu: null })}
         onPaneContextMenu={(e) => { e.preventDefault(); openTabMenu({ sx: e.clientX, sy: e.clientY, at: rf.screenToFlowPosition({ x: e.clientX, y: e.clientY }), inputs: [] }) }}
-        zoomOnDoubleClick={false}
+        zoomOnDoubleClick={false} panOnScroll zoomOnScroll={false} zoomActivationKeyCode={['Control', 'Meta']}
         fitView fitViewOptions={{ padding: 0.25, maxZoom: 1.1 }} minZoom={0.15} maxZoom={2.5}
         selectionOnDrag={false} panOnDrag multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
         proOptions={{ hideAttribution: true }} colorMode="dark"
@@ -174,9 +175,9 @@ export function MapView() {
 function EmptyMap({ onStart }: { onStart: () => void }) {
   const steps = [
     ['Add a concept.', 'Double-click the map, or press Tab, and type an idea into the box.'],
-    ['Add a transform.', 'Pick a move on the left, or drag from the dot on a box’s right onto empty space. It is wired to the selected box.'],
+    ['Add a transform.', 'Pick a move on the left, or drag from the dot under a box onto empty space. It is wired to the selected box.'],
     ['Run it.', 'Nothing runs until you press Run on a transform, or Run all at the top. Its best result shows in it; “1 of 3” steps through the others.'],
-    ['Keep going.', 'Wire a transform’s right-hand dot into the next one. Drop a wire onto another box to collide the two.'],
+    ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. The wheel scrolls; Ctrl and the wheel zoom.'],
   ]
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 max-md:p-3">

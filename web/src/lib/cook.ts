@@ -20,7 +20,7 @@ function problemWith(t: TransformBox): string {
   const need = def.inputs === 2 ? 2 : 1
   for (let i = 0; i < need; i++) {
     const src = t.inputs[i]
-    if (!src || !g.nodes[src]) return need === 2 ? 'A collision needs two inputs: wire a box into each dot on its left.' : 'Wire a concept into the dot on its left first.'
+    if (!src || !g.nodes[src]) return need === 2 ? 'A collision needs two inputs: wire a box into each dot on its top.' : 'Wire a concept into the dot on its top first.'
     if (!outputOf(g, src)) return 'An input has no text yet: type into it, or run the transform it comes from.'
     if (g.nodes[src].kind === 'source' && need !== 2) return 'A source only goes into a collision.'
   }

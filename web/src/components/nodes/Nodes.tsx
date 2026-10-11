@@ -1,5 +1,5 @@
 // The kinds of node on the map: concepts and sources you type into, notes, and transforms that hold their results.
-// Wires go from the dot on a node's right (its output) into a dot on a transform's left (its inputs).
+// Graphs run top to bottom: wires go from the dot under a node (its output) into a dot on top of a transform (its inputs).
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, Loader2, Play, Quote, RotateCw, StickyNote } from 'lucide-react'
@@ -52,7 +52,7 @@ export const ConceptNode = memo(function ConceptNode({ id, selected }: NodeProps
       selected && '!border-primary ring-1 ring-primary')} style={{ width: C_W }}
       onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
       <NodeText id={id} text={n.text} placeholder="Type a concept" clamp="line-clamp-5" />
-      <Handle type="source" id="out" position={Position.Right} className={outCls} title="Drag into a transform, or onto empty space to add one" />
+      <Handle type="source" id="out" position={Position.Bottom} className={outCls} title="Drag into a transform, or onto empty space to add one" />
     </div>
   )
 })
@@ -66,7 +66,7 @@ export const SourceNode = memo(function SourceNode({ id, selected }: NodeProps) 
       onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
       <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-chart-2"><Quote className="size-3" />Source</div>
       <NodeText id={id} text={n.text} placeholder="Paste a passage to collide with" className="italic" clamp="line-clamp-6 text-muted-foreground" />
-      <Handle type="source" id="out" position={Position.Right} className={outCls} title="Drag into a collision" />
+      <Handle type="source" id="out" position={Position.Bottom} className={outCls} title="Drag into a collision" />
     </div>
   )
 })
@@ -110,14 +110,14 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
       selected && '!border-primary ring-1 ring-primary')}
       style={{ width: T_W, borderLeft: `4px solid ${color}` }}>
       {Array.from({ length: ports }, (_, i) => (
-        <Handle key={i} type="target" id={`in${i}`} position={Position.Left} className={inCls}
-          style={{ top: ports === 2 ? (i ? '68%' : '32%') : '50%' }}
+        <Handle key={i} type="target" id={`in${i}`} position={Position.Top} className={inCls}
+          style={{ left: ports === 2 ? (i ? '68%' : '32%') : '50%' }}
           title={ports === 2 ? (i ? 'Input B' : 'Input A') : 'Input'} />
       ))}
       {ports === 2 && (
         <>
-          <span className="pointer-events-none absolute -left-4 top-[32%] -translate-y-1/2 text-[9px] font-bold text-muted-foreground">A</span>
-          <span className="pointer-events-none absolute -left-4 top-[68%] -translate-y-1/2 text-[9px] font-bold text-muted-foreground">B</span>
+          <span className="pointer-events-none absolute -top-4 left-[32%] ml-2 text-[9px] font-bold text-muted-foreground">A</span>
+          <span className="pointer-events-none absolute -top-4 left-[68%] ml-2 text-[9px] font-bold text-muted-foreground">B</span>
         </>
       )}
       <div className="flex items-start gap-1.5 border-b border-border/70 px-2 py-1.5">
@@ -157,7 +157,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
           </div>
         )}
       </div>
-      <Handle type="source" id="out" position={Position.Right} className={outCls} title="Drag into the next transform, or onto empty space to add one" />
+      <Handle type="source" id="out" position={Position.Bottom} className={outCls} title="Drag into the next transform, or onto empty space to add one" />
     </div>
   )
 })

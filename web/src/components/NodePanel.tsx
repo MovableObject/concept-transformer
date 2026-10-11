@@ -173,7 +173,7 @@ export function NodePanel() {
           return (
             <div key={i} className="truncate">
               <b className="text-foreground">{ports === 2 ? `Input ${i ? 'B' : 'A'}` : 'Input'}:</b>{' '}
-              {src && g.nodes[src] ? (txt ? txt.slice(0, 140) : 'no text yet') : 'not wired: drag from a box’s right-hand dot into this transform'}
+              {src && g.nodes[src] ? (txt ? txt.slice(0, 140) : 'no text yet') : 'not wired: drag from the dot under a box into the dot on top of this transform'}
             </div>
           )
         })}

@@ -4,7 +4,7 @@ import dagre from '@dagrejs/dagre'
 import type { Graph, MapBox, MoveDef, TransformBox } from './types'
 
 export const C_W = 220, S_W = 240, T_W = 250, N_W = 200   // concept, source, transform and note widths
-const GAP_X = 70, CLEAR = 14
+const GAP_Y = 56, CLEAR = 14
 
 export const newId = (p: string) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 export const widthOf = (n: MapBox) => (n.kind === 'transform' ? T_W : n.kind === 'source' ? S_W : n.kind === 'note' ? N_W : C_W)
@@ -163,26 +163,28 @@ export function place(g: Graph, id: string, at?: { x: number; y: number }) {
   const ins = n.kind === 'transform' ? n.inputs.filter((i): i is string => !!i && !!g.nodes[i]) : []
   if (at) { x = at.x; y = at.y }
   else if (ins.length) {
+    // under the nodes wired into it, centred between them
     const rs = ins.map((i) => rect(g, i))
-    x = Math.max(...rs.map((r) => r.x + r.w)) + GAP_X
-    y = rs.reduce((s, r) => s + r.y + r.h / 2, 0) / rs.length - estHeight(n) / 2
+    y = Math.max(...rs.map((r) => r.y + r.h)) + GAP_Y
+    x = rs.reduce((s, r) => s + r.x + r.w / 2, 0) / rs.length - widthOf(n) / 2
   } else {
+    // a new starting box goes to the right of everything, level with the top
     const others = g.order.filter((k) => k !== id)
-    x = others.length ? Math.min(...others.map((k) => g.nodes[k].x)) : 0
-    y = others.length ? Math.max(...others.map((k) => { const r = rect(g, k); return r.y + r.h })) + 40 : 0
+    x = others.length ? Math.max(...others.map((k) => { const r = rect(g, k); return r.x + r.w })) + 40 : 0
+    y = others.length ? Math.min(...others.map((k) => g.nodes[k].y)) : 0
   }
   const w = widthOf(n), h = estHeight(n)
   for (let i = 0; i < 600; i++) {
-    const off = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 10
-    if (!hits(g, { x, y: y + off, w, h }, id)) { n.x = x; n.y = y + off; return }
+    const off = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 12
+    if (!hits(g, { x: x + off, y, w, h }, id)) { n.x = x + off; n.y = y; return }
   }
   n.x = x; n.y = y
 }
 
-/** Lay the whole graph out again, left to right, with wires flowing from inputs to transforms. */
+/** Lay the whole graph out again, top to bottom, with wires flowing down from inputs into transforms. */
 export function tidy(g: Graph, measured: Record<string, { w: number; h: number }> = {}) {
   const dg = new dagre.graphlib.Graph()
-  dg.setGraph({ rankdir: 'LR', nodesep: 22, ranksep: 70, marginx: 0, marginy: 0 })
+  dg.setGraph({ rankdir: 'TB', nodesep: 30, ranksep: 56, marginx: 0, marginy: 0 })
   dg.setDefaultEdgeLabel(() => ({}))
   for (const k of g.order) {
     const n = g.nodes[k]

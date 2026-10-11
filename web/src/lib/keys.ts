@@ -7,6 +7,8 @@ import { pointer } from './pointer'
 
 export const SHORTCUTS: [string, string][] = [
   ['Tab', 'add a node'],
+  ['Wheel', 'scroll'],
+  ['Ctrl+wheel', 'zoom'],
   ['Double-click', 'new concept'],
   ['Enter', 'type into the box'],
   ['R', 'run'],
