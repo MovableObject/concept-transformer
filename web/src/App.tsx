@@ -10,7 +10,7 @@ import { Toolbar } from '@/components/Toolbar'
 import { NodePanel } from '@/components/NodePanel'
 import { MapView } from '@/components/MapView'
 import { Outline } from '@/components/Outline'
-import { CollisionDialog } from '@/components/MovePicker'
+import { TabMenu } from '@/components/TabMenu'
 import { Footer, Toasts } from '@/components/Footer'
 
 export default function App() {
@@ -35,7 +35,7 @@ export default function App() {
           </div>
           <Footer />
         </div>
-        <CollisionDialog />
+        <TabMenu />
         <Toasts />
       </ReactFlowProvider>
     </TooltipProvider>

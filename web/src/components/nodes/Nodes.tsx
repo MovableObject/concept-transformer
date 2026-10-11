@@ -1,54 +1,58 @@
-// The three kinds of box on the map.
-import { memo } from 'react'
+// The kinds of node on the map: concepts and sources you type into, notes, and transforms that hold their results.
+// Wires go from the dot on a node's right (its output) into a dot on a transform's left (its inputs).
+import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { Loader2, Plus, Quote, RotateCw, ThumbsDown, ThumbsUp } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { AlertTriangle, Loader2, Play, Quote, RotateCw, StickyNote } from 'lucide-react'
+import { labelOf, moveById } from '@/lib/api'
+import { runNodes } from '@/lib/cook'
+import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
 import { cn } from '@/lib/utils'
-import { C_W, S_W, T_W } from '@/lib/layout'
-import { resultsOf, shownResult, useGraph } from '@/store/graph'
+import { useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
-import { MovePicker } from '../MovePicker'
-import { MoveIcon } from '../MoveIcon'
+import { MoveIcon, groupColor } from '../MoveIcon'
 
-const handleCls = '!opacity-0 group-hover:!opacity-100 [.selected_&]:!opacity-100'
+const outCls = '!size-3 !border-2 !border-background !bg-muted-foreground hover:!bg-primary'
+const inCls = '!size-3 !border-2 !border-background !bg-muted-foreground'
 
-function PlusPicker({ id }: { id: string }) {
-  const open = useUI((u) => u.pickerFor === id)
-  return (
-    <Popover open={open} onOpenChange={(o) => useUI.getState().set({ pickerFor: o ? id : null })}>
-      <PopoverTrigger asChild>
-        <button
-          className="nodrag absolute -right-9 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-[4px] bg-primary text-primary-foreground shadow hover:brightness-125"
-          title="Transform this: open the moves" aria-label="Transform this"
-        ><Plus className="size-4" /></button>
-      </PopoverTrigger>
-      <PopoverContent side="right" align="start" className="w-[340px] max-h-[70vh] overflow-y-auto p-3"
-        onOpenAutoFocus={(e) => e.preventDefault()}>
-        <MovePicker onDone={() => useUI.getState().set({ pickerFor: null })} />
-      </PopoverContent>
-    </Popover>
-  )
+/** Text typed straight into a node. Enter keeps it (Shift+Enter for a new line); Escape or clicking away too. */
+function NodeText({ id, text, placeholder, className, clamp }: { id: string; text: string; placeholder: string; className?: string; clamp: string }) {
+  const editing = useUI((u) => u.editing === id)
+  const [draft, setDraft] = useState(text)
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => { if (editing) { setDraft(text); useGraph.getState().checkpoint(); setTimeout(() => { ref.current?.focus(); ref.current?.select() }, 0) } }, [editing]) // eslint-disable-line react-hooks/exhaustive-deps
+  const done = () => {
+    const clean = draft.replace(/[ \t]+/g, ' ').trim()
+    const g = useGraph.getState()
+    useUI.getState().set({ editing: null })
+    if (!clean) { if (!text.trim()) g.remove([id]); return }   // an empty new box goes away
+    if (clean !== text) g.setText(id, clean)
+  }
+  if (editing) {
+    return (
+      <textarea ref={ref} value={draft} rows={3} placeholder={placeholder} aria-label={placeholder}
+        className={cn('nodrag nowheel nopan block w-full resize-none rounded-[3px] border border-input bg-background px-1.5 py-1 text-[13px] leading-snug outline-none focus-visible:ring-2 focus-visible:ring-ring/50', className)}
+        onChange={(e) => setDraft(e.target.value)} onBlur={done}
+        onKeyDown={(e) => {
+          e.stopPropagation()
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done() }
+          if (e.key === 'Escape') { e.preventDefault(); done() }
+        }} />
+    )
+  }
+  return text.trim()
+    ? <div className={cn(clamp, className)}>{text}</div>
+    : <div className={cn('italic text-muted-foreground', className)}>{placeholder}</div>
 }
 
 export const ConceptNode = memo(function ConceptNode({ id, selected }: NodeProps) {
   const n = useGraph((s) => s.graph.nodes[id])
   if (!n || n.kind !== 'concept') return null
-  const root = !n.parent
   return (
-    <div className={cn('group relative rounded-[4px] border px-3 py-2 text-[13px] leading-snug shadow-sm transition-colors',
-      root ? 'border-muted-foreground bg-secondary' : 'border-input bg-card',
-      n.verdict === 'kept' && 'border-chart-1', n.verdict === 'discarded' && 'opacity-55',
-      selected && '!border-primary ring-1 ring-primary')}
-      style={{ width: C_W }} title={n.plain}>
-      <Handle type="target" position={Position.Left} className={handleCls} />
-      <div className="line-clamp-4">{n.plain}</div>
-      {n.verdict && (
-        <span className="absolute -top-2 right-2 rounded-[3px] border border-border bg-background px-1 text-muted-foreground">
-          {n.verdict === 'kept' ? <ThumbsUp className="size-3" /> : <ThumbsDown className="size-3" />}
-        </span>
-      )}
-      <Handle type="source" position={Position.Right} className={handleCls} title="Drag onto another box to collide them" />
-      {selected && <PlusPicker id={id} />}
+    <div className={cn('group relative rounded-[4px] border border-muted-foreground/60 bg-secondary px-3 py-2 text-[13px] leading-snug shadow-sm',
+      selected && '!border-primary ring-1 ring-primary')} style={{ width: C_W }}
+      onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
+      <NodeText id={id} text={n.text} placeholder="Type a concept" clamp="line-clamp-5" />
+      <Handle type="source" id="out" position={Position.Right} className={outCls} title="Drag into a transform, or onto empty space to add one" />
     </div>
   )
 })
@@ -58,42 +62,104 @@ export const SourceNode = memo(function SourceNode({ id, selected }: NodeProps) 
   if (!n || n.kind !== 'source') return null
   return (
     <div className={cn('group relative rounded-[4px] border border-dashed border-chart-2 bg-background px-3 py-2 text-[12.5px] leading-snug shadow-sm',
-      selected && '!border-primary !border-solid ring-1 ring-primary')} style={{ width: S_W }} title={n.plain}>
-      <Handle type="target" position={Position.Left} className={handleCls} />
+      selected && '!border-solid !border-primary ring-1 ring-primary')} style={{ width: S_W }}
+      onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
       <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-chart-2"><Quote className="size-3" />Source</div>
-      <div className="line-clamp-6 italic text-muted-foreground">{n.plain}</div>
-      <Handle type="source" position={Position.Right} className={handleCls} title="Drag onto another box to collide with this source" />
-      {selected && <PlusPicker id={id} />}
+      <NodeText id={id} text={n.text} placeholder="Paste a passage to collide with" className="italic" clamp="line-clamp-6 text-muted-foreground" />
+      <Handle type="source" id="out" position={Position.Right} className={outCls} title="Drag into a collision" />
     </div>
   )
 })
+
+export const NoteNode = memo(function NoteNode({ id, selected }: NodeProps) {
+  const n = useGraph((s) => s.graph.nodes[id])
+  if (!n || n.kind !== 'note') return null
+  return (
+    <div className={cn('rounded-[3px] border border-chart-4/50 bg-chart-4/10 px-3 py-2 text-[12.5px] leading-snug text-foreground/90 shadow-sm',
+      selected && '!border-primary ring-1 ring-primary')} style={{ width: N_W }}
+      onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
+      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-chart-4"><StickyNote className="size-3" />Note</div>
+      <NodeText id={id} text={n.text} placeholder="Write a note" clamp="line-clamp-8 whitespace-pre-wrap" />
+    </div>
+  )
+})
+
+const STATE_WORDS: Record<NodeState, string> = {
+  new: 'Not run yet', working: 'Running…', done: '', stale: 'Changed since it ran', error: 'Failed', bypass: 'Bypassed',
+}
 
 export const TransformNode = memo(function TransformNode({ id, selected }: NodeProps) {
   const n = useGraph((s) => s.graph.nodes[id])
-  const total = useGraph((s) => resultsOf(s.graph, id).length)
-  const shownTag = useGraph((s) => { const r = shownResult(s.graph, id); const c = r ? s.graph.nodes[r] : null; return c && c.kind === 'concept' ? c.tag.replace(/^\[|\]$/g, '') : '' })
+  const state = useGraph((s) => stateOf(s.graph, id))
+  const busy = useUI((u) => u.busy)
   if (!n || n.kind !== 'transform') return null
+  const def = moveById(n.moveIds[0])
+  const ports = portsOf(n, def)
+  const name = n.moveIds.length > 1
+    ? n.moveIds.map((m) => labelOf(moveById(m), n.mode)).join(' + ')
+    : labelOf(def, n.mode) || 'Unknown move'
+  const extra = n.card ? `“${n.card}”` : n.field ? `→ ${n.field}` : ''
+  const r = n.results[Math.min(n.shown, n.results.length - 1)]
+  const color = groupColor(def?.group) || 'var(--muted-foreground)'
+  const canRun = state !== 'working' && !n.bypass
   return (
-    <div className={cn('group relative rounded-[4px] border border-dashed bg-background px-2.5 py-2 shadow-sm',
-      n.status === 'error' ? 'border-destructive' : n.status === 'working' ? 'border-muted-foreground' : 'border-chart-3',
-      n.parent2 && 'border-chart-2', selected && '!border-solid !border-primary ring-1 ring-primary')} style={{ width: T_W }}>
-      <Handle type="target" position={Position.Left} className="!opacity-0" isConnectable={false} />
-      <div className="flex items-start gap-1.5">
-        {n.moveIds.length > 0 && <span className="mt-[-1px] flex shrink-0 gap-0.5">{n.moveIds.map((mid) => <MoveIcon key={mid} id={mid} className="size-5" />)}</span>}
-        <div className="text-[12px] font-semibold leading-tight text-chart-1 line-clamp-3">{n.move}</div>
-      </div>
-      {shownTag && <div className="mt-1 text-[11px] leading-tight text-muted-foreground line-clamp-2">{shownTag}</div>}
-      {n.status === 'working' && <div className="mt-1 flex items-center gap-1 text-[11px] italic text-muted-foreground"><Loader2 className="size-3 animate-spin" />working…</div>}
-      {n.status === 'error' && <div className="mt-1 text-[11px] italic text-destructive">failed, select for details</div>}
-      {total > 1 && (
-        <button className="nodrag mt-1.5 flex items-center gap-1 rounded-[3px] border border-input bg-card px-1.5 py-0.5 text-[10.5px] text-muted-foreground hover:border-primary hover:text-foreground"
-          title="Show the next option from this press" onClick={(e) => { e.stopPropagation(); useGraph.getState().rotate(id) }}>
-          {(n.shown || 0) + 1} of {total} <RotateCw className="size-3" />
-        </button>
+    <div className={cn('group relative rounded-[4px] border bg-card text-[12.5px] leading-snug shadow-sm',
+      state === 'new' && 'border-dashed border-muted-foreground/60',
+      state === 'stale' && 'border-amber-400/80', state === 'error' && 'border-destructive',
+      (state === 'done' || state === 'working') && 'border-border', n.bypass && 'opacity-55',
+      selected && '!border-primary ring-1 ring-primary')}
+      style={{ width: T_W, borderLeft: `4px solid ${color}` }}>
+      {Array.from({ length: ports }, (_, i) => (
+        <Handle key={i} type="target" id={`in${i}`} position={Position.Left} className={inCls}
+          style={{ top: ports === 2 ? (i ? '68%' : '32%') : '50%' }}
+          title={ports === 2 ? (i ? 'Input B' : 'Input A') : 'Input'} />
+      ))}
+      {ports === 2 && (
+        <>
+          <span className="pointer-events-none absolute -left-4 top-[32%] -translate-y-1/2 text-[9px] font-bold text-muted-foreground">A</span>
+          <span className="pointer-events-none absolute -left-4 top-[68%] -translate-y-1/2 text-[9px] font-bold text-muted-foreground">B</span>
+        </>
       )}
-      <Handle type="source" position={Position.Right} className="!opacity-0" isConnectable={false} />
+      <div className="flex items-start gap-1.5 border-b border-border/70 px-2 py-1.5">
+        {n.moveIds.map((m) => <MoveIcon key={m} id={m} className="size-5" />)}
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[12.5px] font-semibold" style={{ color }}>{name}</div>
+          {extra && <div className="truncate text-[11px] text-muted-foreground">{extra}</div>}
+        </div>
+        {state === 'working'
+          ? <Loader2 className="mt-0.5 size-4 animate-spin text-muted-foreground" aria-label="Running" />
+          : canRun && state !== 'done' && (
+            <button className="nodrag flex items-center gap-1 rounded-[3px] bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground hover:brightness-110 disabled:opacity-50"
+              disabled={busy} title="Run this transform (R)" onClick={(e) => { e.stopPropagation(); runNodes([id]) }}>
+              <Play className="size-3" />Run
+            </button>
+          )}
+      </div>
+      <div className="px-2.5 py-2">
+        {n.bypass ? <div className="italic text-muted-foreground">Bypassed: passes its input straight through.</div>
+          : r ? <div className={cn('line-clamp-5', state === 'stale' && 'text-muted-foreground')}>{r.plain}</div>
+            : <div className="italic text-muted-foreground">{state === 'error' ? n.error : 'Press Run to see the result.'}</div>}
+        {(STATE_WORDS[state] && state !== 'new' && !n.bypass) && (
+          <div className={cn('mt-1 flex items-center gap-1 text-[10.5px]', state === 'error' ? 'text-destructive' : state === 'stale' ? 'text-amber-400' : 'text-muted-foreground')}>
+            {state === 'stale' || state === 'error' ? <AlertTriangle className="size-3" /> : null}{STATE_WORDS[state]}
+          </div>
+        )}
+        {(r?.tag || n.results.length > 1) && !n.bypass && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            {r?.tag && <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted-foreground">{r.tag.replace(/^\[|\]$/g, '')}</span>}
+            {n.results.length > 1 && (
+              <button className="nodrag ml-auto flex items-center gap-1 rounded-[3px] border border-input bg-background px-1.5 py-0.5 text-[10.5px] text-muted-foreground hover:border-primary hover:text-foreground"
+                title="Show the next result; it becomes what this transform passes on (N)"
+                onClick={(e) => { e.stopPropagation(); useGraph.getState().rotate(id) }}>
+                {n.shown + 1} of {n.results.length} <RotateCw className="size-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      <Handle type="source" id="out" position={Position.Right} className={outCls} title="Drag into the next transform, or onto empty space to add one" />
     </div>
   )
 })
 
-export const nodeTypes = { concept: ConceptNode, source: SourceNode, transform: TransformNode }
+export const nodeTypes = { concept: ConceptNode, source: SourceNode, note: NoteNode, transform: TransformNode }

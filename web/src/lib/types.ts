@@ -42,58 +42,65 @@ export interface MovesFile {
   moves: MoveDef[]
 }
 
-// ── the map ──
-export interface ConceptBox {
+// ── the map (version 4: a node graph) ──
+// Concepts and sources are typed in; a transform applies one move to the node(s) wired into it and keeps its own
+// results. Whichever result is showing is the transform's output, which can be wired into the next transform.
+// Nothing runs until the visitor presses Run. A transform whose inputs or settings changed since it ran is stale.
+
+export type Verdict = 'kept' | 'discarded'
+
+interface NodeBase {
   id: string
+  x: number
+  y: number
+  time: number
+}
+
+export interface ConceptBox extends NodeBase {
   kind: 'concept'
-  parent: string | null      // the transform that made it, or null for a typed concept
-  rank: number | null        // its place among its transform's results (0 = best)
+  text: string
+}
+
+export interface SourceBox extends NodeBase {
+  kind: 'source'
+  text: string               // a pasted passage; only collisions take it
+}
+
+export interface NoteBox extends NodeBase {
+  kind: 'note'
+  text: string               // a sticky note: never sent anywhere
+}
+
+export interface Result {
   text: string               // as returned, with any leading [tag]
   plain: string              // without the tag
   tag: string
-  x?: number
-  y?: number
-  time: number
-  verdict?: 'kept' | 'discarded'
+  verdict?: Verdict
 }
 
-export interface SourceBox {
-  id: string
-  kind: 'source'
-  parent: null
-  text: string
-  plain: string
-  title: string
-  x?: number
-  y?: number
-  time: number
-}
-
-export interface TransformBox {
-  id: string
+export interface TransformBox extends NodeBase {
   kind: 'transform'
-  parent: string             // the concept it was applied to (for a collision: the first box)
-  parent2?: string           // a collision's second box
-  move: string               // label as shown
-  moveIds: string[]          // one id, or several for a stack
-  field: string
-  field2?: string
+  moveIds: string[]          // one move (older maps may hold a stack of two or three)
+  inputs: (string | null)[]  // wired nodes, one per input port (two for a collision)
+  field: string              // the move's extra boxes (target domain, rule, ...)
+  field2: string
   mode: ModeId
-  words: number
-  engine: string
-  note: string
-  status: 'working' | 'done' | 'error'
+  words: number              // 0 = the mode's default length
+  results: Result[]
+  shown: number              // which result is the output
+  status: 'idle' | 'working' | 'error'
   error: string
-  shown: number              // which result is on the map
-  x?: number
-  y?: number
-  time: number
+  engine: string             // who answered the last run
+  note: string               // a note from the relay (e.g. which free engine answered)
+  card: string               // Oblique Strategies: the card drawn on the last run
+  ranKey: string             // inputs and settings at the last successful run; differs = stale
+  bypass?: boolean           // passes its first input straight through
 }
 
-export type MapBox = ConceptBox | SourceBox | TransformBox
+export type MapBox = ConceptBox | SourceBox | NoteBox | TransformBox
 
 export interface Graph {
-  v: 3
+  v: 4
   nodes: Record<string, MapBox>
   order: string[]
   selected: string | null

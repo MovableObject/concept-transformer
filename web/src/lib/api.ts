@@ -52,7 +52,7 @@ export function currentEngine(): { own: Provider | null; label: string } {
   return { own: null, label: ENGINES[s.engine] }
 }
 
-export async function callRelay(req: PressRequest, count: number): Promise<PressResult> {
+export async function callRelay(req: PressRequest, count: number, signal?: AbortSignal): Promise<PressResult> {
   const s = useSettings.getState()
   const { own } = currentEngine()
   const body: Record<string, unknown> = { engine: own ? `own:${own}` : s.engine, move: req.move, mode: req.mode, concept: req.concept }
@@ -65,8 +65,9 @@ export async function callRelay(req: PressRequest, count: number): Promise<Press
   if (own) body.key = ownKey(own)
   let r: Response
   try {
-    r = await fetch('relay.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  } catch {
+    r = await fetch('relay.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal })
+  } catch (e) {
+    if (signal?.aborted || (e as Error)?.name === 'AbortError') throw new FriendlyError('Stopped.')
     throw new FriendlyError("Couldn't reach the site. Check your connection and try again.")
   }
   let b: { variants?: string[]; engine?: string; note?: string; card?: string; message?: string; error?: string } = {}
@@ -76,5 +77,5 @@ export async function callRelay(req: PressRequest, count: number): Promise<Press
     return { variants: b.variants.slice(0, count || 3), engine, note: b.note || '', card: typeof b.card === 'string' ? b.card : '' }
   }
   const openKey = own ? b.error === 'key' : ['allowance', 'rate', 'busy'].includes(b.error || '')
-  throw new FriendlyError(b.message || 'Something went wrong. Press the move again.', openKey)
+  throw new FriendlyError(b.message || 'Something went wrong. Press Run again.', openKey)
 }

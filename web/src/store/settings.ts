@@ -1,4 +1,4 @@
-// Visitor settings, remembered in this browser: engine, result mode, length per mode, stacking, view.
+// Visitor settings, remembered in this browser: engine, the result mode and length new transforms start with, view.
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Engine, ModeId, Provider } from '@/lib/types'
@@ -10,8 +10,6 @@ interface Settings {
   mode: ModeId
   words: Record<ModeId, number>        // 0 = the mode's default (not sent)
   showChanges: boolean
-  stacking: boolean
-  stack: string[]                      // picked move ids while stacking
   view: 'map' | 'outline'
   provider: Provider                   // the own-key panel's provider
   useOwn: boolean                      // presses use the visitor's own key
@@ -24,8 +22,6 @@ export const useSettings = create<Settings>()(persist((set) => ({
   mode: 'image',
   words: { image: 0, ideas: 0 },
   showChanges: true,
-  stacking: false,
-  stack: [],
   view: 'map',
   provider: 'gemini',
   useOwn: false,

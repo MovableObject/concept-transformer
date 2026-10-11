@@ -1,8 +1,8 @@
-// Above the map: view switch and map tools.
+// Above the map: Run all, the view switch and map tools.
 import { useRef } from 'react'
 import { getNodesBounds, getViewportForBounds, useReactFlow } from '@xyflow/react'
 import { toPng } from 'html-to-image'
-import { Download, FolderOpen, Image as ImageIcon, LayoutGrid, Maximize, Save, Undo2 } from 'lucide-react'
+import { Download, FolderOpen, Image as ImageIcon, LayoutGrid, Maximize, Play, Save, Square, Undo2 } from 'lucide-react'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -10,7 +10,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { normalize, useGraph } from '@/store/graph'
+import { readMap, useGraph } from '@/store/graph'
+import { runAll, stopRun } from '@/lib/cook'
+import { runAllPlan } from '@/lib/graph'
 import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
 
@@ -23,6 +25,9 @@ function download(href: string, name: string) {
 export function Toolbar() {
   const s = useSettings()
   const count = useGraph((g) => g.graph.order.length)
+  const toRun = useGraph((g) => runAllPlan(g.graph).length)
+  const canUndo = useGraph((g) => g.past.length > 0)
+  const busy = useUI((u) => u.busy)
   const rf = useReactFlow()
   const file = useRef<HTMLInputElement>(null)
   const isMap = s.view === 'map'
@@ -36,7 +41,7 @@ export function Toolbar() {
   const saveFile = () => {
     const g = useGraph.getState().graph
     if (!g.order.length) return
-    const data = JSON.stringify({ app: 'concept-transformer', v: 3, saved: new Date().toISOString(), graph: g }, null, 1)
+    const data = JSON.stringify({ app: 'concept-transformer', v: 4, saved: new Date().toISOString(), graph: g }, null, 1)
     download('data:application/json;charset=utf-8,' + encodeURIComponent(data), `concept-map-${new Date().toISOString().slice(0, 10)}.json`)
   }
   const openFile = (f: File) => {
@@ -44,7 +49,7 @@ export function Toolbar() {
     r.onload = () => {
       try {
         const d = JSON.parse(String(r.result))
-        const g = normalize(d && d.graph)
+        const g = readMap(d && d.graph)
         if (!g) throw new Error('not a map')
         if (useGraph.getState().graph.order.length && !window.confirm('Replace the map on screen with the one in this file?')) return
         useGraph.getState().replace(g)
@@ -71,6 +76,9 @@ export function Toolbar() {
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-2">
+      {busy
+        ? <Button size="sm" variant="destructive" onClick={stopRun} title="Stop after the call in progress (Esc)"><Square />Stop</Button>
+        : <Button size="sm" disabled={!toRun} onClick={runAll} title="Run every transform that is new or changed, inputs first (Shift+R)"><Play />Run all{toRun ? ` (${toRun})` : ''}</Button>}
       <Tabs value={s.view} onValueChange={(v) => s.set({ view: v as 'map' | 'outline' })}>
         <TabsList className="h-8">
           <TabsTrigger value="map" className="px-3 text-xs">Map</TabsTrigger>
@@ -79,7 +87,7 @@ export function Toolbar() {
       </Tabs>
       <Button size="sm" variant="outline" disabled={!isMap} onClick={() => rf.fitView({ padding: 0.2, duration: 300, maxZoom: 1.1 })}><Maximize />Fit</Button>
       <Button size="sm" variant="outline" disabled={!isMap || !count} onClick={tidy}><LayoutGrid />Tidy up</Button>
-      <Button size="sm" variant="outline" disabled={!count} onClick={() => useGraph.getState().undoLastPress()}><Undo2 />Undo last press</Button>
+      <Button size="sm" variant="outline" disabled={!canUndo} onClick={() => useGraph.getState().undo()} title="Undo (Ctrl+Z)"><Undo2 />Undo</Button>
       <Button size="sm" variant="outline" disabled={!count} onClick={saveFile}><Save />Save map</Button>
       <Button size="sm" variant="outline" onClick={() => file.current?.click()}><FolderOpen />Open map</Button>
       <input ref={file} type="file" accept=".json,application/json" hidden
@@ -93,7 +101,7 @@ export function Toolbar() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Clear the whole map?</AlertDialogTitle>
-            <AlertDialogDescription>Every box on the map goes. Save the map first if you want to keep it.</AlertDialogDescription>
+            <AlertDialogDescription>Every box on the map goes. Undo brings it back; Save map keeps a copy.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

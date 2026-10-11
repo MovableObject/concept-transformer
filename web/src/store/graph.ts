@@ -1,247 +1,229 @@
-// The map: concepts, sources and transforms, kept in this browser only (localStorage). Nothing here is sent to the
-// server except the concept text a press is about (and, from phase 4, the visitor's own keep/discard lists).
+// The node graph: concepts, sources, notes and transforms, kept in this browser only (localStorage). Nothing here is
+// sent to the server except the inputs of a transform being run (and the visitor's own keep/discard lists).
 import { create } from 'zustand'
 import { lsGet, lsSet } from '@/lib/storage'
 import { splitTag } from '@/lib/diff'
-import type { ConceptBox, Graph, MapBox, ModeId, SourceBox, TransformBox } from '@/lib/types'
-import { descendants, placePress, placeRoot, resultsOf, shownResult, tidy as tidyLayout } from '@/lib/layout'
+import { canWire, downstream, keyOf, newId, place, tidy as tidyLayout } from '@/lib/graph'
+import { fromOlder } from '@/lib/legacy'
+import { moveById } from '@/lib/api'
+import type { Graph, MapBox, ModeId, Result, TransformBox, Verdict } from '@/lib/types'
 
-const KEY = 'ct.map.v3', V2 = 'ct.map.v2', V1 = 'ct.map.v1'
-const MAX_NODES = 1200
-const empty = (): Graph => ({ v: 3, nodes: {}, order: [], selected: null })
-const newId = (p: string) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+const KEY = 'ct.map.v4'
+const OLDER = ['ct.map.v3', 'ct.map.v2', 'ct.map.v1']
+const MAX_NODES = 1500, MAX_UNDO = 60
+const empty = (): Graph => ({ v: 4, nodes: {}, order: [], selected: null })
 
-/** Accept a version 2 or 3 graph (same fields; 3 adds sources and two-parent transforms). */
+const str = (v: unknown, max = 4000) => (v == null ? '' : String(v)).slice(0, max)
+const num = (v: unknown) => Number(v) || 0
+
+/** Accept a version 4 graph, keeping only plain values: nothing from a file or old storage runs. */
 export function normalize(raw: unknown): Graph | null {
-  const g = raw as { v?: number; nodes?: Record<string, MapBox>; order?: string[]; selected?: string | null }
-  if (!g || (g.v !== 2 && g.v !== 3) || !g.nodes || !Array.isArray(g.order)) return null
-  const order = g.order.filter((k) => g.nodes![k] && ['concept', 'transform', 'source'].includes(g.nodes![k].kind))
-  const nodes: Record<string, MapBox> = {}
-  for (const k of order) {
-    const n = { ...g.nodes[k] } as MapBox
-    // keep only plain values: nothing from a file or old storage runs
-    for (const f of ['text', 'plain', 'tag', 'move', 'engine', 'note', 'error', 'field', 'field2', 'mode', 'title'] as const) {
-      const r = n as unknown as Record<string, unknown>
-      if (r[f] != null) r[f] = String(r[f])
+  const g = raw as { v?: number; nodes?: Record<string, Record<string, unknown>>; order?: unknown[]; selected?: unknown }
+  if (!g || g.v !== 4 || !g.nodes || !Array.isArray(g.order)) return null
+  const out = empty()
+  for (const k of g.order.map(String)) {
+    const r = g.nodes[k]
+    if (!r) continue
+    const base = { id: k, x: num(r.x), y: num(r.y), time: num(r.time) }
+    let n: MapBox | null = null
+    if (r.kind === 'concept' || r.kind === 'source' || r.kind === 'note') n = { ...base, kind: r.kind, text: str(r.text, 1600) } as MapBox
+    else if (r.kind === 'transform') {
+      const results: Result[] = (Array.isArray(r.results) ? r.results : []).slice(0, 8).map((x) => {
+        const o = x as Record<string, unknown>
+        return { text: str(o.text), plain: str(o.plain), tag: str(o.tag), verdict: o.verdict === 'kept' || o.verdict === 'discarded' ? o.verdict : undefined }
+      })
+      n = { ...base, kind: 'transform', moveIds: (Array.isArray(r.moveIds) ? r.moveIds : []).slice(0, 3).map((m) => str(m, 60)),
+        inputs: (Array.isArray(r.inputs) ? r.inputs : []).slice(0, 2).map((i) => (i ? str(i, 80) : null)),
+        field: str(r.field, 300), field2: str(r.field2, 300), mode: r.mode === 'ideas' ? 'ideas' : 'image', words: num(r.words),
+        results, shown: Math.min(num(r.shown), Math.max(0, results.length - 1)), status: r.status === 'error' ? 'error' : 'idle',
+        error: str(r.error, 400), engine: str(r.engine, 80), note: str(r.note, 400), card: str(r.card, 200), ranKey: str(r.ranKey, 20000),
+        bypass: r.bypass === true || undefined } as TransformBox
     }
-    for (const f of ['x', 'y', 'shown', 'rank', 'words', 'time'] as const) {
-      const r = n as unknown as Record<string, unknown>
-      if (r[f] != null) r[f] = Number(r[f]) || 0
-    }
-    if (n.kind === 'transform') n.moveIds = Array.isArray(n.moveIds) ? n.moveIds.map(String) : []
-    nodes[k] = n
+    if (n) { out.nodes[k] = n; out.order.push(k) }
   }
-  return { v: 3, nodes, order, selected: g.selected && nodes[g.selected] ? g.selected : null }
+  for (const k of out.order) {   // wires only to nodes that exist
+    const n = out.nodes[k]
+    if (n.kind === 'transform') n.inputs = n.inputs.map((i) => (i && out.nodes[i] && i !== k ? i : null))
+  }
+  out.selected = typeof g.selected === 'string' && out.nodes[g.selected] ? g.selected : null
+  return out
 }
 
-/** Version 1 maps (one box per result, grouped by press) become transforms with their results. */
-function fromV1(): Graph | null {
-  let g1: { nodes?: Record<string, Record<string, unknown>>; order?: string[]; shown?: Record<string, number> } | null = null
-  try { g1 = JSON.parse(lsGet(V1, '') || 'null') } catch { return null }
-  if (!g1 || !g1.nodes || !Array.isArray(g1.order) || !g1.order.length) return null
-  const g = empty()
-  const tOf: Record<string, string> = {}
-  for (const id of g1.order) {
-    const o = g1.nodes[id] as Record<string, string & number>
-    if (!o) continue
-    if (!o.parent) {
-      g.nodes[id] = { id, kind: 'concept', parent: null, rank: null, text: o.text, plain: o.plain || o.text, tag: '', time: o.time || 0 }
-      g.order.push(id)
-      continue
-    }
-    let tid = tOf[o.press]
-    if (!tid) {
-      tid = 't' + o.press
-      tOf[o.press] = tid
-      g.nodes[tid] = { id: tid, kind: 'transform', parent: o.parent, move: o.move || '', moveIds: [], field: '', mode: (o.mode || 'image') as ModeId,
-        words: 0, engine: o.engine || '', note: '', status: 'done', error: '', shown: g1.shown?.[o.press] || 0, time: o.time || 0 }
-      g.order.push(tid)
-    }
-    const rank = o.rank != null ? Number(o.rank) : Object.values(g.nodes).filter((n) => n.parent === tid).length
-    g.nodes[id] = { id, kind: 'concept', parent: tid, rank, text: o.text, plain: o.plain || o.text, tag: o.tag || '', time: o.time || 0 }
-    g.order.push(id)
-  }
-  tidyLayout(g)
-  return g
+/** A stored or saved map of any version, as a version 4 graph. */
+export function readMap(raw: unknown): Graph | null {
+  return normalize(raw) || fromOlder(raw)
 }
 
 function load(): Graph {
-  for (const k of [KEY, V2]) {
+  try { const g = normalize(JSON.parse(lsGet(KEY, '') || 'null')); if (g) return g } catch { /* older */ }
+  for (const k of OLDER) {
     try {
-      const g = normalize(JSON.parse(lsGet(k, '') || 'null'))
-      if (g) return g
+      const g = fromOlder(JSON.parse(lsGet(k, '') || 'null'))
+      if (g) { lsSet(KEY, JSON.stringify(g)); return g }   // the older copy stays where it was
     } catch { /* next */ }
   }
-  return fromV1() || empty()
-}
-
-function trim(g: Graph) {
-  const roots = () => g.order.filter((k) => !g.nodes[k].parent)
-  while (g.order.length > MAX_NODES && roots().length > 1) removeIn(g, roots()[0])
-}
-function removeIn(g: Graph, id: string) {
-  const gone = new Set([id, ...descendants(g, id)])
-  g.order = g.order.filter((k) => !gone.has(k))
-  for (const k of gone) delete g.nodes[k]
-  if (g.selected && gone.has(g.selected)) g.selected = null
-}
-
-interface PressInfo {
-  move: string
-  moveIds: string[]
-  field: string
-  field2?: string
-  mode: ModeId
-  words: number
-  engine: string
-}
-
-interface GraphStore {
-  graph: Graph
-  version: number                  // bumps on every change (cheap memo key for React Flow)
-  update: (fn: (g: Graph) => void, persist?: boolean) => void
-  select: (id: string | null) => void
-  plant: (text: string) => string
-  addSource: (text: string, title: string) => string
-  beginPress: (parents: string[], info: PressInfo) => string
-  finishPress: (tid: string, variants: string[], engine: string, note: string) => void
-  failPress: (tid: string, message: string) => void
-  show: (tid: string, index: number) => void
-  rotate: (tid: string) => void
-  moveBranch: (id: string, x: number, y: number, branch: boolean) => void
-  remove: (ids: string[]) => void
-  undoLastPress: () => void
-  clear: () => void
-  tidy: (measured: Record<string, { w: number; h: number }>) => void
-  replace: (g: Graph) => void
-  setVerdict: (id: string, v: 'kept' | 'discarded' | undefined) => void
-  editText: (id: string, text: string) => void
+  return empty()
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 const saveSoon = (g: Graph) => {
   if (saveTimer) clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => { lsSet(KEY, JSON.stringify(g)); lsSet(V1, null) }, 250)
+  saveTimer = setTimeout(() => lsSet(KEY, JSON.stringify(g)), 250)
+}
+
+export interface NewTransform {
+  moveId: string
+  inputs: (string | null)[]
+  mode: ModeId
+  words: number
+  at?: { x: number; y: number }
+}
+
+interface GraphStore {
+  graph: Graph
+  version: number                  // bumps on every change (cheap memo key for React Flow)
+  past: Graph[]                    // undo steps
+  /** Change the graph. `undo: true` records an undo step first; `persist: false` skips saving (mid-drag). */
+  update: (fn: (g: Graph) => void, opts?: { persist?: boolean; undo?: boolean }) => void
+  checkpoint: () => void           // record an undo step now (before a drag or a typing session)
+  undo: () => void
+  select: (id: string | null) => void
+  addText: (kind: 'concept' | 'source' | 'note', text: string, at?: { x: number; y: number }) => string
+  addTransform: (t: NewTransform) => string
+  wire: (from: string, to: string, port: number) => string   // '' when wired, else the reason it could not be
+  unwire: (to: string, port: number) => void
+  setText: (id: string, text: string) => void
+  setParam: (id: string, p: Partial<Pick<TransformBox, 'field' | 'field2' | 'mode' | 'words' | 'bypass'>>, undo?: boolean) => void
+  startRun: (id: string) => string                            // returns the key the run is for
+  finishRun: (id: string, key: string, variants: string[], engine: string, note: string, card: string) => void
+  failRun: (id: string, message: string) => void
+  show: (id: string, index: number) => void
+  rotate: (id: string) => void
+  setVerdict: (id: string, v: Verdict | undefined) => void
+  remove: (ids: string[]) => void
+  clear: () => void
+  tidy: (measured: Record<string, { w: number; h: number }>) => void
+  replace: (g: Graph) => void
 }
 
 export const useGraph = create<GraphStore>()((set, get) => ({
   graph: load(),
   version: 0,
-  update: (fn, persist = true) => {
-    const g = structuredClone(get().graph)
+  past: [],
+  update: (fn, opts = {}) => {
+    const before = get().graph
+    const g = structuredClone(before)
     fn(g)
-    trim(g)
-    set({ graph: g, version: get().version + 1 })
-    if (persist) saveSoon(g)
+    if (g.order.length > MAX_NODES) return
+    const past = opts.undo ? [...get().past.slice(-(MAX_UNDO - 1)), before] : get().past
+    set({ graph: g, version: get().version + 1, past })
+    if (opts.persist !== false) saveSoon(g)
   },
-  select: (id) => get().update((g) => { g.selected = id && g.nodes[id] ? id : null }),
-  plant: (text) => {
-    const id = newId('c')
-    const clean = text.replace(/\s+/g, ' ').trim().slice(0, 500)
+  checkpoint: () => set({ past: [...get().past.slice(-(MAX_UNDO - 1)), get().graph] }),
+  undo: () => {
+    const past = get().past
+    if (!past.length) return
+    const g = past[past.length - 1]
+    // a transform that was running when the step was recorded is not running in the restored copy
+    const restored = structuredClone(g)
+    for (const k of restored.order) { const n = restored.nodes[k]; if (n.kind === 'transform' && n.status === 'working') n.status = 'idle' }
+    set({ graph: restored, past: past.slice(0, -1), version: get().version + 1 })
+    saveSoon(restored)
+  },
+  select: (id) => get().update((g) => { g.selected = id && g.nodes[id] ? id : null }, { persist: false }),
+  addText: (kind, text, at) => {
+    const id = newId(kind[0])
     get().update((g) => {
-      g.nodes[id] = { id, kind: 'concept', parent: null, rank: null, text: clean, plain: clean, tag: '', time: Date.now() } as ConceptBox
+      g.nodes[id] = { id, kind, text: text.slice(0, kind === 'concept' ? 800 : 1600), x: 0, y: 0, time: Date.now() } as MapBox
       g.order.push(id)
-      placeRoot(g, id)
+      place(g, id, at)
       g.selected = id
-    })
+    }, { undo: true })
     return id
   },
-  addSource: (text, title) => {
-    const id = newId('s')
-    get().update((g) => {
-      g.nodes[id] = { id, kind: 'source', parent: null, text, plain: text, title, time: Date.now() } as SourceBox
-      g.order.push(id)
-      placeRoot(g, id)
-      g.selected = id
-    })
-    return id
-  },
-  beginPress: (parents, info) => {
+  addTransform: ({ moveId, inputs, mode, words, at }) => {
     const id = newId('t')
     get().update((g) => {
-      g.nodes[id] = { id, kind: 'transform', parent: parents[0], parent2: parents[1], move: info.move, moveIds: info.moveIds,
-        field: info.field || '', field2: info.field2 || '', mode: info.mode, words: info.words || 0, engine: info.engine,
-        note: '', status: 'working', error: '', shown: 0, time: Date.now() } as TransformBox
+      const t: TransformBox = { id, kind: 'transform', moveIds: [moveId], inputs: inputs.map((i) => (i && g.nodes[i] ? i : null)),
+        field: '', field2: '', mode, words, results: [], shown: 0, status: 'idle', error: '', engine: '', note: '', card: '', ranKey: '',
+        x: 0, y: 0, time: Date.now() }
+      g.nodes[id] = t
       g.order.push(id)
-      placePress(g, id)
+      place(g, id, at)
       g.selected = id
-    })
+    }, { undo: true })
     return id
   },
-  finishPress: (tid, variants, engine, note) => get().update((g) => {
-    const t = g.nodes[tid] as TransformBox | undefined
-    if (!t) return
-    t.status = 'done'; t.engine = engine || t.engine; t.note = note || ''
-    variants.forEach((v, rank) => {
-      const { body, tag } = splitTag(v)
-      const id = newId('c')
-      g.nodes[id] = { id, kind: 'concept', parent: tid, rank, text: v, plain: body, tag, time: Date.now() } as ConceptBox
-      g.order.push(id)
-    })
-    placePress(g, tid)
-    g.selected = shownResult(g, tid)
+  wire: (from, to, port) => {
+    const target = get().graph.nodes[to]
+    const why = canWire(get().graph, from, to, target?.kind === 'transform' ? moveById(target.moveIds[0]) : undefined)
+    if (why) return why
+    get().update((g) => {
+      const t = g.nodes[to] as TransformBox
+      while (t.inputs.length <= port) t.inputs.push(null)
+      t.inputs[port] = from
+    }, { undo: true })
+    return ''
+  },
+  unwire: (to, port) => get().update((g) => {
+    const t = g.nodes[to]
+    if (t?.kind === 'transform' && port < t.inputs.length) t.inputs[port] = null
+  }, { undo: true }),
+  setText: (id, text) => get().update((g) => {
+    const n = g.nodes[id]
+    if (n && n.kind !== 'transform') n.text = text.slice(0, n.kind === 'concept' ? 800 : 1600)
   }),
-  failPress: (tid, message) => get().update((g) => {
-    const t = g.nodes[tid] as TransformBox | undefined
-    if (!t) return
+  setParam: (id, p, undo = true) => get().update((g) => {
+    const n = g.nodes[id]
+    if (n?.kind === 'transform') Object.assign(n, p)
+  }, { undo }),
+  startRun: (id) => {
+    let key = ''
+    get().update((g) => {
+      const t = g.nodes[id]
+      if (t?.kind !== 'transform') return
+      t.status = 'working'; t.error = ''
+      key = keyOf(g, t)
+    }, { persist: false })
+    return key
+  },
+  finishRun: (id, key, variants, engine, note, card) => get().update((g) => {
+    const t = g.nodes[id]
+    if (t?.kind !== 'transform') return
+    t.results = variants.map((v) => { const { body, tag } = splitTag(v); return { text: v, plain: body, tag } })
+    t.shown = 0; t.status = 'idle'; t.error = ''; t.engine = engine; t.note = note; t.card = card
+    t.ranKey = key
+  }, { undo: true }),
+  failRun: (id, message) => get().update((g) => {
+    const t = g.nodes[id]
+    if (t?.kind !== 'transform') return
     t.status = 'error'; t.error = message
-    g.selected = tid
   }),
-  show: (tid, index) => get().update((g) => {
-    const t = g.nodes[tid] as TransformBox | undefined
-    const opts = resultsOf(g, tid)
-    if (!t || opts.length < 2) return
-    const i = ((index % opts.length) + opts.length) % opts.length
-    const wasSelected = g.selected ? opts.includes(g.selected) : false
-    t.shown = i
-    if (wasSelected) g.selected = opts[i]
-  }),
-  rotate: (tid) => { const t = get().graph.nodes[tid] as TransformBox | undefined; if (t) get().show(tid, (t.shown || 0) + 1) },
-  moveBranch: (id, x, y, branch) => get().update((g) => {
-    const n = g.nodes[id]
-    if (!n) return
-    const dx = x - (n.x ?? 0), dy = y - (n.y ?? 0)
-    if (!dx && !dy) return
-    for (const k of branch ? [id, ...descendants(g, id)] : [id]) {
-      g.nodes[k].x = (g.nodes[k].x ?? 0) + dx
-      g.nodes[k].y = (g.nodes[k].y ?? 0) + dy
-    }
-  }),
-  remove: (ids) => get().update((g) => {
-    for (const id of ids) {
-      const n = g.nodes[id]
-      if (!n) continue
-      // a result's branch is its whole press
-      const what = n.kind === 'concept' && n.parent ? n.parent : id
-      const parent = g.nodes[what]?.parent
-      removeIn(g, what)
-      if (!g.selected && parent && g.nodes[parent]) g.selected = parent
-    }
-  }),
-  undoLastPress: () => get().update((g) => {
-    const ts = g.order.filter((k) => g.nodes[k].kind === 'transform')
-    if (!ts.length) return
-    const last = ts.reduce((a, b) => (g.nodes[a].time >= g.nodes[b].time ? a : b))
-    const parent = g.nodes[last].parent
-    removeIn(g, last)
-    g.selected = parent && g.nodes[parent] ? parent : null
-  }),
-  clear: () => get().update((g) => { g.nodes = {}; g.order = []; g.selected = null }),
-  tidy: (measured) => get().update((g) => tidyLayout(g, measured)),
-  replace: (ng) => { set({ graph: ng, version: get().version + 1 }); saveSoon(ng) },
+  show: (id, index) => get().update((g) => {
+    const t = g.nodes[id]
+    if (t?.kind !== 'transform' || t.results.length < 2) return
+    t.shown = ((index % t.results.length) + t.results.length) % t.results.length
+  }, { undo: true }),
+  rotate: (id) => { const t = get().graph.nodes[id]; if (t?.kind === 'transform') get().show(id, t.shown + 1) },
   setVerdict: (id, v) => get().update((g) => {
-    const n = g.nodes[id]
-    if (n && n.kind === 'concept') n.verdict = v
-  }),
-  editText: (id, text) => get().update((g) => {
-    const n = g.nodes[id]
-    if (!n || n.kind === 'transform') return
-    const clean = text.replace(/\s+/g, ' ').trim()
-    if (!clean) return
-    n.plain = clean
-    n.text = n.kind === 'concept' && n.tag ? `${n.tag} ${clean}` : clean
-  }),
+    const t = g.nodes[id]
+    if (t?.kind === 'transform' && t.results[t.shown]) t.results[t.shown].verdict = v
+  }, { undo: true }),
+  remove: (ids) => get().update((g) => {
+    const gone = new Set(ids.filter((i) => g.nodes[i]))
+    if (!gone.size) return
+    g.order = g.order.filter((k) => !gone.has(k))
+    for (const k of gone) delete g.nodes[k]
+    for (const k of g.order) {
+      const n = g.nodes[k]
+      if (n.kind === 'transform') n.inputs = n.inputs.map((i) => (i && gone.has(i) ? null : i))
+    }
+    if (g.selected && gone.has(g.selected)) g.selected = null
+  }, { undo: true }),
+  clear: () => get().update((g) => { g.nodes = {}; g.order = []; g.selected = null }, { undo: true }),
+  tidy: (measured) => get().update((g) => tidyLayout(g, measured), { undo: true }),
+  replace: (ng) => { set({ graph: ng, version: get().version + 1, past: [...get().past, get().graph] }); saveSoon(ng) },
 }))
 
 export const nodeOf = (id: string | null | undefined) => (id ? useGraph.getState().graph.nodes[id] || null : null)
-export { resultsOf, shownResult }
+export { downstream }

@@ -1,13 +1,12 @@
-// The move buttons, by group. Used in the side panel and in the "+" picker on a box.
+// The moves, by group, as a palette: clicking one adds a transform for it, wired to the selected box. Nothing runs
+// until Run. Tooltips say what each move does, with an example and how it did in the studio's tests.
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { labelOf, useMoves } from '@/lib/api'
-import { pick } from '@/lib/press'
+import { addMove } from '@/lib/actions'
 import type { MoveDef } from '@/lib/types'
 import { useSettings } from '@/store/settings'
-import { useUI } from '@/store/ui'
 import { GroupDot, MoveIcon } from './MoveIcon'
 
 const EVIDENCE: Record<string, string> = {
@@ -18,7 +17,7 @@ const EVIDENCE: Record<string, string> = {
 
 const GROUP_TIPS: Record<string, string> = {
   SCAMPER: 'A classic checklist for changing an idea, named for its seven moves: Substitute, Combine, Adapt, Modify, Put to another use, Eliminate, Reverse.',
-  Collisions: 'Moves that take two boxes and force them into one new idea. Drag from the dot on one box onto another to use them. Usually the strongest results.',
+  Collisions: 'Moves that take two boxes and force them into one new idea: each has two inputs. Drop a wire from one box onto another to pick one. Usually the strongest results.',
   Perceptual: 'Change how the thing is seen: flip it, describe it as if seen for the first time, break the rule that defines it, or state something impossible about it.',
   'Scale and abstraction': 'Move up or down: make it far bigger or smaller, climb to what it is an example of, or come down to one specific real case.',
   Substitution: 'Swap the thing for something that stands in for it: one of its parts, something next to it, or something from another world that feels the same.',
@@ -35,26 +34,20 @@ export function MoveTip({ m }: { m: MoveDef }) {
     <div className="max-w-80 space-y-1.5 text-left">
       <p>{m.blurb[mode]}</p>
       <p className="opacity-80">e.g. {m.example[mode]}</p>
-      {m.evidence && <p className="opacity-70 text-xs">{m.evidenceNote || EVIDENCE[m.evidence]}</p>}
+      {m.inputs === 2 && <p className="opacity-80">Two inputs: wire a box into each.</p>}
+      {m.evidence && <p className="text-xs opacity-70">{m.evidenceNote || EVIDENCE[m.evidence]}</p>}
     </div>
   )
 }
 
-export function MoveButton({ m, compact, onDone }: { m: MoveDef; compact?: boolean; onDone?: () => void }) {
+export function MoveButton({ m, onDone }: { m: MoveDef; onDone?: () => void }) {
   const mode = useSettings((s) => s.mode)
-  const stacking = useSettings((s) => s.stacking)
-  const picked = useSettings((s) => s.stack.includes(m.id))
-  const busy = useUI((s) => s.busy)
-  const disabled = busy || (stacking && !m.stackable)
   return (
     <Tooltip delayDuration={500}>
       <TooltipTrigger asChild>
-        <Button
-          variant="outline" size="sm" disabled={disabled} data-move={m.id}
-          className={cn('h-7 gap-1.5 px-2 text-[13px] font-medium', compact && 'h-7', picked && 'border-primary bg-primary/20',
-            m.inputs === 2 && 'border-dashed')}
-          onClick={() => { pick(m); if (!useSettings.getState().stacking) onDone?.() }}
-        >
+        <Button variant="outline" size="sm" data-move={m.id}
+          className={cn('h-7 gap-1.5 px-2 text-[13px] font-medium', m.inputs === 2 && 'border-dashed')}
+          onClick={() => { addMove(m.id); onDone?.() }}>
           <MoveIcon id={m.id} />{labelOf(m, mode)}
         </Button>
       </TooltipTrigger>
@@ -63,26 +56,13 @@ export function MoveButton({ m, compact, onDone }: { m: MoveDef; compact?: boole
   )
 }
 
-export function FieldInput({ m }: { m: MoveDef }) {
-  const value = useUI((s) => s.fields[m.id] || '')
-  if (!m.field || m.deck) return null
-  return (
-    <Input
-      className="h-7 text-[13px]" value={value} maxLength={m.field.max} data-field={m.id}
-      placeholder={m.field.placeholder || m.field.label}
-      onChange={(e) => useUI.getState().set({ fields: { ...useUI.getState().fields, [m.id]: e.target.value } })}
-      onKeyDown={(e) => { if (e.key === 'Enter') pick(m) }}
-    />
-  )
-}
-
-export function MoveGroups({ compact, onDone, only }: { compact?: boolean; onDone?: () => void; only?: (m: MoveDef) => boolean }) {
+export function MoveGroups({ onDone }: { onDone?: () => void }) {
   const moves = useMoves((s) => s.moves)
   if (!moves) return null
   return (
-    <div className={cn('space-y-3', compact && 'space-y-2')}>
+    <div className="space-y-3">
       {moves.groups.map((g) => {
-        const list = moves.moves.filter((m) => m.group === g && (!only || only(m)))
+        const list = moves.moves.filter((m) => m.group === g)
         if (!list.length) return null
         return (
           <div key={g}>
@@ -93,11 +73,8 @@ export function MoveGroups({ compact, onDone, only }: { compact?: boolean; onDon
               {GROUP_TIPS[g] && <TooltipContent side="right" className="max-w-72 normal-case">{GROUP_TIPS[g]}</TooltipContent>}
             </Tooltip>
             <div className="flex flex-wrap gap-1.5">
-              {list.map((m) => <MoveButton key={m.id} m={m} compact={compact} onDone={onDone} />)}
+              {list.map((m) => <MoveButton key={m.id} m={m} onDone={onDone} />)}
             </div>
-            {!compact && list.filter((m) => m.field && !m.deck).map((m) => (
-              <div key={m.id} className="mt-1.5"><FieldInput m={m} /></div>
-            ))}
           </div>
         )
       })}

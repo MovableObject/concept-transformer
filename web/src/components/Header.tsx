@@ -72,7 +72,7 @@ function KeyPanel() {
         </CollapsibleContent>
       </Collapsible>
       <p className="text-xs text-muted-foreground">
-        Your key is kept in this browser tab only, and forgotten when you close it, unless you tick Remember. Each press sends it
+        Your key is kept in this browser tab only, and forgotten when you close it, unless you tick Remember. Each run sends it
         through this site to the provider for that one request; the site never stores or logs it.{' '}
         <a className="text-primary underline" href="https://github.com/MovableObject/concept-transformer/blob/main/relay.php" target="_blank" rel="noopener noreferrer">Read the server code</a>.
       </p>
@@ -88,7 +88,7 @@ export function Header() {
     <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border px-4 py-3">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Concept Transformer</h1>
-        <p className="text-sm text-muted-foreground">Type a concept, press a move, collide ideas, and grow a map from them.</p>
+        <p className="text-sm text-muted-foreground">Type concepts, wire them through creative moves, collide ideas, and run the graph.</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <ToggleGroup type="single" variant="outline" size="sm" value={own ? '' : s.engine}
