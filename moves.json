@@ -1,5 +1,5 @@
 {
- "exported": "2026-10-09T17:54:15",
+ "exported": "2026-10-11T01:47:42",
  "default_mode": "image",
  "modes": {
   "image": {
@@ -304,8 +304,8 @@
     "ideas": "Bisociation"
    },
    "blurb": {
-    "image": "Pulls A into B's world and lets B's logic change it, so the two genuinely intersect.",
-    "ideas": "Pulls A into B's world and lets B's logic change it, so the two genuinely intersect."
+    "image": "Pulls A into B's world and lets B's logic change it, so one thing is true in both worlds at once.",
+    "ideas": "Pulls A into B's world and lets B's logic change it, so one thing is true in both worlds at once."
    },
    "example": {
     "image": "A lighthouse × a vending machine → a coin slot in the lighthouse door; the beam turns once per coin.",
@@ -348,7 +348,7 @@
     "ideas": "Finds the structure A and B share, then builds one new thing that takes from both and adds something neither had."
    },
    "example": {
-    "image": "A lighthouse × a hourglass → a tower whose light drains down into the sea as the night passes.",
+    "image": "A lighthouse × an hourglass → a tower whose light drains down into the sea as the night passes.",
     "ideas": "Tool library × a time bank → Hour library: every tool comes with an hour of its owner's help, repaid in your own hours."
    },
    "count": 3,
@@ -421,8 +421,8 @@
     "ideas": "Abstraction"
    },
    "blurb": {
-    "image": "Climbs from the thing to what it is an example of: its category, its job, the principle behind it.",
-    "ideas": "Climbs from the thing to what it is an example of: its category, its job, the principle behind it."
+    "image": "Climbs from the thing to what it is an example of (its job, its principle), then comes back down as a different thing that does the same.",
+    "ideas": "Climbs from the thing to what it is an example of (its job, its principle), then comes back down as a different thing that does the same."
    },
    "example": {
     "image": "A lighthouse → a single eye kept open all night over a sleeping coast.",
@@ -609,8 +609,8 @@
     "ideas": "Split"
    },
    "blurb": {
-    "image": "Breaks the concept into its parts and builds on one part at a time.",
-    "ideas": "Breaks the concept into its parts and builds on one part at a time."
+    "image": "Breaks the concept into its parts and builds a new concept on one part alone, even a minor one.",
+    "ideas": "Breaks the concept into its parts and builds a new concept on one part alone, even a minor one."
    },
    "example": {
     "image": "A lighthouse → just its rhythm: a coastline where every fourth wave breaks in light.",
@@ -651,8 +651,8 @@
     "ideas": "Refuse the strength"
    },
    "blurb": {
-    "image": "Finds what the concept or its medium does best, and refuses it.",
-    "ideas": "Finds what the concept or its medium does best, and refuses it."
+    "image": "Finds what the concept or its medium does best, refuses it, and finds what does the job instead.",
+    "ideas": "Finds what the concept or its medium does best, refuses it, and finds what does the job instead."
    },
    "example": {
     "image": "A lighthouse that refuses light: a dark tower ships find by its sound, a slow bell in the fog.",
@@ -711,8 +711,8 @@
     "ideas": "Surrealist games"
    },
    "blurb": {
-    "image": "Free-associates from the concept like automatic writing, and keeps the strangeness.",
-    "ideas": "Free-associates from the concept like automatic writing, and keeps the strangeness."
+    "image": "Plays the Surrealists' games on the concept: automatic writing, one thing described as another, questions and answers.",
+    "ideas": "Plays the Surrealists' games on the concept: automatic writing, one thing described as another, questions and answers."
    },
    "example": {
     "image": "A lighthouse → the lamp dreams of moths; at dawn the tower is full of them, sleeping in rows on the glass.",

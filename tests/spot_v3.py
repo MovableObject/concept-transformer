@@ -39,7 +39,13 @@ PICKS = [
     ("constraint_inversion", "groq", A, ""), ("oulipo", "groq", B, ""), ("oblique", "groq", A, ""),
     ("surrealist", "groq", B, ""), ("exquisite_corpse", "groq", A, ""), ("time_shift", "groq", B, ""),
     ("tonal_shift", "groq", A, ""), ("compression", "groq", B, ""),
+    # the SCAMPER, Perceptual, Scale and Structural moves rewritten in the 2026-10-11 audit
+    ("substitute", "groq", A, ""), ("combine", "groq", B, ""), ("adapt", "groq", A, ""), ("modify", "groq", B, ""),
+    ("other_uses", "groq", A, ""), ("eliminate", "groq", B, ""), ("reverse", "groq", A, ""),
+    ("inversion", "groq", B, ""), ("scale_shift", "groq", A, ""), ("defamiliarize", "groq", B, ""),
+    ("rule_break", "groq", A, ""), ("provocation", "groq", B, ""), ("domain_transfer", "groq", A, ""),
 ]
+FIELDS = {"domain_transfer": "beekeeping"}   # moves whose box must be filled
 ENGINES = {"gemini": "Gemini Flash", "groq": "Groq GPT OSS"}
 
 
@@ -47,6 +53,8 @@ def press(engine, move, concept, concept2):
     body = {"engine": engine, "mode": "ideas", "move": move, "concept": concept, "words": 30}
     if concept2:
         body["concept2"] = concept2
+    if move in FIELDS:
+        body["field"] = FIELDS[move]
     req = urllib.request.Request(BASE + "/relay.php", data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
     import time
