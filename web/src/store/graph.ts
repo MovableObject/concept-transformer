@@ -104,6 +104,9 @@ interface GraphStore {
   /** Paste copies of nodes (from a copy) with new ids, shifted so their top-left lands at `at`. Wires between the copies
    *  follow them; wires from nodes outside the copy stay on the originals when those still exist. */
   paste: (nodes: MapBox[], at: { x: number; y: number }) => string[]
+  duplicate: (ids: string[]) => Record<string, string>      // copies in place (Alt-drag); returns original id -> copy id
+  insert: (id: string, from: string, to: string, port: number) => string   // put a lone transform into the wire from -> to
+  cut: (wires: { to: string; port: number }[]) => void       // unwire several at once, one undo step
   clear: () => void
   tidy: (measured: Record<string, { w: number; h: number }>) => void
   replace: (g: Graph) => void
@@ -247,6 +250,37 @@ export const useGraph = create<GraphStore>()((set, get) => ({
     }, { undo: true })
     return ids
   },
+  duplicate: (ids) => {
+    const map: Record<string, string> = {}
+    get().update((g) => {
+      const keep = ids.filter((i) => g.nodes[i])
+      for (const i of keep) map[i] = newId(g.nodes[i].kind[0])
+      for (const i of keep) {
+        const c = structuredClone(g.nodes[i]) as MapBox
+        c.id = map[i]; c.time = Date.now()
+        if (c.kind === 'transform') { c.inputs = c.inputs.map((x) => (x && map[x] ? map[x] : x)); if (c.status === 'working') c.status = 'idle' }
+        g.nodes[c.id] = c
+        g.order.push(c.id)
+      }
+    }, { persist: false })
+    return map
+  },
+  insert: (id, from, to, port) => {
+    const g0 = get().graph
+    const t = g0.nodes[id], b = g0.nodes[to]
+    if (t?.kind !== 'transform' || b?.kind !== 'transform') return 'Only a transform goes into a wire.'
+    const why = canWire(g0, from, id, moveById(t.moveIds[0])) || (b.inputs[port] === from ? '' : 'That wire has moved.')
+    if (why) return why
+    get().update((g) => {
+      (g.nodes[id] as TransformBox).inputs[0] = from
+      ;(g.nodes[to] as TransformBox).inputs[port] = id
+      g.selected = id
+    })
+    return ''
+  },
+  cut: (wires) => get().update((g) => {
+    for (const w of wires) { const t = g.nodes[w.to]; if (t?.kind === 'transform' && w.port < t.inputs.length) t.inputs[w.port] = null }
+  }, { undo: true }),
   clear: () => get().update((g) => { g.nodes = {}; g.order = []; g.selected = null }, { undo: true }),
   tidy: (measured) => get().update((g) => tidyLayout(g, measured), { undo: true }),
   replace: (ng) => { set({ graph: ng, version: get().version + 1, past: [...get().past, get().graph] }); saveSoon(ng) },

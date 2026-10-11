@@ -22,6 +22,8 @@ export const SHORTCUTS: [string, string][] = [
   ['B', 'bypass'],
   ['F', 'finish'],
   ['Delete', 'delete'],
+  ['Y + drag', 'cut wires'],
+  ['Alt + drag', 'copy a box'],
   ['Ctrl+C / Ctrl+V', 'copy / paste boxes'],
   ['Ctrl+Z', 'undo'],
 ]

@@ -2,6 +2,8 @@
 // underneath) into a transform's input (the dot on top). The mouse wheel zooms; drag empty space to move around.
 // Tab or right-click opens the add menu at the pointer; double-click on empty space adds a concept to type into;
 // dropping a wire on empty space opens the menu wired to it; dropping it onto another box offers the collisions.
+// Houdini gestures: drop an unwired transform onto a wire to insert it; hold Y and drag across wires to cut them;
+// Alt-drag a node to leave a copy behind (the copy keeps the original's inputs).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Background, BackgroundVariant, ConnectionMode, Controls, MiniMap, ReactFlow, applyNodeChanges, useReactFlow,
@@ -10,7 +12,8 @@ import {
 import '@xyflow/react/dist/style.css'
 import { moveById, useMoves } from '@/lib/api'
 import { addText, openTabMenu, wireInto } from '@/lib/actions'
-import { canWire, stateOf } from '@/lib/graph'
+import { canWire, downstream, stateOf } from '@/lib/graph'
+import { polylinesCross, wirePoints, wireUnderBox } from '@/lib/wires'
 import { useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
 import { useSettings } from '@/store/settings'
@@ -30,6 +33,10 @@ export function MapView() {
   const wrap = useRef<HTMLDivElement>(null)
   const [nodes, setNodes] = useState<Node[]>([])
   const lastSelected = useRef<string | null>(null)
+  const [hoverWire, setHoverWire] = useState<string | null>(null)
+  const drag = useRef<{ wires: { id: string; from: string; to: string; port: number; pts: { x: number; y: number }[] }[]; copies: Record<string, string> | null; start: Record<string, { x: number; y: number }> }>({ wires: [], copies: null, start: {} })
+  const [knife, setKnife] = useState(false)
+  const [cutLine, setCutLine] = useState<{ x: number; y: number }[] | null>(null)
 
   const built = useMemo(() => {
     const ns: Node[] = graph.order.map((k) => {
@@ -53,6 +60,76 @@ export function MapView() {
     }
     return { ns, es }
   }, [version]) // eslint-disable-line react-hooks/exhaustive-deps
+  const edges = useMemo(() => (hoverWire ? built.es.map((e) => (e.id === hoverWire
+    ? { ...e, style: { ...e.style, stroke: 'var(--primary)', strokeWidth: 3.5, strokeDasharray: undefined } } : e)) : built.es), [built, hoverWire])
+
+  // ── Alt-drag copies; dropping a lone transform onto a wire inserts it ──
+  const lone = (id: string) => {
+    const g = useGraph.getState().graph
+    const n = g.nodes[id]
+    return n?.kind === 'transform' && n.inputs.every((i) => !i) && downstream(g, id).length === 0
+  }
+  const onNodeDragStart = useCallback((e: MouseEvent | TouchEvent, _n: Node, dragged: Node[]) => {
+    const store = useGraph.getState()
+    store.checkpoint()
+    const ids = dragged.map((d) => d.id)
+    drag.current = { wires: [], copies: null, start: Object.fromEntries(dragged.map((d) => [d.id, { ...d.position }])) }
+    if ((e as MouseEvent).altKey) { drag.current.copies = store.duplicate(ids); return }
+    if (ids.length === 1 && lone(ids[0])) {
+      drag.current.wires = built.es.map((w) => ({ id: w.id, from: w.source, to: w.target, port: Number((w.targetHandle || 'in0').slice(2)) || 0, pts: wirePoints(w.id) }))
+    }
+  }, [built]) // eslint-disable-line react-hooks/exhaustive-deps
+  const onNodeDrag = useCallback((_e: MouseEvent | TouchEvent, n: Node) => {
+    if (!drag.current.wires.length) return
+    const r = { x: n.position.x, y: n.position.y, w: n.measured?.width ?? 290, h: n.measured?.height ?? 80 }
+    const hit = drag.current.wires.find((w) => wireUnderBox(w.pts, r))
+    setHoverWire((h) => (h === (hit?.id ?? null) ? h : hit?.id ?? null))
+  }, [])
+  const onNodeDragStop = useCallback((_e: MouseEvent | TouchEvent, n: Node) => {
+    const store = useGraph.getState()
+    const { copies, start, wires } = drag.current
+    drag.current = { wires: [], copies: null, start: {} }
+    if (copies) {
+      // React Flow dragged the original; swap so the original stays put (keeping what it feeds) and the copy moves.
+      store.update((g) => {
+        for (const [orig, copy] of Object.entries(copies)) {
+          if (!g.nodes[orig] || !g.nodes[copy] || !start[orig]) continue
+          g.nodes[copy].x = g.nodes[orig].x; g.nodes[copy].y = g.nodes[orig].y
+          g.nodes[orig].x = Math.round(start[orig].x); g.nodes[orig].y = Math.round(start[orig].y)
+        }
+        const ids = Object.values(copies)
+        g.selected = ids.length === 1 ? ids[0] : g.selected
+      })
+      return
+    }
+    const r = { x: n.position.x, y: n.position.y, w: n.measured?.width ?? 290, h: n.measured?.height ?? 80 }
+    const hit = wires.find((w) => wireUnderBox(w.pts, r))   // from where it landed, not the last hover (a fast drop skips it)
+    setHoverWire(null)
+    if (hit) { const why = store.insert(n.id, hit.from, hit.to, hit.port); if (why) useUI.getState().toast(why) }
+  }, [])
+
+  // ── Y knife: hold Y, drag across wires, let go to cut them ──
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'y' || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return
+      if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable]')) return
+      if (useUI.getState().editing || document.querySelector('[role=dialog], [role=alertdialog]')) return
+      setKnife(true)
+    }
+    const up = (e: KeyboardEvent) => { if (e.key.toLowerCase() === 'y') setKnife(false) }
+    const blur = () => setKnife(false)
+    window.addEventListener('keydown', down); window.addEventListener('keyup', up); window.addEventListener('blur', blur)
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', blur) }
+  }, [])
+  const local = (e: React.PointerEvent) => { const r = wrap.current!.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top } }
+  const finishCut = (line: { x: number; y: number }[]) => {
+    const r = wrap.current!.getBoundingClientRect()
+    const flow = line.map((p) => rf.screenToFlowPosition({ x: p.x + r.left, y: p.y + r.top }))
+    if (flow.length < 2) return
+    const hits = built.es.filter((w) => polylinesCross(flow, wirePoints(w.id)))
+    if (!hits.length) return
+    useGraph.getState().cut(hits.map((w) => ({ to: w.target, port: Number((w.targetHandle || 'in0').slice(2)) || 0 })))
+  }
 
   // Merge the store's nodes into React Flow's list, keeping measured sizes; follow the store's selection when it
   // changes (a new node selects itself), otherwise keep React Flow's own (box-select, shift-click).
@@ -160,9 +237,9 @@ export function MapView() {
         addText('concept', rf.screenToFlowPosition({ x: e.clientX, y: e.clientY }))
       }}>
       <ReactFlow
-        nodes={nodes} edges={built.es} nodeTypes={nodeTypes}
+        nodes={nodes} edges={edges} nodeTypes={nodeTypes}
         onNodesChange={onNodesChange} onConnect={onConnect} isValidConnection={isValidConnection} onConnectEnd={onConnectEnd}
-        onNodeDragStart={() => useGraph.getState().checkpoint()}
+        onNodeDragStart={onNodeDragStart} onNodeDrag={onNodeDrag} onNodeDragStop={onNodeDragStop}
         onBeforeDelete={onBeforeDelete} deleteKeyCode={['Delete', 'Backspace']}
         connectionMode={ConnectionMode.Strict} connectionRadius={30}
         onPaneClick={() => useUI.getState().set({ tabMenu: null })}
@@ -180,6 +257,19 @@ export function MapView() {
           }}
           maskColor="color-mix(in oklch, var(--background) 70%, transparent)" className="max-md:!hidden" />}
       </ReactFlow>
+      {(knife || cutLine) && (
+        <div className="absolute inset-0 z-10 cursor-crosshair" title="Drag across wires to cut them"
+          onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setCutLine([local(e)]) }}
+          onPointerMove={(e) => { if (cutLine) setCutLine([...cutLine, local(e)]) }}
+          onPointerUp={() => { if (cutLine) finishCut(cutLine); setCutLine(null) }}
+          onPointerCancel={() => setCutLine(null)}>
+          {cutLine && cutLine.length > 1 && (
+            <svg className="pointer-events-none absolute inset-0 h-full w-full">
+              <polyline points={cutLine.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="var(--destructive)" strokeWidth={1.5} strokeDasharray="6 4" />
+            </svg>
+          )}
+        </div>
+      )}
       {empty && <EmptyMap onStart={() => addText('concept', rf.screenToFlowPosition({ x: (wrap.current?.getBoundingClientRect().left ?? 0) + 80, y: (wrap.current?.getBoundingClientRect().top ?? 0) + 120 }))} />}
     </div>
   )
@@ -191,7 +281,7 @@ function EmptyMap({ onStart }: { onStart: () => void }) {
     ['Add a concept.', 'Double-click the map, or press Tab, and type an idea into the box.'],
     ['Add a transform.', 'Select the box and press Tab (or right-click), or drag from the dot under it onto empty space, and pick a move. The panel on the left lists them too.'],
     ['Run it.', 'Nothing runs until you press Run on a transform, or Run all at the top. Its best result shows in it; “1 of 3” steps through the others.'],
-    ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. The wheel zooms; drag empty space to move around.'],
+    ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. Drop a new transform onto a wire to put it in between; hold Y and drag across wires to cut them; Alt-drag a box to copy it. The wheel zooms; drag empty space to move around.'],
   ]
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 max-md:p-3">

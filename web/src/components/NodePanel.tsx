@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { labelOf, moveById } from '@/lib/api'
+import { labelOf, moveById, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { outputOf, portsOf, stateOf, upstream } from '@/lib/graph'
 import { speak, useSpeaking } from '@/lib/speak'
@@ -68,6 +68,7 @@ const KIND_HELP: Record<string, [string, string]> = {
 
 function Body() {
   useGraph((s) => s.version)
+  useMoves((s) => s.moves)   // the move list loads after the map; redraw when it lands
   const g = useGraph((s) => s.graph)
   const busy = useUI((u) => u.busy)
   const n = g.selected ? g.nodes[g.selected] : null
