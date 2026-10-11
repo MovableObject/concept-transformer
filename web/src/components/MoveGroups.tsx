@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { labelOf, useMoves } from '@/lib/api'
 import { addMove } from '@/lib/actions'
-import type { MoveDef } from '@/lib/types'
+import type { ModeId, MoveDef } from '@/lib/types'
 import { useSettings } from '@/store/settings'
 import { GroupDot, MoveIcon } from './MoveIcon'
 
@@ -28,8 +28,9 @@ const GROUP_TIPS: Record<string, string> = {
   Shifts: "Same idea, different angle: another person's point of view, another era, another mood, or squeezed down to its core.",
 }
 
-export function MoveTip({ m }: { m: MoveDef }) {
-  const mode = useSettings((s) => s.mode)
+export function MoveTip({ m, mode: forMode }: { m: MoveDef; mode?: ModeId }) {
+  const settingsMode = useSettings((s) => s.mode)
+  const mode = forMode || settingsMode
   return (
     <div className="max-w-80 space-y-1.5 text-left">
       <p>{m.blurb[mode]}</p>

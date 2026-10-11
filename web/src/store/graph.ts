@@ -101,6 +101,9 @@ interface GraphStore {
   rotate: (id: string) => void
   setVerdict: (id: string, v: Verdict | undefined) => void
   remove: (ids: string[]) => void
+  /** Paste copies of nodes (from a copy) with new ids, shifted so their top-left lands at `at`. Wires between the copies
+   *  follow them; wires from nodes outside the copy stay on the originals when those still exist. */
+  paste: (nodes: MapBox[], at: { x: number; y: number }) => string[]
   clear: () => void
   tidy: (measured: Record<string, { w: number; h: number }>) => void
   replace: (g: Graph) => void
@@ -220,6 +223,30 @@ export const useGraph = create<GraphStore>()((set, get) => ({
     }
     if (g.selected && gone.has(g.selected)) g.selected = null
   }, { undo: true }),
+  paste: (nodes, at) => {
+    const ids: string[] = []
+    const valid = nodes.filter((n) => n && typeof n.id === 'string' && ['concept', 'source', 'note', 'transform'].includes(n.kind))
+    if (!valid.length) return ids
+    get().update((g) => {
+      const map = new Map(valid.map((n) => [n.id, newId(n.kind[0])]))
+      const minX = Math.min(...valid.map((n) => Number(n.x) || 0)), minY = Math.min(...valid.map((n) => Number(n.y) || 0))
+      for (const n of valid) {
+        const c = structuredClone(n) as MapBox
+        c.id = map.get(n.id)!
+        c.x = Math.round(at.x + (Number(n.x) || 0) - minX); c.y = Math.round(at.y + (Number(n.y) || 0) - minY)
+        c.time = Date.now()
+        if (c.kind === 'transform') {
+          c.inputs = (Array.isArray(c.inputs) ? c.inputs : []).map((i) => (i && map.has(i) ? map.get(i)! : i && g.nodes[i] ? i : null))
+          c.status = c.status === 'error' ? 'error' : 'idle'
+        }
+        g.nodes[c.id] = c
+        g.order.push(c.id)
+        ids.push(c.id)
+      }
+      g.selected = ids.length === 1 ? ids[0] : null
+    }, { undo: true })
+    return ids
+  },
   clear: () => get().update((g) => { g.nodes = {}; g.order = []; g.selected = null }, { undo: true }),
   tidy: (measured) => get().update((g) => tidyLayout(g, measured), { undo: true }),
   replace: (ng) => { set({ graph: ng, version: get().version + 1, past: [...get().past, get().graph] }); saveSoon(ng) },

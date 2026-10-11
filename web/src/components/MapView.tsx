@@ -17,6 +17,7 @@ import { nodeTypes } from './nodes/Nodes'
 import { groupColor } from './MoveIcon'
 import { SHORTCUTS } from '@/lib/keys'
 import { pointer } from '@/lib/pointer'
+import { mapHooks } from '@/lib/mapHooks'
 import { Button } from '@/components/ui/button'
 
 export function MapView() {
@@ -135,6 +136,11 @@ export function MapView() {
     return false   // the store did it
   }, [])
 
+  useEffect(() => {
+    mapHooks.selectedIds = () => rf.getNodes().filter((n) => n.selected).map((n) => n.id)
+    mapHooks.toFlow = (p) => rf.screenToFlowPosition(p)
+  }, [rf])
+
   const empty = graph.order.length === 0
   return (
     <div ref={wrap} className="relative h-full min-h-[420px] w-full"
@@ -175,7 +181,7 @@ export function MapView() {
 function EmptyMap({ onStart }: { onStart: () => void }) {
   const steps = [
     ['Add a concept.', 'Double-click the map, or press Tab, and type an idea into the box.'],
-    ['Add a transform.', 'Pick a move on the left, or drag from the dot under a box onto empty space. It is wired to the selected box.'],
+    ['Add a transform.', 'Select the box and press Tab (or right-click), or drag from the dot under it onto empty space, and pick a move. The panel on the left lists them too.'],
     ['Run it.', 'Nothing runs until you press Run on a transform, or Run all at the top. Its best result shows in it; “1 of 3” steps through the others.'],
     ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. The wheel scrolls; Ctrl and the wheel zoom.'],
   ]

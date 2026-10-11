@@ -1,5 +1,5 @@
 // Left: add boxes, the settings new transforms start with, and the moves palette.
-import { FileText, Quote, StickyNote } from 'lucide-react'
+import { FileText, PanelLeftClose, PanelLeftOpen, Quote, StickyNote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Slider } from '@/components/ui/slider'
@@ -76,14 +76,35 @@ export function ModeTabs({ value, onChange, size = 'sm' }: { value: ModeId; onCh
   )
 }
 
+/** The left panel folded away: a thin strip with the button to open it and the quick add buttons. */
+function Rail() {
+  const set = useSettings((s) => s.set)
+  const tip = (label: string, el: React.ReactNode) => (
+    <Tooltip><TooltipTrigger asChild>{el}</TooltipTrigger><TooltipContent side="right">{label}</TooltipContent></Tooltip>
+  )
+  return (
+    <aside className="flex min-h-0 flex-col items-center gap-1.5 border-r border-border py-3 max-md:flex-row max-md:border-r-0 max-md:border-b max-md:px-3" aria-label="Tools">
+      {tip('Open the panel: moves, settings and help', <Button size="icon" variant="ghost" aria-label="Open the panel" onClick={() => set({ sidebar: true })}><PanelLeftOpen /></Button>)}
+      <div className="my-1 h-px w-6 bg-border max-md:h-6 max-md:w-px" />
+      {tip('New concept (or double-click the map)', <Button size="icon" variant="ghost" aria-label="New concept" onClick={() => addText('concept')}><FileText /></Button>)}
+      {tip('New source', <Button size="icon" variant="ghost" aria-label="New source" onClick={() => addText('source')}><Quote /></Button>)}
+      {tip('New note', <Button size="icon" variant="ghost" aria-label="New note" onClick={() => addText('note')}><StickyNote /></Button>)}
+    </aside>
+  )
+}
+
 export function SidePanel() {
   const err = useMoves((s) => s.error)
   const s = useSettings()
   const words = s.words[s.mode] || DEFAULT_WORDS[s.mode]
+  if (!s.sidebar) return <Rail />
   return (
     <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto [&>*]:shrink-0 border-r border-border p-4 max-md:border-r-0 max-md:border-b">
       <div className="space-y-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Add to the map</div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Add to the map</span>
+          <Button size="icon" variant="ghost" className="size-7" aria-label="Fold the panel away" title="Fold the panel away" onClick={() => s.set({ sidebar: false })}><PanelLeftClose /></Button>
+        </div>
         <div className="flex flex-wrap gap-1.5">
           <Button size="sm" onClick={() => addText('concept')} title="A box you type an idea into (or double-click the map)"><FileText />Concept</Button>
           <Button size="sm" variant="outline" onClick={() => addText('source')} title="A pasted passage (a book line, a list, lyrics) to collide with"><Quote />Source</Button>

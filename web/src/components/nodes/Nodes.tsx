@@ -10,6 +10,9 @@ import { cn } from '@/lib/utils'
 import { useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
 import { MoveIcon, groupColor } from '../MoveIcon'
+import { MoveTip } from '../MoveGroups'
+import { MODE_TIPS } from '../SidePanel'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const outCls = '!size-3 !border-2 !border-background !bg-muted-foreground hover:!bg-primary'
 const inCls = '!size-3 !border-2 !border-background !bg-muted-foreground'
@@ -121,11 +124,23 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
         </>
       )}
       <div className="flex items-start gap-1.5 border-b border-border/70 px-2 py-1.5">
-        {n.moveIds.map((m) => <MoveIcon key={m} id={m} className="size-5" />)}
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[12.5px] font-semibold" style={{ color }}>{name}</div>
-          {extra && <div className="truncate text-[11px] text-muted-foreground">{extra}</div>}
-        </div>
+        <Tooltip delayDuration={400}>
+          <TooltipTrigger asChild>
+            <div className="flex min-w-0 flex-1 cursor-help items-start gap-1.5">
+              {n.moveIds.map((m) => <MoveIcon key={m} id={m} className="size-5" />)}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[12.5px] font-semibold" style={{ color }}>{name}</div>
+                {extra && <div className="truncate text-[11px] text-muted-foreground">{extra}</div>}
+              </div>
+            </div>
+          </TooltipTrigger>
+          {def && (
+            <TooltipContent side="top" className="max-w-80">
+              <p className="mb-1 font-semibold">{name}</p>
+              <MoveTip m={def} mode={n.mode} />
+            </TooltipContent>
+          )}
+        </Tooltip>
         {state === 'working'
           ? <Loader2 className="mt-0.5 size-4 animate-spin text-muted-foreground" aria-label="Running" />
           : canRun && state !== 'done' && (
@@ -134,6 +149,16 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
               <Play className="size-3" />Run
             </button>
           )}
+      </div>
+      <div className="nodrag flex items-center gap-1 border-b border-border/70 px-2 py-1" role="radiogroup" aria-label="What this transform gives">
+        {(['image', 'ideas'] as const).map((m) => (
+          <button key={m} role="radio" aria-checked={n.mode === m} title={MODE_TIPS[m]}
+            className={cn('rounded-[3px] px-1.5 py-0.5 text-[10.5px] font-medium transition-colors',
+              n.mode === m ? 'bg-secondary text-foreground ring-1 ring-border' : 'text-muted-foreground hover:text-foreground')}
+            onClick={(e) => { e.stopPropagation(); if (n.mode !== m) useGraph.getState().setParam(id, { mode: m }) }}>
+            {m === 'image' ? 'Image concepts' : 'Ideas'}
+          </button>
+        ))}
       </div>
       <div className="px-2.5 py-2">
         {n.bypass ? <div className="italic text-muted-foreground">Bypassed: passes its input straight through.</div>

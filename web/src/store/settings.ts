@@ -11,6 +11,7 @@ interface Settings {
   words: Record<ModeId, number>        // 0 = the mode's default (not sent)
   showChanges: boolean
   view: 'map' | 'outline'
+  sidebar: boolean                     // the left panel is open (it starts collapsed)
   provider: Provider                   // the own-key panel's provider
   useOwn: boolean                      // presses use the visitor's own key
   useOwnProvider: Provider
@@ -23,13 +24,14 @@ export const useSettings = create<Settings>()(persist((set) => ({
   words: { image: 0, ideas: 0 },
   showChanges: true,
   view: 'map',
+  sidebar: false,
   provider: 'gemini',
   useOwn: false,
   useOwnProvider: 'gemini',
   set: (p) => set(p),
 }), {
   name: 'ct.settings.v3',
-  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view,
+  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar,
     provider: s.provider, useOwn: s.useOwn, useOwnProvider: s.useOwnProvider }),
 }))
 
