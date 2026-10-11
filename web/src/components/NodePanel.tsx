@@ -16,18 +16,8 @@ import { useUI } from '@/store/ui'
 import { ChangeView } from './ChangeView'
 import { MoveIcon, groupColor } from './MoveIcon'
 import { ModeTabs } from './SidePanel'
+import { speak, useSpeaking } from '@/lib/speak'
 
-let speaking: string | null = null
-function speak(text: string, key: string, set: (k: string | null) => void) {
-  const synth = window.speechSynthesis
-  if (!synth) return
-  synth.cancel()
-  if (speaking === key) { speaking = null; set(null); return }
-  const u = new SpeechSynthesisUtterance(text)
-  u.onend = u.onerror = () => { if (speaking === key) { speaking = null; set(null) } }
-  speaking = key; set(key)
-  synth.speak(u)
-}
 async function copy(text: string) {
   try { await navigator.clipboard.writeText(text); useUI.getState().toast('Copied.') } catch { useUI.getState().toast('Could not copy.', 'error') }
 }
@@ -54,11 +44,11 @@ function TextBox({ id, text, label }: { id: string; text: string; label: string 
 }
 
 function Actions({ id, text }: { id: string; text: string }) {
-  const [saying, setSaying] = useState<string | null>(null)
+  const saying = useSpeaking((s) => s.key)
   return (
     <>
       <Button size="sm" variant="outline" disabled={!text} onClick={() => void copy(text)}><Copy />Copy</Button>
-      <Button size="sm" variant="outline" disabled={!text} onClick={() => speak(text, id, setSaying)}><Volume2 />{saying === id ? 'Stop' : 'Read aloud'}</Button>
+      <Button size="sm" variant="outline" disabled={!text} onClick={() => speak(text, id)}><Volume2 />{saying === id ? 'Stop' : 'Read aloud'}</Button>
       <Button size="sm" variant="ghost" onClick={() => useGraph.getState().remove([id])}><Trash2 />Delete</Button>
     </>
   )

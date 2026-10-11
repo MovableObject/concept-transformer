@@ -16,7 +16,7 @@ export function estHeight(n: MapBox): number {
   if (n.kind === 'transform') {
     const r = n.results[n.shown] || n.results[0]
     const lines = r ? Math.min(5, Math.max(1, Math.ceil(r.plain.length / perLine))) : 1
-    return 70 + lines * 18 + (n.results.length > 1 ? 26 : 0)
+    return 100 + lines * 18 + (n.results.length > 1 ? 26 : 0)
   }
   const lines = Math.min(n.kind === 'source' ? 6 : 5, Math.max(1, Math.ceil((n.text || ' ').length / perLine)))
   return 22 + lines * 19 + (n.kind === 'source' ? 18 : 0)
