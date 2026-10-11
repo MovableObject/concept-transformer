@@ -2,7 +2,7 @@
 // Graphs run top to bottom: wires go from the dot under a node (its output) into a dot on top of a transform (its inputs).
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertTriangle, ArrowDown, MonitorPlay, Info, Loader2, Play, Quote, RotateCw, StickyNote, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ChevronLeft, ChevronRight, Info, Loader2, Play, Quote, StickyNote, Volume2, VolumeX } from 'lucide-react'
 import { labelOf, moveById, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
@@ -44,26 +44,21 @@ function ReadAloud({ id, text }: { id: string; text: string }) {
   )
 }
 
-/** The bypass flag, Houdini's yellow one: lit when the node passes its input straight through (B). */
-function BypassFlag({ id, on }: { id: string; on: boolean }) {
+/** Houdini's flag tabs at the right end of the title bar: pink = bypass, blue = display. Dim when off, lit when on. */
+const tab = 'nodrag h-5 w-2.5 rounded-[2px] border transition-colors'
+function BypassTab({ id, on }: { id: string; on: boolean }) {
   return (
-    <button className={cn(flagBtn, on && '!border-amber-400 !bg-amber-400/25 !text-amber-300 opacity-100')}
-      role="switch" aria-checked={on} aria-label="Bypass" title={on ? 'Bypassed: passes its input straight through. Click to turn it back on (B)' : 'Bypass: pass the input straight through without this move (B)'}
-      onClick={(e) => { e.stopPropagation(); useGraph.getState().setParam(id, { bypass: !on || undefined }) }}>
-      <ArrowDown className="size-3.5" />
-    </button>
+    <button className={cn(tab, on ? 'border-pink-400 bg-pink-400' : 'border-pink-400/50 bg-pink-400/15 hover:bg-pink-400/40')}
+      role="switch" aria-checked={on} aria-label="Bypass" title={on ? 'Bypassed: passes its input straight through. Click to turn it back on (B)' : 'Bypass: pass the input straight through without this transform (B)'}
+      onClick={(e) => { e.stopPropagation(); useGraph.getState().setParam(id, { bypass: !on || undefined }) }} />
   )
 }
-
-/** The display flag, Houdini's blue one: the chain above this node runs by itself when something in it changes (D). */
-function DisplayFlag({ id, on }: { id: string; on: boolean }) {
+function DisplayTab({ id, on }: { id: string; on: boolean }) {
   return (
-    <button className={cn(flagBtn, on && '!border-sky-400 !bg-sky-400/25 !text-sky-300 opacity-100')}
+    <button className={cn(tab, on ? 'border-sky-400 bg-sky-400' : 'border-sky-400/50 bg-sky-400/15 hover:bg-sky-400/40')}
       role="switch" aria-checked={on} aria-label="Display flag"
       title={on ? 'Display flag: Cook runs the chain down to here. Click to take it off (D)' : 'Display flag: put it here, and Cook runs the chain down to this node (D)'}
-      onClick={(e) => { e.stopPropagation(); useGraph.getState().setDisplay(on ? null : id) }}>
-      <MonitorPlay className="size-3.5" />
-    </button>
+      onClick={(e) => { e.stopPropagation(); useGraph.getState().setDisplay(on ? null : id) }} />
   )
 }
 
@@ -166,7 +161,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
     <div className={cn('group relative rounded-[4px] border bg-card text-[12.5px] leading-snug shadow-sm',
       state === 'new' && 'border-dashed border-muted-foreground/60',
       state === 'stale' && 'border-amber-400/80', state === 'error' && 'border-destructive',
-      (state === 'done' || state === 'working') && 'border-border', n.bypass && '!border-amber-400/70 bg-amber-400/[0.06]',
+      (state === 'done' || state === 'working') && 'border-border', n.bypass && '!border-pink-400/60 bg-pink-400/[0.06]',
       selected && '!border-primary ring-1 ring-primary')}
       style={{ width: T_W, borderLeft: `4px solid ${color}` }}>
       {Array.from({ length: ports }, (_, i) => (
@@ -206,10 +201,13 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
               <Play className="size-3" />Run
             </button>
           )}
+        <div className="ml-0.5 flex shrink-0 items-center gap-1 self-center">
+          <BypassTab id={id} on={!!n.bypass} />
+          <DisplayTab id={id} on={isDisplay} />
+        </div>
       </div>
       <FlagRing
         left={<>
-          <BypassFlag id={id} on={!!n.bypass} />
           {def && (
             <Tooltip delayDuration={150}>
               <TooltipTrigger asChild>
@@ -222,28 +220,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
             </Tooltip>
           )}
         </>}
-        right={<>
-          <DisplayFlag id={id} on={isDisplay} />
-          <ReadAloud id={id} text={n.bypass ? '' : (r ? (r.tag ? `${r.plain} ${r.tag}` : r.plain) : '')} />
-          {r && !n.bypass && (['kept', 'discarded'] as const).map((v) => (
-            <button key={v} className={cn(flagBtn, r.verdict === v && (v === 'kept' ? '!border-primary !text-primary' : '!border-destructive !text-destructive'))}
-              title={v === 'kept' ? 'Keep: later runs aim for ideas like this (K)' : 'Discard: later runs steer away from ideas like this (X)'}
-              aria-label={v === 'kept' ? 'Keep' : 'Discard'} aria-pressed={r.verdict === v}
-              onClick={(e) => { e.stopPropagation(); useGraph.getState().setVerdict(id, r.verdict === v ? undefined : v) }}>
-              {v === 'kept' ? <ThumbsUp className="size-3.5" /> : <ThumbsDown className="size-3.5" />}
-            </button>
-          ))}
-        </>} />
-      {isDisplay && (
-        <span className="pointer-events-none absolute left-full top-2 ml-2 flex size-5 items-center justify-center rounded-full border border-sky-400 bg-sky-400/25 text-sky-300 group-hover:opacity-0" aria-hidden="true">
-          <MonitorPlay className="size-3" />
-        </span>
-      )}
-      {n.bypass && (
-        <span className="pointer-events-none absolute right-full top-2 mr-2 flex size-5 items-center justify-center rounded-full border border-amber-400 bg-amber-400/25 text-amber-300 group-hover:opacity-0" aria-hidden="true">
-          <ArrowDown className="size-3" />
-        </span>
-      )}
+        right={<ReadAloud id={id} text={n.bypass ? '' : (r ? (r.tag ? `${r.plain} ${r.tag}` : r.plain) : '')} />} />
 
       <div className="px-2.5 py-2">
         {n.bypass ? <div className="italic text-muted-foreground">Bypassed: passes its input straight through.</div>
@@ -258,11 +235,11 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
           <div className="mt-1.5 flex items-center gap-1.5">
             {(r?.tag || r?.hand) && <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted-foreground">{r.hand ? 'by hand' : r.tag.replace(/^\[|\]$/g, '')}</span>}
             {n.results.length > 1 && (
-              <button className="nodrag ml-auto flex items-center gap-1 rounded-[3px] border border-input bg-background px-1.5 py-0.5 text-[10.5px] text-muted-foreground hover:border-primary hover:text-foreground"
-                title="Show the next result; it becomes what this transform passes on (N)"
-                onClick={(e) => { e.stopPropagation(); useGraph.getState().rotate(id) }}>
-                {n.shown + 1} of {n.results.length} <RotateCw className="size-3" />
-              </button>
+              <span className="nodrag ml-auto flex items-center rounded-[3px] border border-input bg-background text-[10.5px] text-muted-foreground" title="Step through the results; the one showing is what this transform passes on (N, Shift+N)">
+                <button className="px-1 py-0.5 hover:text-foreground" aria-label="Previous result" onClick={(e) => { e.stopPropagation(); useGraph.getState().show(id, n.shown - 1) }}><ChevronLeft className="size-3" /></button>
+                <span className="tabular-nums">{n.shown + 1} of {n.results.length}</span>
+                <button className="px-1 py-0.5 hover:text-foreground" aria-label="Next result" onClick={(e) => { e.stopPropagation(); useGraph.getState().rotate(id) }}><ChevronRight className="size-3" /></button>
+              </span>
             )}
           </div>
         )}

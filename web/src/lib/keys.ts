@@ -17,8 +17,8 @@ export const SHORTCUTS: [string, string][] = [
   ['Enter', 'type into the box'],
   ['R', 'run'],
   ['Shift+R', 'run all'],
-  ['N', 'next result'],
-  ['K / X', 'keep / discard it'],
+  ['N / Shift+N', 'next / previous result'],
+  ['K / X', 'aim for / steer away from this'],
   ['B', 'bypass'],
   ['D', 'display flag (Cook runs its chain)'],
   ['F', 'finish'],
@@ -52,7 +52,7 @@ export function onShortcut(e: KeyboardEvent) {
   if (!n) return
   if (e.key === 'Enter' && n.kind !== 'transform') { e.preventDefault(); ui.set({ editing: n.id }) }
   else if (k === 'r' && n.kind === 'transform' && !ui.busy) { e.preventDefault(); runNodes([n.id]) }
-  else if (k === 'n' && n.kind === 'transform') { e.preventDefault(); store.rotate(n.id) }
+  else if (k === 'n' && n.kind === 'transform') { e.preventDefault(); if (e.shiftKey) store.show(n.id, n.shown - 1); else store.rotate(n.id) }
   else if (k === 'd' && n.kind === 'transform') { e.preventDefault(); store.setDisplay(g.display === n.id ? null : n.id) }
   else if (k === 'b' && n.kind === 'transform') { e.preventDefault(); store.setParam(n.id, { bypass: !n.bypass || undefined }) }
   else if (k === 'f' && !ui.busy) { e.preventDefault(); finish(n.id) }

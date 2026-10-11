@@ -156,7 +156,7 @@ function Body() {
         <label className="flex items-center gap-2">
           <span className={rowLabel}>Bypass</span>
           <Switch checked={!!t.bypass} onCheckedChange={(v) => store.setParam(t.id, { bypass: v || undefined })} aria-label="Bypass" />
-          <span className="text-[12px] text-muted-foreground"><ArrowDown className="mr-1 inline size-3 text-amber-400" />pass the input straight through (B)</span>
+          <span className="text-[12px] text-muted-foreground"><ArrowDown className="mr-1 inline size-3 text-pink-400" />pass the input straight through (B)</span>
         </label>
         <label className="flex items-center gap-2">
           <span className={rowLabel}>Display</span>
@@ -178,6 +178,7 @@ function Body() {
       {!t.bypass && (
         <div className="space-y-1.5 border-t border-border pt-3">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Results: the chosen one passes on</div>
+          <p className="text-[11px] text-muted-foreground">The thumbs never rerun anything: they tell later runs on this map what to aim for and what to avoid.</p>
           {t.results.map((r, i) => editing === i ? (
             <div key={i} className="rounded-[4px] border border-primary px-2.5 py-2"><HandWrite id={t.id} index={i} start={r.plain} onDone={() => setEditing(null)} /></div>
           ) : (
@@ -190,8 +191,8 @@ function Body() {
                 {(['kept', 'discarded'] as const).map((v) => (
                   <button key={v} className={cn('flex size-6 items-center justify-center rounded-[3px] hover:bg-accent',
                     r.verdict === v ? (v === 'kept' ? 'text-primary' : 'text-destructive') : 'text-muted-foreground')}
-                    aria-label={v === 'kept' ? 'Keep' : 'Discard'} aria-pressed={r.verdict === v}
-                    title={v === 'kept' ? 'Keep: later runs aim for ideas like this (K)' : 'Discard: later runs steer away from ideas like this (X)'}
+                    aria-label={v === 'kept' ? 'Aim for more like this' : 'Steer away from this'} aria-pressed={r.verdict === v}
+                    title={v === 'kept' ? 'Aim for more like this: later runs on this map are told you liked this kind of idea (K)' : 'Steer away from this: later runs on this map are told to avoid this kind of idea (X)'}
                     onClick={() => store.update((gg) => { const tt = gg.nodes[t.id]; if (tt?.kind === 'transform' && tt.results[i]) tt.results[i].verdict = r.verdict === v ? undefined : v }, { undo: true })}>
                     {v === 'kept' ? <ThumbsUp className="size-3.5" /> : <ThumbsDown className="size-3.5" />}
                   </button>
