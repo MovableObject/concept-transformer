@@ -128,3 +128,6 @@
 .ct-del { color: var(--muted-foreground); text-decoration: line-through; opacity: .8; }
 .ct-add { font-weight: 650; }
 .ct-tag { color: var(--muted-foreground); font-size: .85em; }
+
+/* Houdini-style flags around a node show on hover and stay while the node is selected. */
+.react-flow__node.selected .ct-flags { opacity: 1; pointer-events: auto; }

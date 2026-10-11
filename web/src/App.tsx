@@ -7,16 +7,16 @@ import { useSettings } from '@/store/settings'
 import { cn } from '@/lib/utils'
 import { Header } from '@/components/Header'
 import { SidePanel } from '@/components/SidePanel'
-import { Toolbar } from '@/components/Toolbar'
 import { NodePanel } from '@/components/NodePanel'
 import { MapView } from '@/components/MapView'
 import { Outline } from '@/components/Outline'
 import { TabMenu } from '@/components/TabMenu'
-import { Footer, Toasts } from '@/components/Footer'
+import { Toasts } from '@/components/Footer'
 
 export default function App() {
   const view = useSettings((s) => s.view)
   const sidebar = useSettings((s) => s.sidebar)
+  const params = useSettings((s) => s.params)
   useEffect(() => { void useMoves.getState().load() }, [])
   useEffect(() => {
     window.addEventListener('keydown', onShortcut)
@@ -33,15 +33,14 @@ export default function App() {
       <ReactFlowProvider>
         <div className="flex h-full flex-col max-md:h-auto">
           <Header />
-          <div className={cn('grid min-h-0 flex-1 max-md:grid-cols-1', sidebar ? 'grid-cols-[320px_minmax(0,1fr)]' : 'grid-cols-[52px_minmax(0,1fr)]')}>
+          <div className="grid min-h-0 flex-1 max-md:!grid-cols-1"
+            style={{ gridTemplateColumns: `${sidebar ? '320px' : '52px'} minmax(0,1fr) ${params ? '340px' : '44px'}` }}>
             <SidePanel />
             <main className="flex min-h-0 flex-col max-md:min-h-[85vh]">
-              <Toolbar />
-              <NodePanel />
               <div className="min-h-0 flex-1">{view === 'map' ? <MapView /> : <Outline />}</div>
             </main>
+            <NodePanel />
           </div>
-          <Footer />
         </div>
         <TabMenu />
         <Toasts />

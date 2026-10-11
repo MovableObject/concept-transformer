@@ -2,7 +2,7 @@
 // Graphs run top to bottom: wires go from the dot under a node (its output) into a dot on top of a transform (its inputs).
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertTriangle, EyeOff, Loader2, Play, Quote, RotateCw, StickyNote, ThumbsDown, ThumbsUp, Trash2, Volume2, VolumeX } from 'lucide-react'
+import { AlertTriangle, ArrowDown, Info, Loader2, Play, Quote, RotateCw, StickyNote, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
 import { labelOf, moveById } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
@@ -19,24 +19,42 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const outCls = '!size-3 !border-2 !border-background !bg-muted-foreground hover:!bg-primary'
 
-/** Small buttons on a node: read it aloud and delete it (and, on a transform, bypass it). */
-function NodeTools({ id, text, children }: { id: string; text: string; children?: React.ReactNode }) {
-  const saying = useSpeaking((s) => s.key === id)
-  const btn = 'nodrag flex size-6 items-center justify-center rounded-[3px] text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40'
+// ── Flags around a node, like the ring Houdini shows when you hover a node: they appear on hover (or while the node is
+// selected) just outside its edges, so the graph itself stays clean. A lit flag (bypass) stays visible. ──
+const flagBtn = 'nodrag pointer-events-auto flex size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-foreground disabled:opacity-40'
+
+function FlagRing({ left, right }: { left?: React.ReactNode; right?: React.ReactNode }) {
+  const rail = 'pointer-events-none absolute top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1.5 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 ct-flags'
   return (
-    <div className="flex items-center gap-0.5">
-      {children}
-      <button className={btn} disabled={!text} title={saying ? 'Stop reading' : 'Read aloud'} aria-label={saying ? 'Stop reading' : 'Read aloud'}
-        onClick={(e) => { e.stopPropagation(); speak(text, id) }}>
-        {saying ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
-      </button>
-      <button className={cn(btn, 'hover:text-destructive')} title="Delete (Delete key; Ctrl+Z brings it back)" aria-label="Delete"
-        onClick={(e) => { e.stopPropagation(); if (useSpeaking.getState().key === id) { window.speechSynthesis?.cancel(); useSpeaking.setState({ key: null }) } useGraph.getState().remove([id]) }}>
-        <Trash2 className="size-3.5" />
-      </button>
-    </div>
+    <>
+      {left && <div className={cn(rail, 'right-full pr-2')}>{left}</div>}
+      {right && <div className={cn(rail, 'left-full pl-2')}>{right}</div>}
+    </>
   )
 }
+
+/** Read a node aloud (press again to stop). Deleting is the Delete key, as in Houdini. */
+function ReadAloud({ id, text }: { id: string; text: string }) {
+  const saying = useSpeaking((s) => s.key === id)
+  return (
+    <button className={cn(flagBtn, saying && 'border-primary text-primary')} disabled={!text} title={saying ? 'Stop reading' : 'Read aloud'} aria-label={saying ? 'Stop reading' : 'Read aloud'}
+      onClick={(e) => { e.stopPropagation(); speak(text, id) }}>
+      {saying ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
+    </button>
+  )
+}
+
+/** The bypass flag, Houdini's yellow one: lit when the node passes its input straight through (B). */
+function BypassFlag({ id, on }: { id: string; on: boolean }) {
+  return (
+    <button className={cn(flagBtn, on && '!border-amber-400 !bg-amber-400/25 !text-amber-300 opacity-100')}
+      role="switch" aria-checked={on} aria-label="Bypass" title={on ? 'Bypassed: passes its input straight through. Click to turn it back on (B)' : 'Bypass: pass the input straight through without this move (B)'}
+      onClick={(e) => { e.stopPropagation(); useGraph.getState().setParam(id, { bypass: !on || undefined }) }}>
+      <ArrowDown className="size-3.5" />
+    </button>
+  )
+}
+
 const inCls = '!size-3 !border-2 !border-background !bg-muted-foreground'
 
 /** Text typed straight into a node. Enter keeps it (Shift+Enter for a new line); Escape or clicking away too. */
@@ -77,7 +95,7 @@ export const ConceptNode = memo(function ConceptNode({ id, selected }: NodeProps
       selected && '!border-primary ring-1 ring-primary')} style={{ width: C_W }}
       onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
       <NodeText id={id} text={n.text} placeholder="Type a concept" clamp="line-clamp-5" />
-      <div className="mt-1 flex justify-end"><NodeTools id={id} text={n.text} /></div>
+      <FlagRing right={<ReadAloud id={id} text={n.text} />} />
       <Handle type="source" id="out" position={Position.Bottom} className={outCls} title="Drag into a transform, or onto empty space to add one" />
     </div>
   )
@@ -90,8 +108,8 @@ export const SourceNode = memo(function SourceNode({ id, selected }: NodeProps) 
     <div className={cn('group relative rounded-[4px] border border-dashed border-chart-2 bg-background px-3 py-2 text-[12.5px] leading-snug shadow-sm',
       selected && '!border-solid !border-primary ring-1 ring-primary')} style={{ width: S_W }}
       onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
-      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-chart-2"><Quote className="size-3" />Source
-        <span className="ml-auto normal-case tracking-normal"><NodeTools id={id} text={n.text} /></span></div>
+      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-chart-2"><Quote className="size-3" />Source</div>
+      <FlagRing right={<ReadAloud id={id} text={n.text} />} />
       <NodeText id={id} text={n.text} placeholder="Paste a passage to collide with" className="italic" clamp="line-clamp-6 text-muted-foreground" />
       <Handle type="source" id="out" position={Position.Bottom} className={outCls} title="Drag into a collision" />
     </div>
@@ -102,11 +120,11 @@ export const NoteNode = memo(function NoteNode({ id, selected }: NodeProps) {
   const n = useGraph((s) => s.graph.nodes[id])
   if (!n || n.kind !== 'note') return null
   return (
-    <div className={cn('rounded-[3px] border border-chart-4/50 bg-chart-4/10 px-3 py-2 text-[12.5px] leading-snug text-foreground/90 shadow-sm',
+    <div className={cn('group relative rounded-[3px] border border-chart-4/50 bg-chart-4/10 px-3 py-2 text-[12.5px] leading-snug text-foreground/90 shadow-sm',
       selected && '!border-primary ring-1 ring-primary')} style={{ width: N_W }}
       onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
-      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-chart-4"><StickyNote className="size-3" />Note
-        <span className="ml-auto normal-case tracking-normal"><NodeTools id={id} text={n.text} /></span></div>
+      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-chart-4"><StickyNote className="size-3" />Note</div>
+      <FlagRing right={<ReadAloud id={id} text={n.text} />} />
       <NodeText id={id} text={n.text} placeholder="Write a note" clamp="line-clamp-8 whitespace-pre-wrap" />
     </div>
   )
@@ -134,7 +152,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
     <div className={cn('group relative rounded-[4px] border bg-card text-[12.5px] leading-snug shadow-sm',
       state === 'new' && 'border-dashed border-muted-foreground/60',
       state === 'stale' && 'border-amber-400/80', state === 'error' && 'border-destructive',
-      (state === 'done' || state === 'working') && 'border-border', n.bypass && 'opacity-55',
+      (state === 'done' || state === 'working') && 'border-border', n.bypass && '!border-amber-400/70 bg-amber-400/[0.06]',
       selected && '!border-primary ring-1 ring-primary')}
       style={{ width: T_W, borderLeft: `4px solid ${color}` }}>
       {Array.from({ length: ports }, (_, i) => (
@@ -175,42 +193,35 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
             </button>
           )}
       </div>
-      <div className="nodrag flex items-center gap-1 border-b border-border/70 px-2 py-1" role="radiogroup" aria-label="What this transform gives">
-        {(['image', 'ideas'] as const).map((m) => (
-          <button key={m} role="radio" aria-checked={n.mode === m} title={MODE_TIPS[m]}
-            className={cn('rounded-[3px] px-1.5 py-0.5 text-[10.5px] font-medium transition-colors',
-              n.mode === m ? 'bg-secondary text-foreground ring-1 ring-border' : 'text-muted-foreground hover:text-foreground')}
-            onClick={(e) => { e.stopPropagation(); if (n.mode !== m) useGraph.getState().setParam(id, { mode: m }) }}>
-            {m === 'image' ? 'Images' : 'Ideas'}
-          </button>
-        ))}
-        <span className="ml-auto">
-          <NodeTools id={id} text={n.bypass ? '' : (r ? (r.tag ? `${r.plain} ${r.tag}` : r.plain) : '')}>
-            {r && !n.bypass && (['kept', 'discarded'] as const).map((v) => (
-              <button key={v} className={cn('nodrag flex size-6 items-center justify-center rounded-[3px] hover:bg-accent',
-                r.verdict === v ? (v === 'kept' ? 'text-primary' : 'text-destructive') : 'text-muted-foreground hover:text-foreground')}
-                title={v === 'kept' ? 'Keep: later runs aim for ideas like this (K)' : 'Discard: later runs steer away from ideas like this (X)'}
-                aria-label={v === 'kept' ? 'Keep' : 'Discard'} aria-pressed={r.verdict === v}
-                onClick={(e) => { e.stopPropagation(); useGraph.getState().setVerdict(id, r.verdict === v ? undefined : v) }}>
-                {v === 'kept' ? <ThumbsUp className="size-3.5" /> : <ThumbsDown className="size-3.5" />}
-              </button>
-            ))}
-            <button className={cn('nodrag flex h-6 items-center gap-1 rounded-[3px] px-1.5 text-[10.5px] font-medium',
-              n.bypass ? 'bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/50' : 'text-muted-foreground hover:bg-accent hover:text-foreground')}
-              role="switch" aria-checked={!!n.bypass} title="Bypass: pass the input straight through without this move (B)"
-              onClick={(e) => { e.stopPropagation(); useGraph.getState().setParam(id, { bypass: !n.bypass || undefined }) }}>
-              <EyeOff className="size-3.5" />Bypass
+      <FlagRing
+        left={<>
+          <BypassFlag id={id} on={!!n.bypass} />
+          {def && (
+            <Tooltip delayDuration={150}>
+              <TooltipTrigger asChild>
+                <button className={flagBtn} aria-label="About this move" onClick={(e) => e.stopPropagation()}><Info className="size-3.5" /></button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-80"><p className="mb-1 font-semibold">{name}</p><MoveTip m={def} mode={n.mode} /></TooltipContent>
+            </Tooltip>
+          )}
+        </>}
+        right={<>
+          <ReadAloud id={id} text={n.bypass ? '' : (r ? (r.tag ? `${r.plain} ${r.tag}` : r.plain) : '')} />
+          {r && !n.bypass && (['kept', 'discarded'] as const).map((v) => (
+            <button key={v} className={cn(flagBtn, r.verdict === v && (v === 'kept' ? '!border-primary !text-primary' : '!border-destructive !text-destructive'))}
+              title={v === 'kept' ? 'Keep: later runs aim for ideas like this (K)' : 'Discard: later runs steer away from ideas like this (X)'}
+              aria-label={v === 'kept' ? 'Keep' : 'Discard'} aria-pressed={r.verdict === v}
+              onClick={(e) => { e.stopPropagation(); useGraph.getState().setVerdict(id, r.verdict === v ? undefined : v) }}>
+              {v === 'kept' ? <ThumbsUp className="size-3.5" /> : <ThumbsDown className="size-3.5" />}
             </button>
-          </NodeTools>
+          ))}
+        </>} />
+      {n.bypass && (
+        <span className="pointer-events-none absolute right-full top-2 mr-2 flex size-5 items-center justify-center rounded-full border border-amber-400 bg-amber-400/25 text-amber-300 group-hover:opacity-0" aria-hidden="true">
+          <ArrowDown className="size-3" />
         </span>
-      </div>
-      <div className="nodrag nowheel flex items-center gap-2 border-b border-border/70 px-2.5 py-1.5" title="Longest a result may be, in words">
-        <span className="text-[10.5px] text-muted-foreground">Length</span>
-        <Slider min={5} max={60} step={1} value={[n.words || DEFAULT_WORDS[n.mode]]} aria-label="Length of results" className="flex-1"
-          onPointerDown={(e) => { e.stopPropagation(); useGraph.getState().checkpoint() }}
-          onValueChange={([v]) => useGraph.getState().setParam(id, { words: v }, false)} />
-        <span className="w-14 text-right text-[10.5px] tabular-nums text-muted-foreground">{n.words || DEFAULT_WORDS[n.mode]} words</span>
-      </div>
+      )}
+
       <div className="px-2.5 py-2">
         {n.bypass ? <div className="italic text-muted-foreground">Bypassed: passes its input straight through.</div>
           : r ? <div className={cn('line-clamp-5', state === 'stale' && 'text-muted-foreground')}>{r.plain}</div>

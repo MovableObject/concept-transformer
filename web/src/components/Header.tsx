@@ -15,6 +15,7 @@ import { forgetKey, keyRemembered, ownKey, saveKey } from '@/lib/storage'
 import type { Engine, Provider } from '@/lib/types'
 import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
+import { Toolbar } from './Toolbar'
 
 const KEY_HELP: Record<Provider, [string, string, string]> = {
   gemini: ['In Google AI Studio, create the key in a NEW project and do not set up billing on it. It then runs on the free tier and nothing can be charged.',
@@ -85,13 +86,11 @@ export function Header() {
   const open = useUI((u) => u.keyPanelOpen)
   const own = s.useOwn && !!ownKey(s.useOwnProvider)
   return (
-    <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border px-4 py-3">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Concept Transformer</h1>
-        <p className="text-sm text-muted-foreground">Type concepts, wire them through creative moves, collide ideas, and run the graph.</p>
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <ToggleGroup type="single" variant="outline" size="sm" value={own ? '' : s.engine}
+    <header className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5">
+      <h1 className="mr-2 text-[15px] font-semibold tracking-tight" title="Type concepts, wire them through creative moves, collide ideas, and run the graph.">Concept Transformer</h1>
+      <Toolbar />
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        <ToggleGroup type="single" variant="outline" size="sm" className="h-7" value={own ? '' : s.engine}
           onValueChange={(v) => { if (v) s.set({ engine: v as Engine, useOwn: false }) }}>
           {(Object.keys(ENGINES) as Engine[]).map((e) => <ToggleGroupItem key={e} value={e} className="px-3">{ENGINES[e]}</ToggleGroupItem>)}
         </ToggleGroup>
@@ -99,7 +98,7 @@ export function Header() {
           <Tooltip>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
-                <Button variant={own ? 'default' : 'outline'} size="sm"><KeyRound />{own ? `Your ${PROVIDERS[s.useOwnProvider]} key` : 'Use your own key'}</Button>
+                <Button variant={own ? 'default' : 'outline'} size="sm" className="h-7"><KeyRound />{own ? `Your ${PROVIDERS[s.useOwnProvider]} key` : 'Own key'}</Button>
               </PopoverTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-72">

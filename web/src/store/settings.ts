@@ -12,6 +12,8 @@ interface Settings {
   showChanges: boolean
   view: 'map' | 'outline'
   sidebar: boolean                     // the left panel is open (it starts collapsed)
+  minimap: boolean                     // the overview map in the corner (off unless asked for)
+  params: boolean                      // the parameter pane on the right is open
   provider: Provider                   // the own-key panel's provider
   useOwn: boolean                      // presses use the visitor's own key
   useOwnProvider: Provider
@@ -25,13 +27,15 @@ export const useSettings = create<Settings>()(persist((set) => ({
   showChanges: true,
   view: 'map',
   sidebar: false,
+  minimap: false,
+  params: true,
   provider: 'gemini',
   useOwn: false,
   useOwnProvider: 'gemini',
   set: (p) => set(p),
 }), {
   name: 'ct.settings.v3',
-  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar,
+  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar, minimap: s.minimap, params: s.params,
     provider: s.provider, useOwn: s.useOwn, useOwnProvider: s.useOwnProvider }),
 }))
 

@@ -1,5 +1,5 @@
 // The map: the node graph drawn by React Flow, top to bottom as in Houdini. Wires go from a node's output (the dot
-// underneath) into a transform's input (the dot on top). The mouse wheel scrolls; Ctrl with the wheel zooms.
+// underneath) into a transform's input (the dot on top). The mouse wheel zooms; drag empty space to move around.
 // Tab or right-click opens the add menu at the pointer; double-click on empty space adds a concept to type into;
 // dropping a wire on empty space opens the menu wired to it; dropping it onto another box offers the collisions.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -13,6 +13,7 @@ import { addText, openTabMenu, wireInto } from '@/lib/actions'
 import { canWire, stateOf } from '@/lib/graph'
 import { useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
+import { useSettings } from '@/store/settings'
 import { nodeTypes } from './nodes/Nodes'
 import { groupColor } from './MoveIcon'
 import { SHORTCUTS } from '@/lib/keys'
@@ -24,6 +25,7 @@ export function MapView() {
   const graph = useGraph((s) => s.graph)
   const version = useGraph((s) => s.version)
   useMoves((s) => s.moves)
+  const minimap = useSettings((s) => s.minimap)
   const rf = useReactFlow()
   const wrap = useRef<HTMLDivElement>(null)
   const [nodes, setNodes] = useState<Node[]>([])
@@ -139,6 +141,13 @@ export function MapView() {
   useEffect(() => {
     mapHooks.selectedIds = () => rf.getNodes().filter((n) => n.selected).map((n) => n.id)
     mapHooks.toFlow = (p) => rf.screenToFlowPosition(p)
+    mapHooks.fit = () => { void rf.fitView({ padding: 0.2, duration: 300, maxZoom: 1.1 }) }
+    mapHooks.tidy = () => {
+      const measured: Record<string, { w: number; h: number }> = {}
+      for (const n of rf.getNodes()) if (n.measured?.width) measured[n.id] = { w: n.measured.width, h: n.measured.height ?? 60 }
+      useGraph.getState().tidy(measured)
+      setTimeout(() => mapHooks.fit(), 80)
+    }
   }, [rf])
 
   const empty = graph.order.length === 0
@@ -158,19 +167,18 @@ export function MapView() {
         connectionMode={ConnectionMode.Strict} connectionRadius={30}
         onPaneClick={() => useUI.getState().set({ tabMenu: null })}
         onPaneContextMenu={(e) => { e.preventDefault(); openTabMenu({ sx: e.clientX, sy: e.clientY, at: rf.screenToFlowPosition({ x: e.clientX, y: e.clientY }), inputs: [] }) }}
-        zoomOnDoubleClick={false} panOnScroll zoomOnScroll={false} zoomActivationKeyCode={['Control', 'Meta']}
+        zoomOnDoubleClick={false}
         fitView fitViewOptions={{ padding: 0.25, maxZoom: 1.1 }} minZoom={0.15} maxZoom={2.5}
         selectionOnDrag={false} panOnDrag multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
         proOptions={{ hideAttribution: true }} colorMode="dark"
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="color-mix(in oklch, var(--foreground) 16%, transparent)" />
-        <Controls showInteractive={false} position="bottom-left" />
-        <MiniMap pannable zoomable position="bottom-right"
+        {minimap && <MiniMap pannable zoomable position="bottom-right"
           nodeColor={(n) => {
             const m = useGraph.getState().graph.nodes[n.id]
             return m?.kind === 'transform' ? (groupColor(moveById(m.moveIds[0])?.group) || 'var(--chart-3)') : m?.kind === 'source' ? 'var(--chart-2)' : 'var(--muted-foreground)'
           }}
-          maskColor="color-mix(in oklch, var(--background) 70%, transparent)" className="max-md:!hidden" />
+          maskColor="color-mix(in oklch, var(--background) 70%, transparent)" className="max-md:!hidden" />}
       </ReactFlow>
       {empty && <EmptyMap onStart={() => addText('concept', rf.screenToFlowPosition({ x: (wrap.current?.getBoundingClientRect().left ?? 0) + 80, y: (wrap.current?.getBoundingClientRect().top ?? 0) + 120 }))} />}
     </div>
@@ -183,7 +191,7 @@ function EmptyMap({ onStart }: { onStart: () => void }) {
     ['Add a concept.', 'Double-click the map, or press Tab, and type an idea into the box.'],
     ['Add a transform.', 'Select the box and press Tab (or right-click), or drag from the dot under it onto empty space, and pick a move. The panel on the left lists them too.'],
     ['Run it.', 'Nothing runs until you press Run on a transform, or Run all at the top. Its best result shows in it; “1 of 3” steps through the others.'],
-    ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. The wheel scrolls; Ctrl and the wheel zoom.'],
+    ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. The wheel zooms; drag empty space to move around.'],
   ]
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 max-md:p-3">

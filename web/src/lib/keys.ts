@@ -10,8 +10,9 @@ import { normalize } from '@/store/graph'
 
 export const SHORTCUTS: [string, string][] = [
   ['Tab', 'add a node'],
-  ['Wheel', 'scroll'],
-  ['Ctrl+wheel', 'zoom'],
+  ['Wheel', 'zoom'],
+  ['H', 'fit in view'],
+  ['L', 'tidy up'],
   ['Double-click', 'new concept'],
   ['Enter', 'type into the box'],
   ['R', 'run'],
@@ -43,6 +44,8 @@ export function onShortcut(e: KeyboardEvent) {
     return
   }
   if (k === 'r' && e.shiftKey) { e.preventDefault(); if (!ui.busy) runAll(); return }
+  if (k === 'h' && !e.shiftKey) { e.preventDefault(); mapHooks.fit(); return }
+  if (k === 'l' && !e.shiftKey) { e.preventDefault(); mapHooks.tidy(); return }
   if (!n) return
   if (e.key === 'Enter' && n.kind !== 'transform') { e.preventDefault(); ui.set({ editing: n.id }) }
   else if (k === 'r' && n.kind === 'transform' && !ui.busy) { e.preventDefault(); runNodes([n.id]) }
