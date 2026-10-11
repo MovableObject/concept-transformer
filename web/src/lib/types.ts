@@ -106,4 +106,5 @@ export interface Graph {
   nodes: Record<string, MapBox>
   order: string[]
   selected: string | null
+  display?: string | null    // the transform with the display flag: the chain above it cooks by itself (Houdini)
 }

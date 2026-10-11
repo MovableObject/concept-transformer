@@ -56,7 +56,7 @@ async function runOne(id: string, signal: AbortSignal): Promise<boolean> {
   }
 }
 
-async function runList(plan: string[]) {
+export async function runList(plan: string[]) {
   const ui = useUI.getState()
   if (ui.busy || !plan.length) return
   stopper = new AbortController()

@@ -158,6 +158,11 @@ function Body() {
           <Switch checked={!!t.bypass} onCheckedChange={(v) => store.setParam(t.id, { bypass: v || undefined })} aria-label="Bypass" />
           <span className="text-[12px] text-muted-foreground"><ArrowDown className="mr-1 inline size-3 text-amber-400" />pass the input straight through (B)</span>
         </label>
+        <label className="flex items-center gap-2">
+          <span className={rowLabel}>Display</span>
+          <Switch checked={g.display === t.id} onCheckedChange={(v) => store.setDisplay(v ? t.id : null)} aria-label="Display flag" />
+          <span className="text-[12px] text-muted-foreground">Cook runs the chain down to here (D)</span>
+        </label>
         {Array.from({ length: ports }, (_, i) => {
           const src = t.inputs[i]
           const txt = src ? outputOf(g, src) : ''

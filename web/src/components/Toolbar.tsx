@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { getNodesBounds, getViewportForBounds, useReactFlow } from '@xyflow/react'
 import { toPng } from 'html-to-image'
-import { Menu, Play, Square, Undo2 } from 'lucide-react'
+import { Menu, MonitorPlay, Play, Square, Undo2 } from 'lucide-react'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { readMap, useGraph } from '@/store/graph'
 import { runAll, stopRun } from '@/lib/cook'
+import { cookDisplay, cookPlan } from '@/lib/autocook'
 import { runAllPlan } from '@/lib/graph'
 import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
@@ -44,6 +45,8 @@ export function Toolbar() {
   const count = useGraph((g) => g.graph.order.length)
   const toRun = useGraph((g) => runAllPlan(g.graph).length)
   const canUndo = useGraph((g) => g.past.length > 0)
+  const hasDisplay = useGraph((g) => !!g.graph.display)
+  const toCook = useGraph((g) => cookPlan(g.graph).length)
   const busy = useUI((u) => u.busy)
   const { fit, tidy, rf } = useMapActions()
   const file = useRef<HTMLInputElement>(null)
@@ -92,6 +95,12 @@ export function Toolbar() {
       {busy
         ? <Button size="sm" variant="destructive" className="h-7" onClick={stopRun} title="Stop after the call in progress (Esc)"><Square />Stop</Button>
         : <Button size="sm" className="h-7" disabled={!toRun} onClick={runAll} title="Run every transform that is new or changed, inputs first (Shift+R)"><Play />Run all{toRun ? ` (${toRun})` : ''}</Button>}
+      {hasDisplay && !busy && (
+        <Button size="sm" variant="outline" className="h-7 border-sky-400/60 text-sky-300 hover:text-sky-200" disabled={!toCook} onClick={cookDisplay}
+          title={s.autoCook ? 'Cook: the display chain also runs by itself when something above it changes' : 'Cook: run the chain down to the display flag'}>
+          <MonitorPlay />Cook{toCook ? ` (${toCook})` : ''}
+        </Button>
+      )}
       <Button size="icon" variant="ghost" className="size-7" disabled={!canUndo} onClick={() => useGraph.getState().undo()} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo2 /></Button>
       <input ref={file} type="file" accept=".json,application/json" hidden
         onChange={(e) => { const f = e.target.files?.[0]; if (f) openFile(f); e.target.value = '' }} />
@@ -107,6 +116,7 @@ export function Toolbar() {
           </DropdownMenuRadioGroup>
           <DropdownMenuItem disabled={!isMap} onSelect={fit}>Fit the graph in view<DropdownMenuShortcut>H</DropdownMenuShortcut></DropdownMenuItem>
           <DropdownMenuItem disabled={!isMap || !count} onSelect={tidy}>Tidy up the layout<DropdownMenuShortcut>L</DropdownMenuShortcut></DropdownMenuItem>
+          <DropdownMenuCheckboxItem checked={s.autoCook} onCheckedChange={(v) => s.set({ autoCook: !!v })}>Cook the display chain automatically</DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem checked={s.minimap} onCheckedChange={(v) => s.set({ minimap: !!v })}>Overview map</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Map</DropdownMenuLabel>

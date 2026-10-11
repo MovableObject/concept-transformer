@@ -46,6 +46,8 @@ export function normalize(raw: unknown): Graph | null {
     if (n.kind === 'transform') n.inputs = n.inputs.map((i) => (i && out.nodes[i] && i !== k ? i : null))
   }
   out.selected = typeof g.selected === 'string' && out.nodes[g.selected] ? g.selected : null
+  const d = (raw as { display?: unknown }).display
+  out.display = typeof d === 'string' && out.nodes[d]?.kind === 'transform' ? d : null
   return out
 }
 
@@ -97,6 +99,7 @@ interface GraphStore {
   startRun: (id: string) => string                            // returns the key the run is for
   finishRun: (id: string, key: string, variants: string[], engine: string, note: string, card: string) => void
   failRun: (id: string, message: string) => void
+  setDisplay: (id: string | null) => void                     // move the display flag here (or take it off)
   writeResult: (id: string, text: string, index?: number) => void   // a result written by hand: new, or replacing result `index`
   show: (id: string, index: number) => void
   rotate: (id: string) => void
@@ -216,6 +219,7 @@ export const useGraph = create<GraphStore>()((set, get) => ({
     if (!t.engine) t.engine = 'by hand'
     t.ranKey = keyOf(g, t)
   }, { undo: true }),
+  setDisplay: (id) => get().update((g) => { g.display = id && g.nodes[id]?.kind === 'transform' ? id : null }, { undo: true }),
   failRun: (id, message) => get().update((g) => {
     const t = g.nodes[id]
     if (t?.kind !== 'transform') return
@@ -241,6 +245,7 @@ export const useGraph = create<GraphStore>()((set, get) => ({
       if (n.kind === 'transform') n.inputs = n.inputs.map((i) => (i && gone.has(i) ? null : i))
     }
     if (g.selected && gone.has(g.selected)) g.selected = null
+    if (g.display && gone.has(g.display)) g.display = null
   }, { undo: true }),
   paste: (nodes, at) => {
     const ids: string[] = []

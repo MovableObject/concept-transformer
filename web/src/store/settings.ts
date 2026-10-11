@@ -14,6 +14,7 @@ interface Settings {
   sidebar: boolean                     // the left panel is open (it starts collapsed)
   minimap: boolean                     // the overview map in the corner (off unless asked for)
   params: boolean                      // the parameter pane on the right is open
+  autoCook: boolean                    // the display node's chain runs by itself when something above it changes
   provider: Provider                   // the own-key panel's provider
   useOwn: boolean                      // presses use the visitor's own key
   useOwnProvider: Provider
@@ -29,13 +30,14 @@ export const useSettings = create<Settings>()(persist((set) => ({
   sidebar: false,
   minimap: false,
   params: true,
+  autoCook: false,                     // Houdini's manual mode by default (owner, 2026-10-11): Cook runs the chain
   provider: 'gemini',
   useOwn: false,
   useOwnProvider: 'gemini',
   set: (p) => set(p),
 }), {
   name: 'ct.settings.v3',
-  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar, minimap: s.minimap, params: s.params,
+  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar, minimap: s.minimap, params: s.params, autoCook: s.autoCook,
     provider: s.provider, useOwn: s.useOwn, useOwnProvider: s.useOwnProvider }),
 }))
 

@@ -2,7 +2,7 @@
 // Graphs run top to bottom: wires go from the dot under a node (its output) into a dot on top of a transform (its inputs).
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertTriangle, ArrowDown, Info, Loader2, Play, Quote, RotateCw, StickyNote, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
+import { AlertTriangle, ArrowDown, MonitorPlay, Info, Loader2, Play, Quote, RotateCw, StickyNote, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
 import { labelOf, moveById, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
@@ -51,6 +51,18 @@ function BypassFlag({ id, on }: { id: string; on: boolean }) {
       role="switch" aria-checked={on} aria-label="Bypass" title={on ? 'Bypassed: passes its input straight through. Click to turn it back on (B)' : 'Bypass: pass the input straight through without this move (B)'}
       onClick={(e) => { e.stopPropagation(); useGraph.getState().setParam(id, { bypass: !on || undefined }) }}>
       <ArrowDown className="size-3.5" />
+    </button>
+  )
+}
+
+/** The display flag, Houdini's blue one: the chain above this node runs by itself when something in it changes (D). */
+function DisplayFlag({ id, on }: { id: string; on: boolean }) {
+  return (
+    <button className={cn(flagBtn, on && '!border-sky-400 !bg-sky-400/25 !text-sky-300 opacity-100')}
+      role="switch" aria-checked={on} aria-label="Display flag"
+      title={on ? 'Display flag: Cook runs the chain down to here. Click to take it off (D)' : 'Display flag: put it here, and Cook runs the chain down to this node (D)'}
+      onClick={(e) => { e.stopPropagation(); useGraph.getState().setDisplay(on ? null : id) }}>
+      <MonitorPlay className="size-3.5" />
     </button>
   )
 }
@@ -139,6 +151,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
   const state = useGraph((s) => stateOf(s.graph, id))
   const busy = useUI((u) => u.busy)
   useMoves((s) => s.moves)   // redraw when the move list lands (names, colors)
+  const isDisplay = useGraph((s) => s.graph.display === id)
   if (!n || n.kind !== 'transform') return null
   const def = moveById(n.moveIds[0])
   const ports = portsOf(n, def)
@@ -210,6 +223,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
           )}
         </>}
         right={<>
+          <DisplayFlag id={id} on={isDisplay} />
           <ReadAloud id={id} text={n.bypass ? '' : (r ? (r.tag ? `${r.plain} ${r.tag}` : r.plain) : '')} />
           {r && !n.bypass && (['kept', 'discarded'] as const).map((v) => (
             <button key={v} className={cn(flagBtn, r.verdict === v && (v === 'kept' ? '!border-primary !text-primary' : '!border-destructive !text-destructive'))}
@@ -220,6 +234,11 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
             </button>
           ))}
         </>} />
+      {isDisplay && (
+        <span className="pointer-events-none absolute left-full top-2 ml-2 flex size-5 items-center justify-center rounded-full border border-sky-400 bg-sky-400/25 text-sky-300 group-hover:opacity-0" aria-hidden="true">
+          <MonitorPlay className="size-3" />
+        </span>
+      )}
       {n.bypass && (
         <span className="pointer-events-none absolute right-full top-2 mr-2 flex size-5 items-center justify-center rounded-full border border-amber-400 bg-amber-400/25 text-amber-300 group-hover:opacity-0" aria-hidden="true">
           <ArrowDown className="size-3" />
