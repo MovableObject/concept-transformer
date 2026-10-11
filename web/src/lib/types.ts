@@ -77,6 +77,7 @@ export interface Result {
   plain: string              // without the tag
   tag: string
   verdict?: Verdict
+  hand?: boolean             // written (or rewritten) by the visitor, not the model; runs never overwrite it
 }
 
 export interface TransformBox extends NodeBase {

@@ -53,6 +53,12 @@ export function keyOf(g: Graph, t: TransformBox): string {
   return JSON.stringify([t.moveIds, t.field, t.field2, t.mode, t.words, t.inputs.map((i) => outputOf(g, i))])
 }
 
+/** Is the transform passing on a result the visitor wrote by hand? Runs leave such a node alone. */
+export function handShown(g: Graph, id: string | null | undefined): boolean {
+  const n = id ? g.nodes[id] : null
+  return n?.kind === 'transform' && !n.bypass && !!n.results[Math.min(n.shown, n.results.length - 1)]?.hand
+}
+
 export type NodeState = 'new' | 'working' | 'done' | 'stale' | 'error' | 'bypass'
 
 /** A transform's state, like Houdini's cook flags: new (never run), working, done, stale (an input or setting changed
@@ -75,6 +81,7 @@ export function stateOf(g: Graph, id: string, memo = new Map<string, NodeState>(
     const upBad = n.inputs.some((i) => {
       if (!i) return false
       const u = stateOf(g, i, memo, path)
+      if (u === 'stale' && handShown(g, i)) return false   // a hand-written result is what the visitor chose to pass on
       return u === 'new' || u === 'stale' || u === 'error'
     })
     s = upBad || keyOf(g, n) !== n.ranKey ? 'stale' : 'done'
@@ -118,9 +125,9 @@ export function runPlan(g: Graph, targets: string[], force: boolean): string[] {
   const plan: string[] = []
   const add = (k: string) => { if (!plan.includes(k)) plan.push(k) }
   for (const t of targets) {
-    for (const u of upstream(g, t)) if (needsRun(stateOf(g, u, memo)) && !(g.nodes[u] as TransformBox).bypass) add(u)
+    for (const u of upstream(g, t)) if (needsRun(stateOf(g, u, memo)) && !(g.nodes[u] as TransformBox).bypass && !handShown(g, u)) add(u)
     const n = g.nodes[t]
-    if (n?.kind === 'transform' && !n.bypass && (force || needsRun(stateOf(g, t, memo)))) add(t)
+    if (n?.kind === 'transform' && !n.bypass && (force || (needsRun(stateOf(g, t, memo)) && !handShown(g, t)))) add(t)
   }
   return plan
 }
@@ -128,7 +135,7 @@ export function runPlan(g: Graph, targets: string[], force: boolean): string[] {
 /** Every transform that needs running, in an order where inputs come first. */
 export function runAllPlan(g: Graph): string[] {
   const memo = new Map<string, NodeState>()
-  const ts = g.order.filter((k) => g.nodes[k].kind === 'transform' && !(g.nodes[k] as TransformBox).bypass && needsRun(stateOf(g, k, memo)))
+  const ts = g.order.filter((k) => g.nodes[k].kind === 'transform' && !(g.nodes[k] as TransformBox).bypass && !handShown(g, k) && needsRun(stateOf(g, k, memo)))
   return runPlan(g, ts, false)
 }
 

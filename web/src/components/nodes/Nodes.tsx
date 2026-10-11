@@ -3,7 +3,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, ArrowDown, Info, Loader2, Play, Quote, RotateCw, StickyNote, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
-import { labelOf, moveById } from '@/lib/api'
+import { labelOf, moveById, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
 import { cn } from '@/lib/utils'
@@ -138,6 +138,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
   const n = useGraph((s) => s.graph.nodes[id])
   const state = useGraph((s) => stateOf(s.graph, id))
   const busy = useUI((u) => u.busy)
+  useMoves((s) => s.moves)   // redraw when the move list lands (names, colors)
   if (!n || n.kind !== 'transform') return null
   const def = moveById(n.moveIds[0])
   const ports = portsOf(n, def)
@@ -231,12 +232,12 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
             : <div className="italic text-muted-foreground">{state === 'error' ? n.error : 'Press Run to see the result.'}</div>}
         {(STATE_WORDS[state] && state !== 'new' && !n.bypass) && (
           <div className={cn('mt-1 flex items-center gap-1 text-[10.5px]', state === 'error' ? 'text-destructive' : state === 'stale' ? 'text-amber-400' : 'text-muted-foreground')}>
-            {state === 'stale' || state === 'error' ? <AlertTriangle className="size-3" /> : null}{STATE_WORDS[state]}
+            {state === 'stale' || state === 'error' ? <AlertTriangle className="size-3" /> : null}{state === 'stale' && r?.hand ? 'Changed above since you wrote it' : STATE_WORDS[state]}
           </div>
         )}
-        {(r?.tag || n.results.length > 1) && !n.bypass && (
+        {(r?.tag || r?.hand || n.results.length > 1) && !n.bypass && (
           <div className="mt-1.5 flex items-center gap-1.5">
-            {r?.tag && <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted-foreground">{r.tag.replace(/^\[|\]$/g, '')}</span>}
+            {(r?.tag || r?.hand) && <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted-foreground">{r.hand ? 'by hand' : r.tag.replace(/^\[|\]$/g, '')}</span>}
             {n.results.length > 1 && (
               <button className="nodrag ml-auto flex items-center gap-1 rounded-[3px] border border-input bg-background px-1.5 py-0.5 text-[10.5px] text-muted-foreground hover:border-primary hover:text-foreground"
                 title="Show the next result; it becomes what this transform passes on (N)"

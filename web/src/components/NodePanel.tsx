@@ -1,7 +1,7 @@
 // The parameter pane, as in Houdini: everything about the selected node, on the right of the graph, so the nodes
 // themselves stay small. It folds away to a thin strip.
 import { useEffect, useState } from 'react'
-import { ArrowDown, PanelRightClose, PanelRightOpen, Play, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
+import { ArrowDown, PanelRightClose, Pencil, PanelRightOpen, Play, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
@@ -43,6 +43,25 @@ function TextParam({ id, text, label }: { id: string; text: string; label: strin
   return <Textarea value={v} rows={5} aria-label={label} className="text-sm" onChange={(e) => setV(e.target.value)} onBlur={save} />
 }
 
+/** Type a result by hand: a new one, or a rewrite of an existing one. It passes on like a model result. */
+function HandWrite({ id, index, start, onDone }: { id: string; index?: number; start?: string; onDone?: () => void }) {
+  const [v, setV] = useState(start ?? '')
+  useEffect(() => setV(start ?? ''), [id, index, start])
+  const save = () => { if (!v.trim()) return; useGraph.getState().writeResult(id, v, index); if (index == null) setV(''); onDone?.() }
+  return (
+    <div className="space-y-1.5">
+      <Textarea value={v} rows={3} className="text-sm" aria-label={index == null ? 'Write your own result' : 'Rewrite this result'}
+        placeholder={index == null ? 'Write your own result, by hand. It passes on like any other.' : undefined}
+        onChange={(e) => setV(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save() } if (e.key === 'Escape' && onDone) onDone() }} />
+      <div className="flex gap-1.5">
+        <Button size="sm" className="h-7" disabled={!v.trim()} onClick={save} title="Use this as the result (Ctrl+Enter)">{index == null ? 'Use it' : 'Save'}</Button>
+        {onDone && <Button size="sm" variant="ghost" className="h-7" onClick={onDone}>Cancel</Button>}
+      </div>
+    </div>
+  )
+}
+
 function SpeakButton({ id, text, small }: { id: string; text: string; small?: boolean }) {
   const saying = useSpeaking((s) => s.key === id)
   if (small) {
@@ -72,6 +91,8 @@ function Body() {
   const g = useGraph((s) => s.graph)
   const busy = useUI((u) => u.busy)
   const n = g.selected ? g.nodes[g.selected] : null
+  const [editing, setEditing] = useState<number | null>(null)
+  useEffect(() => setEditing(null), [g.selected])
 
   if (!n) return <p className="p-4 text-[13px] text-muted-foreground">Select a node to see its parameters here.</p>
 
@@ -90,8 +111,9 @@ function Body() {
   const t = n as TransformBox
   const def = moveById(t.moveIds[0])
   const state = stateOf(g, t.id)
+  const handStale = state === 'stale' && !!t.results[t.shown]?.hand
   const name = t.moveIds.length > 1 ? t.moveIds.map((m) => labelOf(moveById(m), t.mode)).join(' + ') : labelOf(def, t.mode) || 'Unknown move'
-  const status = state === 'new' ? 'not run yet' : state === 'stale' ? 'changed since it ran' : state === 'working' ? 'running…'
+  const status = state === 'new' ? 'not run yet' : handStale ? 'something above changed since you wrote this; Run all leaves it alone' : state === 'stale' ? 'changed since it ran' : state === 'working' ? 'running…'
     : state === 'error' ? 'failed' : state === 'bypass' ? 'bypassed' : t.engine
   const words = t.words || DEFAULT_WORDS[t.mode]
   const ports = portsOf(t, def)
@@ -148,15 +170,18 @@ function Body() {
         })}
       </div>
 
-      {t.results.length > 0 && !t.bypass && (
+      {!t.bypass && (
         <div className="space-y-1.5 border-t border-border pt-3">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Results: the chosen one passes on</div>
-          {t.results.map((r, i) => (
+          {t.results.map((r, i) => editing === i ? (
+            <div key={i} className="rounded-[4px] border border-primary px-2.5 py-2"><HandWrite id={t.id} index={i} start={r.plain} onDone={() => setEditing(null)} /></div>
+          ) : (
             <div key={i} className={cn('rounded-[4px] border px-2.5 py-2 text-[13px] leading-snug', i === t.shown ? 'border-primary bg-primary/10' : 'border-border')}>
               <button className="block w-full text-left" onClick={() => store.show(t.id, i)} title="Use this result as the output (N steps through them)">
                 {r.plain}{r.tag && <span className="text-muted-foreground"> {r.tag}</span>}
               </button>
               <div className="mt-1.5 flex items-center gap-1">
+                {r.hand && <span className="mr-1 text-[11px] text-muted-foreground">by hand</span>}
                 {(['kept', 'discarded'] as const).map((v) => (
                   <button key={v} className={cn('flex size-6 items-center justify-center rounded-[3px] hover:bg-accent',
                     r.verdict === v ? (v === 'kept' ? 'text-primary' : 'text-destructive') : 'text-muted-foreground')}
@@ -167,9 +192,12 @@ function Body() {
                   </button>
                 ))}
                 <SpeakButton small id={`${t.id}:${i}`} text={r.tag ? `${r.plain} ${r.tag}` : r.plain} />
+                <button className="flex size-6 items-center justify-center rounded-[3px] text-muted-foreground hover:bg-accent"
+                  aria-label="Rewrite by hand" title="Rewrite this result by hand" onClick={() => setEditing(i)}><Pencil className="size-3.5" /></button>
               </div>
             </div>
           ))}
+          <div className="pt-1"><HandWrite id={t.id} /></div>
         </div>
       )}
       {depth >= 4 && <p className="text-[12px] text-muted-foreground">This chain is {depth} transforms long. Long chains tend to drift; a collision, or finishing it with Visualize, usually works better.</p>}

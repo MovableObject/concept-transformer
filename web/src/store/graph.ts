@@ -30,7 +30,7 @@ export function normalize(raw: unknown): Graph | null {
     else if (r.kind === 'transform') {
       const results: Result[] = (Array.isArray(r.results) ? r.results : []).slice(0, 8).map((x) => {
         const o = x as Record<string, unknown>
-        return { text: str(o.text), plain: str(o.plain), tag: str(o.tag), verdict: o.verdict === 'kept' || o.verdict === 'discarded' ? o.verdict : undefined }
+        return { text: str(o.text), plain: str(o.plain), tag: str(o.tag), verdict: o.verdict === 'kept' || o.verdict === 'discarded' ? o.verdict : undefined, hand: o.hand === true || undefined }
       })
       n = { ...base, kind: 'transform', moveIds: (Array.isArray(r.moveIds) ? r.moveIds : []).slice(0, 3).map((m) => str(m, 60)),
         inputs: (Array.isArray(r.inputs) ? r.inputs : []).slice(0, 2).map((i) => (i ? str(i, 80) : null)),
@@ -97,6 +97,7 @@ interface GraphStore {
   startRun: (id: string) => string                            // returns the key the run is for
   finishRun: (id: string, key: string, variants: string[], engine: string, note: string, card: string) => void
   failRun: (id: string, message: string) => void
+  writeResult: (id: string, text: string, index?: number) => void   // a result written by hand: new, or replacing result `index`
   show: (id: string, index: number) => void
   rotate: (id: string) => void
   setVerdict: (id: string, v: Verdict | undefined) => void
@@ -196,9 +197,24 @@ export const useGraph = create<GraphStore>()((set, get) => ({
   finishRun: (id, key, variants, engine, note, card) => get().update((g) => {
     const t = g.nodes[id]
     if (t?.kind !== 'transform') return
-    t.results = variants.map((v) => { const { body, tag } = splitTag(v); return { text: v, plain: body, tag } })
-    t.shown = 0; t.status = 'idle'; t.error = ''; t.engine = engine; t.note = note; t.card = card
+    // results written by hand stay, first; the model's join them, and a hand result that was showing keeps showing
+    const hand = t.results.filter((r) => r.hand)
+    const wasHand = !!t.results[t.shown]?.hand
+    const kept = wasHand ? hand.indexOf(t.results[t.shown]) : -1
+    t.results = [...hand, ...variants.map((v) => { const { body, tag } = splitTag(v); return { text: v, plain: body, tag } })]
+    t.shown = wasHand ? kept : hand.length; t.status = 'idle'; t.error = ''; t.engine = engine; t.note = note; t.card = card
     t.ranKey = key
+  }, { undo: true }),
+  writeResult: (id, text, index) => get().update((g) => {
+    const t = g.nodes[id]
+    const clean = text.replace(/[ 	]+/g, ' ').trim().slice(0, 4000)
+    if (t?.kind !== 'transform' || !clean) return
+    const r: Result = { text: clean, plain: clean, tag: '', hand: true }
+    if (index != null && t.results[index]) { t.results[index] = r; t.shown = index }
+    else { t.results.push(r); if (t.results.length > 8) { const drop = t.results.findIndex((x) => !x.hand); t.results.splice(drop >= 0 ? drop : 0, 1) }; t.shown = t.results.lastIndexOf(r) }
+    t.status = 'idle'; t.error = ''; t.bypass = undefined
+    if (!t.engine) t.engine = 'by hand'
+    t.ranKey = keyOf(g, t)
   }, { undo: true }),
   failRun: (id, message) => get().update((g) => {
     const t = g.nodes[id]
