@@ -1,5 +1,5 @@
 {
- "exported": "2026-10-11T01:47:42",
+ "exported": "2026-10-11T08:32:02",
  "default_mode": "image",
  "modes": {
   "image": {
@@ -44,6 +44,14 @@
    },
    "count": 3,
    "evidence": "strong",
+   "hand": {
+    "steps": [
+     "List the parts of the concept: its materials, people, steps, tools, rules, place and timing.",
+     "Circle one part the whole thing depends on.",
+     "Swap it for something unlike it that could still do that part's job.",
+     "Leave everything else exactly as it was, and follow what the swap changes."
+    ]
+   },
    "stackable": true
   },
   {
@@ -63,6 +71,14 @@
    },
    "count": 3,
    "evidence": "strong",
+   "hand": {
+    "steps": [
+     "Pick a partner from a far-off field: a creature, a trade, a ritual, a machine, a place.",
+     "Ask what one purpose the concept and the partner could serve together.",
+     "Fuse them into a single thing with that purpose, not two things side by side.",
+     "Check it: take either one away and the idea should fall apart."
+    ]
+   },
    "stackable": true
   },
   {
@@ -81,6 +97,14 @@
     "ideas": "Tool bank: run it like a blood bank; give a tool, bank a credit, draw any tool when you need one."
    },
    "count": 3,
+   "hand": {
+    "steps": [
+     "Find a weak spot in the concept: a wait, a cost, a risk, something it does badly.",
+     "Ask who has already solved exactly that problem elsewhere: nature, a sport, a craft, an old trade, the military, a game.",
+     "Copy how their solution works, not how it looks.",
+     "Build that mechanism into the concept, which otherwise stays itself."
+    ]
+   },
    "stackable": true
   },
   {
@@ -100,6 +124,14 @@
    },
    "count": 3,
    "evidence": "strong",
+   "hand": {
+    "steps": [
+     "Pick one attribute: size, number, how often, how long, how fast, how loud, its shape or what it means.",
+     "Push it to an extreme: much bigger, much smaller, many more, a hundred times as often.",
+     "Keep everything else the same.",
+     "Ask what the thing now does or means at that extreme."
+    ]
+   },
    "stackable": true
   },
   {
@@ -119,6 +151,14 @@
    },
    "count": 3,
    "evidence": "strong",
+   "hand": {
+    "steps": [
+     "Forget what the thing is for.",
+     "List what it actually is: what it is made of, what it can hold or do, where it sits, who it reaches.",
+     "Find a new job those properties are good at, in a different setting: a hospital, a theater, a farm, a classroom.",
+     "Change nothing about the thing itself, only what it is used for and by whom."
+    ]
+   },
    "stackable": true
   },
   {
@@ -137,6 +177,14 @@
     "ideas": "Public repair bench: nothing leaves; the tools are chained to the bench and you bring the broken thing."
    },
    "count": 3,
+   "hand": {
+    "steps": [
+     "List what the concept seems to need: a part, a step, a person, a rule, a place.",
+     "Remove the one that seems most essential.",
+     "Ask what takes over its job, or what becomes possible now it is gone.",
+     "Keep the version that works differently, not the one that is just missing a piece."
+    ]
+   },
    "stackable": true
   },
   {
@@ -156,6 +204,14 @@
    },
    "count": 3,
    "evidence": "strong",
+   "hand": {
+    "steps": [
+     "Find something in the concept that has a direction: who it serves, what it is for, who is in charge, what comes first.",
+     "Turn it around: the served become the servers, the end comes first, the watched watch back.",
+     "Keep every part; only their arrangement flips.",
+     "Try who it is for, what it is for, or who serves whom first; those flips pay off most often."
+    ]
+   },
    "stackable": true
   },
   {
@@ -175,6 +231,14 @@
    },
    "count": 3,
    "evidence": "drifts",
+   "hand": {
+    "steps": [
+     "Imagine the concept gone, or replaced by its opposite.",
+     "Look at what is left: the empty space it leaves, the dent, the gap, what rushes in to fill it.",
+     "Make that absence the subject.",
+     "Check that someone could still tell what used to be there from the shape of the hole."
+    ]
+   },
    "stackable": true
   },
   {
@@ -194,6 +258,14 @@
    },
    "count": 3,
    "evidence": "strong",
+   "hand": {
+    "steps": [
+     "Pick how far to go: down to the microscopic or a single second, or up to a city, a planet or a century.",
+     "Move the concept to that scale and change nothing else.",
+     "Ask what it now has to deal with at that size or span.",
+     "Try one zoomed in and one zoomed out."
+    ]
+   },
    "stackable": true
   },
   {
@@ -213,6 +285,14 @@
    },
    "count": 3,
    "evidence": "drifts",
+   "hand": {
+    "steps": [
+     "Pretend you have never seen anything like this: be a small child, an animal, or a visitor from far away.",
+     "Describe what is physically happening and what it seems to be for.",
+     "Do not use its name, its category or its usual words.",
+     "Keep every real detail; only the naming changes, so it looks strange."
+    ]
+   },
    "stackable": true
   },
   {
@@ -232,6 +312,14 @@
    },
    "count": 3,
    "evidence": "strong",
+   "hand": {
+    "steps": [
+     "Name the kind of thing the concept is: a portrait, a library, a map.",
+     "Write down one rule that kind of thing almost always obeys: portraits show a face; maps are smaller than the land.",
+     "Break exactly that rule and keep everything else.",
+     "Check that it is still clearly one of its kind, and clearly wrong in that one way."
+    ]
+   },
    "stackable": true
   },
   {
@@ -252,6 +340,14 @@
    "count": 3,
    "evidence": "strong",
    "evidenceNote": "Strong in the studio's tests, though Concretization after it cancelled its jolt.",
+   "hand": {
+    "steps": [
+     "Write an impossible statement about the concept, starting with 'Po': reverse a fact, exaggerate it to breaking, or remove something essential.",
+     "If you could actually do it, it is a plan, not a provocation; make it more impossible.",
+     "Do not judge it. Move from it: pull out a principle, imagine what happens next, keep its good parts, or find where it would be true.",
+     "Land on something real that could only have come from that impossible start."
+    ]
+   },
    "stackable": true
   },
   {
@@ -277,7 +373,15 @@
     "placeholder": "target domain — architecture, gardening, weather…"
    },
    "evidence": "mixed",
-   "evidenceNote": "Drifted under one judge in the studio's tests; a second judge rated it well."
+   "evidenceNote": "Drifted under one judge in the studio's tests; a second judge rated it well.",
+   "hand": {
+    "steps": [
+     "Write down how the concept's own parts relate: what gives to what, what causes what, what protects what.",
+     "Take the target domain from the box, or pick one: gardening, weather, music, architecture.",
+     "Find the things in that domain that stand in the same relations to each other.",
+     "Rebuild the concept entirely out of those things, keeping every relation and no original object."
+    ]
+   }
   },
   {
    "id": "visualize",
@@ -294,7 +398,14 @@
     "image": "\"loneliness, as a lighthouse\" → One lit window in a lighthouse, a single chair turned to face the sea.",
     "ideas": "\"generosity, as a public service\" → Tool library with no sign-up: take what you need and chalk your name on the board."
    },
-   "count": 3
+   "count": 3,
+   "hand": {
+    "steps": [
+     "Ask what the concept looks like as one specific example someone could point at.",
+     "Name who, what and where, using the concept's own words.",
+     "Add only what is needed to make it real, and no new theme."
+    ]
+   }
   },
   {
    "id": "bisociation",
@@ -314,7 +425,15 @@
    "count": 3,
    "evidence": "strong",
    "evidenceNote": "The owner's favorite in the studio's blind picks; collisions beat single-concept moves in every test.",
-   "inputs": 2
+   "inputs": 2,
+   "hand": {
+    "steps": [
+     "Write down the rules of A's world and the rules of B's world.",
+     "Pull A into B's world and let B's rules change how A works.",
+     "Look for one idea that makes sense in both worlds at once, the way a good pun works in two meanings.",
+     "Check that A and B are both still recognizable."
+    ]
+   }
   },
   {
    "id": "split_pair",
@@ -334,7 +453,15 @@
    "count": 3,
    "evidence": "strong",
    "evidenceNote": "In the studio, choosing what to collide first added non-obviousness; Split and pair then Bisociation was the owner's top recipe.",
-   "inputs": 2
+   "inputs": 2,
+   "hand": {
+    "steps": [
+     "List the real parts of A and the real parts of B: materials, structure, timing, feeling, job.",
+     "Find one part of A and one part of B that sit on the same scale but disagree, such as permanent against temporary.",
+     "Collide that pair: let one part's logic change how the other works.",
+     "Build the new idea from that one collision."
+    ]
+   }
   },
   {
    "id": "blending",
@@ -353,7 +480,15 @@
    },
    "count": 3,
    "evidence": "strong",
-   "inputs": 2
+   "inputs": 2,
+   "hand": {
+    "steps": [
+     "Write how A works and how B works.",
+     "Find a structure they share: both have a keeper, both run on a cycle, both hand something over.",
+     "Build one new thing that runs on both structures at once.",
+     "Where they clash, invent; then point to the part that exists in neither A nor B alone."
+    ]
+   }
   },
   {
    "id": "graft",
@@ -373,7 +508,15 @@
    "count": 3,
    "evidence": "strong",
    "evidenceNote": "Strong in the studio's tests; the most reliable second step after another collision.",
-   "inputs": 2
+   "inputs": 2,
+   "hand": {
+    "steps": [
+     "Keep A almost whole: it is the host.",
+     "Find A's center, the place where its purpose happens.",
+     "Put B there, as one strong element, not spread everywhere.",
+     "Let B take over that center while the rest of A stays recognizable."
+    ]
+   }
   },
   {
    "id": "collide",
@@ -391,7 +534,15 @@
     "ideas": "Tool library × a confession booth → Tool return booth: you hand back the tool and confess what you broke with it."
    },
    "count": 3,
-   "inputs": 2
+   "inputs": 2,
+   "hand": {
+    "steps": [
+     "Find something A and B both do: both protect, both warn, both keep time, both lend.",
+     "Grow one new thing along that shared line that inherits from both.",
+     "Give neither one the upper hand.",
+     "Check it: swap B for something random, and the result should fall apart."
+    ]
+   }
   },
   {
    "id": "dialectic",
@@ -411,7 +562,15 @@
    "count": 3,
    "evidence": "mixed",
    "evidenceNote": "Judges disagreed in the studio: last under one, mid-pack under another. It can wander.",
-   "inputs": 2
+   "inputs": 2,
+   "hand": {
+    "steps": [
+     "Name the conflict between A and B: permanent against passing, control against chaos, giving against keeping.",
+     "Decide what is true in each side.",
+     "Build a third thing that keeps both truths and ends the fight, made from A's and B's own details.",
+     "Check that you can say what each side gave up and what each kept."
+    ]
+   }
   },
   {
    "id": "abstraction",
@@ -430,6 +589,14 @@
    },
    "count": 3,
    "evidence": "drifts",
+   "hand": {
+    "steps": [
+     "Ask what the concept is an example of: its job, the quality it has, its role, the principle it follows.",
+     "Sharpen the answer until it fits this concept and not a dozen others.",
+     "Come back down somewhere else: find a completely different, concrete thing that does that same job.",
+     "Make the new thing the result, not the abstract idea."
+    ]
+   },
    "stackable": true
   },
   {
@@ -450,6 +617,14 @@
    "count": 3,
    "evidence": "mixed",
    "evidenceNote": "In the studio it grounded collisions well but cancelled the jolt of a Provocation.",
+   "hand": {
+    "steps": [
+     "Pin the concept to one particular case: one place, one moment, one named person or event.",
+     "Add one or two details only that case would have.",
+     "Try different kinds of case: a famous one, an everyday one, a personal one, a passing one.",
+     "Check that it could be visited, dated or photographed."
+    ]
+   },
    "stackable": true
   },
   {
@@ -468,7 +643,14 @@
     "ideas": "A tool library → Library card: one card that unlocks any garage on the street for a single hour."
    },
    "count": 3,
-   "evidence": "mixed"
+   "evidence": "mixed",
+   "hand": {
+    "steps": [
+     "Pick a true physical part of the concept, or the larger whole it belongs to.",
+     "Let that part stand for the whole and do its job, the way the crown stands for the king.",
+     "Check that it really is a piece of the thing, not something next to it or like it."
+    ]
+   }
   },
   {
    "id": "metonymy",
@@ -486,7 +668,15 @@
     "ideas": "A tool library → Sawdust exchange: the library trades in what tools leave behind, sawdust, offcuts, spare screws."
    },
    "count": 3,
-   "evidence": "drifts"
+   "evidence": "drifts",
+   "hand": {
+    "steps": [
+     "List what sits next to the concept: what it uses, what it makes, where it happens, what it leaves behind.",
+     "Pick one, and let it carry the concept's presence, the way the pen stands for the writer.",
+     "Write about that neighbor so the original is still felt through it.",
+     "Check that you can say how the two touch; if they are only alike, it has become a metaphor."
+    ]
+   }
   },
   {
    "id": "metaphor",
@@ -504,7 +694,15 @@
     "ideas": "A tool library → Seed bank for skills: tools are stored like seeds, and each loan must come back with a cutting of what you made."
    },
    "count": 3,
-   "evidence": "drifts"
+   "evidence": "drifts",
+   "hand": {
+    "steps": [
+     "Pick one essential quality of the concept: its rhythm, its risk, its job, its feeling.",
+     "Find something from a completely different world that has that same quality.",
+     "Present the concept as that other thing.",
+     "Keep enough of the original's setting and job that a reader sees what it stands for."
+    ]
+   }
   },
   {
    "id": "etymology",
@@ -522,7 +720,16 @@
     "ideas": "A tool library ('library', from Latin liber, the inner bark of a tree) → Bark library: tools lent from a hollow oak in the park."
    },
    "count": 3,
-   "evidence": "drifts"
+   "evidence": "drifts",
+   "hand": {
+    "need": "a dictionary with word histories, such as etymonline.com",
+    "steps": [
+     "Pick a key word in the concept.",
+     "Look up where it comes from: its old or literal meaning. Disaster once meant a bad star.",
+     "Only use a history you have checked, never a guess.",
+     "Rebuild the concept so the old meaning is literally true in it, and keep the rest."
+    ]
+   }
   },
   {
    "id": "translation_drift",
@@ -547,7 +754,16 @@
     "optional": true,
     "placeholder": "via which languages (optional) — Japanese, Arabic…"
    },
-   "evidence": "drifts"
+   "evidence": "drifts",
+   "hand": {
+    "need": "a translation tool, or friends who speak other languages",
+    "steps": [
+     "Pick three or four languages, or use the ones in the box.",
+     "Translate the concept through each language in turn, then back into your own.",
+     "Find the word or idiom that slipped: a double meaning, a literal compound, an idiom that did not carry.",
+     "Keep the slightly wrong version, and build on what it now says."
+    ]
+   }
   },
   {
    "id": "lewitt",
@@ -565,7 +781,15 @@
     "ideas": "A tool library ([Rule: lend what people own but rarely use]) → a wedding-dress library run by a church hall."
    },
    "count": 3,
-   "evidence": "drifts"
+   "evidence": "drifts",
+   "hand": {
+    "steps": [
+     "Treat the concept as one result of a written instruction, like Sol LeWitt's wall drawings.",
+     "Write that instruction so a stranger could follow it.",
+     "Check it: too loose if it could make anything, too tight if it can only make the original.",
+     "Follow your own instruction to make a new thing it also produces."
+    ]
+   }
   },
   {
    "id": "misuse",
@@ -582,7 +806,15 @@
     "image": "A lighthouse → a lighthouse drawn by leaving a long-exposure camera on a ship's mast through one stormy night.",
     "ideas": "A tool library → Library run on a parcel locker network: tools travel by courier between neighbors, the lockers are the shelves."
    },
-   "count": 3
+   "count": 3,
+   "hand": {
+    "steps": [
+     "Pick a specific tool, machine or system: a photocopier, a spreadsheet, a parcel locker, a security camera.",
+     "Use it to make or run the concept in a way its manual would warn against.",
+     "Commit to the misuse; do not quietly use it properly.",
+     "Keep the marks the tool cannot help leaving."
+    ]
+   }
   },
   {
    "id": "documentation",
@@ -599,7 +831,15 @@
     "image": "A lighthouse → a keeper's logbook page: 'Lamp lit 18:04. No ships. Lamp lit for no one again.'",
     "ideas": "A tool library → Loan slips as the archive: every slip records what was built with the tool, and the slips are the exhibit."
    },
-   "count": 3
+   "count": 3,
+   "hand": {
+    "steps": [
+     "Choose a dry document form: a receipt, a log entry, an inventory, a certificate, a label, a set of instructions.",
+     "Write the document the concept would leave behind, with real-seeming numbers, times, names and conditions.",
+     "Never describe the concept itself.",
+     "Check that a reader could work out what happened from the document alone."
+    ]
+   }
   },
   {
    "id": "split",
@@ -616,7 +856,15 @@
     "image": "A lighthouse → just its rhythm: a coastline where every fourth wave breaks in light.",
     "ideas": "A tool library → just its return date: a service that reminds you what you meant to finish before you borrowed it."
    },
-   "count": 3
+   "count": 3,
+   "hand": {
+    "steps": [
+     "List the concept's real parts along different lines: what it is made of, how it is built, how it sounds or feels, its timing, its job.",
+     "Pick one part, even a minor one: the hinge, the hum, the return date.",
+     "Leave the rest behind.",
+     "Grow that part alone into a complete new idea."
+    ]
+   }
   },
   {
    "id": "constraint_add",
@@ -641,7 +889,15 @@
     "optional": true,
     "placeholder": "a rule to impose (optional) — everything is wet"
    },
-   "evidence": "strong"
+   "evidence": "strong",
+   "hand": {
+    "steps": [
+     "Pick one rule the whole concept must obey, or use the one in the box: exactly three of everything, nothing may leave, no one may speak.",
+     "Apply it to every part of the concept.",
+     "If nothing has to change, pick a tighter rule.",
+     "Keep what the rule forced you to invent."
+    ]
+   }
   },
   {
    "id": "constraint_inversion",
@@ -659,7 +915,15 @@
     "ideas": "A tool library that refuses lending → Tool museum: you may only watch the tools being used, by their owners."
    },
    "count": 3,
-   "evidence": "mixed"
+   "evidence": "mixed",
+   "hand": {
+    "steps": [
+     "Name what the concept is best known for doing.",
+     "Refuse to let it do that.",
+     "It still has to do its job, so find what does the job instead.",
+     "The workaround is your result."
+    ]
+   }
   },
   {
    "id": "oulipo",
@@ -677,7 +941,15 @@
     "ideas": "A tool library, one vowel only → 'Stock shop of tools': a shop where you swap a tool for a job, not for cash."
    },
    "count": 3,
-   "evidence": "mixed"
+   "evidence": "mixed",
+   "hand": {
+    "steps": [
+     "Pick a word game: ban a letter, so 'tree' must become 'a stand of birch'; or replace each noun with the seventh noun after it in a dictionary.",
+     "Rewrite the concept obeying the game strictly.",
+     "Follow where the forced words lead, even when it is strange.",
+     "Write down the new idea in normal words."
+    ]
+   }
   },
   {
    "id": "oblique",
@@ -701,7 +973,16 @@
     "max": 120,
     "optional": true
    },
-   "deck": true
+   "deck": true,
+   "hand": {
+    "need": "an Oblique Strategies deck or app, or any random instruction",
+    "steps": [
+     "Draw one card without choosing.",
+     "Take it as a literal instruction about this concept, even if it seems unrelated.",
+     "Decide exactly what doing what the card says would mean here, and do it.",
+     "Check that the result would not exist without the card."
+    ]
+   }
   },
   {
    "id": "surrealist",
@@ -718,7 +999,16 @@
     "image": "A lighthouse → the lamp dreams of moths; at dawn the tower is full of them, sleeping in rows on the glass.",
     "ideas": "A tool library → a hammer goes out on loan and comes back as a key; the library now lends whatever comes back."
    },
-   "count": 3
+   "count": 3,
+   "hand": {
+    "need": "a friend for the third game",
+    "steps": [
+     "Automatic writing: write fast from the concept for two minutes without stopping or editing, and keep the first strange idea you reach.",
+     "One into another: describe the concept as if it were some unrelated object, in that object's words, until a new idea shows up.",
+     "Questions and answers: write 'What is ...?' about the concept while a friend writes an answer to a question they cannot see; take the answer literally.",
+     "Do not tidy the strangeness away, but keep a trace of the concept."
+    ]
+   }
   },
   {
    "id": "exquisite_corpse",
@@ -742,6 +1032,14 @@
     "max": 60,
     "optional": true,
     "placeholder": "start from this word instead (optional)"
+   },
+   "hand": {
+    "steps": [
+     "Take only the last word or last image of the concept, or the anchor in the box.",
+     "Cover up everything before it and forget it.",
+     "Start a brand new idea from that word alone.",
+     "If anything from before the fold comes back, start again."
+    ]
    }
   },
   {
@@ -760,6 +1058,14 @@
     "ideas": "A tool library, from the drill's side → Tool diaries: each tool keeps a log of every house it has worked in."
    },
    "count": 3,
+   "hand": {
+    "steps": [
+     "Pick someone or something in or near the concept: a witness, an animal, an object, the person leaving, the thing being acted on.",
+     "Describe the same moment through their eyes.",
+     "Use what they would notice and the words they would use, and leave out what they would miss.",
+     "Do not announce who is looking; let it show."
+    ]
+   },
    "stackable": true
   },
   {
@@ -778,6 +1084,14 @@
     "ideas": "A tool library in 2090 → Fabrication library: you borrow a file, the street's printer makes the tool, then melts it back."
    },
    "count": 3,
+   "hand": {
+    "steps": [
+     "Pick an era far from now: centuries back or decades ahead.",
+     "Ask how people then would have had to get the same result, with their own tools, materials and institutions.",
+     "Rebuild the concept from what that era actually had.",
+     "Keep the same job; change everything that belongs to its time."
+    ]
+   },
    "stackable": true
   },
   {
@@ -796,6 +1110,14 @@
     "ideas": "A tool library, comic → Tool library with a strict librarian: overdue hammers get a public notice in the newsletter."
    },
    "count": 3,
+   "hand": {
+    "steps": [
+     "Pick a mood: menacing, absurd, tender, bureaucratic, deadpan.",
+     "Keep the concept's parts and change what happens, what is stressed, and how long things take.",
+     "Use no mood words; a sinister lighthouse is one whose beam lingers on each boat too long.",
+     "Check that the mood still comes across with the label hidden."
+    ]
+   },
    "stackable": true
   },
   {
@@ -820,6 +1142,14 @@
     "max": 60,
     "optional": true,
     "placeholder": "what must survive (optional)"
+   },
+   "hand": {
+    "steps": [
+     "Ask what the concept could not lose and still be itself.",
+     "Cut everything else, keeping its own words where you can.",
+     "Stop at twelve words or fewer.",
+     "Keep cutting until removing one more word would lose something."
+    ]
    }
   }
  ]

@@ -17,7 +17,7 @@ import { useGraph } from '@/store/graph'
 import { DEFAULT_WORDS, useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
 import { MoveIcon, groupColor } from './MoveIcon'
-import { MoveTip } from './MoveGroups'
+import { HandSteps, MoveTip, handText } from './MoveGroups'
 import { ModeTabs } from './SidePanel'
 
 const rowLabel = 'w-20 shrink-0 text-right text-[12px] text-muted-foreground'
@@ -110,6 +110,15 @@ function Body() {
         {state === 'error' && t.error ? t.error : status}
       </p>
       {def && <div className="text-[13px] text-muted-foreground"><MoveTip m={def} mode={t.mode} /></div>}
+      {def?.hand && (
+        <details className="group rounded-[4px] border border-border px-2.5 py-1.5 text-[13px]">
+          <summary className="cursor-pointer select-none text-[12px] font-semibold text-muted-foreground group-open:mb-1.5">Do it by hand</summary>
+          <div className="space-y-2 text-muted-foreground">
+            <HandSteps m={def} mode={t.mode} />
+            <SpeakButton id={`${t.id}:hand`} text={handText(def, t.mode)} />
+          </div>
+        </details>
+      )}
       {(t.note || t.card) && <p className="text-[12px] text-muted-foreground">{t.card ? `Card drawn: “${t.card}”. ` : ''}{t.note}</p>}
 
       <div className="space-y-2.5 border-t border-border pt-3">

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
 import { MoveIcon, groupColor } from '../MoveIcon'
-import { MoveTip } from '../MoveGroups'
+import { HandSteps, MoveTip } from '../MoveGroups'
 import { MODE_TIPS } from '../SidePanel'
 import { speak, useSpeaking } from '@/lib/speak'
 import { Slider } from '@/components/ui/slider'
@@ -201,7 +201,10 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
               <TooltipTrigger asChild>
                 <button className={flagBtn} aria-label="About this move" onClick={(e) => e.stopPropagation()}><Info className="size-3.5" /></button>
               </TooltipTrigger>
-              <TooltipContent side="left" className="max-w-80"><p className="mb-1 font-semibold">{name}</p><MoveTip m={def} mode={n.mode} /></TooltipContent>
+              <TooltipContent side="left" className="max-w-80">
+                <p className="mb-1 font-semibold">{name}</p><MoveTip m={def} mode={n.mode} />
+                {def.hand && <div className="mt-2 border-t border-current/20 pt-1.5"><p className="mb-1 font-semibold">By hand</p><HandSteps m={def} mode={n.mode} /></div>}
+              </TooltipContent>
             </Tooltip>
           )}
         </>}

@@ -21,6 +21,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "prompts"))
 import site_prompts as sp  # noqa: E402
+from site_hand import HAND  # noqa: E402  (the by-hand recipes; public)
 
 OUT = os.path.join(ROOT, "moves.json")
 PRIVATE_OUT = os.path.join(ROOT, "ct_private", "prompts.json")
@@ -68,6 +69,11 @@ def main():
                 problems.append(f"{mid}: takes two inputs but its user template has no {{concept2}}")
         if m.get("deck"):
             pub["deck"] = True
+        hand = HAND.get(mid)
+        if not hand or not 3 <= len(hand.get("steps", [])) <= 5:
+            problems.append(f"{mid}: needs a by-hand recipe of three to five steps in prompts/site_hand.py")
+        else:
+            pub["hand"] = hand
         if m.get("evidence") not in (None, "strong", "mixed", "drifts"):
             problems.append(f"{mid}: unknown evidence tag {m['evidence']}")
         if m.get("diff") is False:

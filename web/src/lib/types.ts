@@ -29,6 +29,7 @@ export interface MoveDef {
   evidence?: Evidence       // how the move did in the studio's tests
   evidenceNote?: string
   deck?: boolean            // Oblique Strategies: the server draws a card and returns it with the results
+  hand?: { steps: string[]; need?: string }   // the move as a recipe a person can follow without a model
 }
 
 export interface ModeDef { label: string; placeholder: string; anchor: string }

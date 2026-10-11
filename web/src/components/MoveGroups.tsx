@@ -41,6 +41,34 @@ export function MoveTip({ m, mode: forMode }: { m: MoveDef; mode?: ModeId }) {
   )
 }
 
+const LAST_STEP: Record<ModeId, string> = {
+  image: 'Write the result as one still picture: what is in the frame.',
+  ideas: 'Write the result as a one-line pitch: what kind of thing it is, then how it works.',
+}
+
+/** The move's steps for doing it by hand, with the last step for the result type. */
+export function handSteps(m: MoveDef, mode: ModeId): string[] {
+  return m.hand ? [...m.hand.steps, LAST_STEP[mode]] : []
+}
+
+/** The same steps as one passage, for reading aloud. */
+export function handText(m: MoveDef, mode: ModeId): string {
+  const steps = handSteps(m, mode)
+  if (!steps.length) return ''
+  return `${labelOf(m, mode)}, by hand. ${m.hand?.need ? `You need ${m.hand.need}. ` : ''}${steps.map((s, i) => `${i + 1}. ${s}`).join(' ')}`
+}
+
+export function HandSteps({ m, mode }: { m: MoveDef; mode: ModeId }) {
+  const steps = handSteps(m, mode)
+  if (!steps.length) return null
+  return (
+    <div className="space-y-1">
+      {m.hand?.need && <p className="opacity-80">You need {m.hand.need}.</p>}
+      <ol className="list-decimal space-y-0.5 pl-4">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+    </div>
+  )
+}
+
 export function MoveButton({ m, onDone }: { m: MoveDef; onDone?: () => void }) {
   const mode = useSettings((s) => s.mode)
   return (
