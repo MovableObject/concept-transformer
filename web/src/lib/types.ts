@@ -30,6 +30,7 @@ export interface MoveDef {
   evidenceNote?: string
   deck?: boolean            // Oblique Strategies: the server draws a card and returns it with the results
   hand?: { steps: string[]; need?: string }   // the move as a recipe a person can follow without a model
+  plain?: string            // what it does, in plain words, shown under the name
 }
 
 export interface ModeDef { label: string; placeholder: string; anchor: string }
@@ -39,6 +40,7 @@ export interface MovesFile {
   default_mode: ModeId
   modes: Record<ModeId, ModeDef>
   groups: string[]
+  group_plain?: Record<string, string>   // each group's plain name
   stack_max: number
   moves: MoveDef[]
 }

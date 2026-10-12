@@ -279,7 +279,7 @@ export function MapView() {
 function EmptyMap({ onStart }: { onStart: () => void }) {
   const steps = [
     ['Add a concept.', 'Double-click the map, or press Tab, and type an idea into the box.'],
-    ['Add a transform.', 'Select the box and press Tab (or right-click), or drag from the dot under it onto empty space, and pick a move. The panel on the left lists them too.'],
+    ['Add a transform.', 'Select the box and press Tab (or right-click), or drag from the dot under it onto empty space, and pick a transform. The panel on the left lists them too.'],
     ['Run it.', 'Nothing runs until you press Run on a transform, or Run all at the top. Its best result shows in it; “1 of 3” steps through the others.'],
     ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. Drop a new transform onto a wire to put it in between; hold Y and drag across wires to cut them; Alt-drag a box to copy it. The wheel zooms; drag empty space to move around.'],
   ]

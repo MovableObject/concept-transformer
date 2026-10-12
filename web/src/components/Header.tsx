@@ -87,10 +87,12 @@ export function Header() {
   const own = s.useOwn && !!ownKey(s.useOwnProvider)
   return (
     <header className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5">
-      <h1 className="mr-2 text-[15px] font-semibold tracking-tight" title="Type concepts, wire them through creative moves, collide ideas, and run the graph.">Concept Transformer</h1>
+      <h1 className="mr-2 text-[15px] font-semibold tracking-tight" title="Type concepts, wire them through transforms, collide ideas, and run the graph.">Concept Transformer</h1>
       <Toolbar />
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <ToggleGroup type="single" variant="outline" size="sm" className="h-7" value={own ? '' : s.engine}
+          title="Which free engine answers. Gemini first; it does not matter until you have run something."
+
           onValueChange={(v) => { if (v) s.set({ engine: v as Engine, useOwn: false }) }}>
           {(Object.keys(ENGINES) as Engine[]).map((e) => <ToggleGroupItem key={e} value={e} className="px-3">{ENGINES[e]}</ToggleGroupItem>)}
         </ToggleGroup>

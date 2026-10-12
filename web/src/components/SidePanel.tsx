@@ -1,4 +1,4 @@
-// Left: add boxes, the settings new transforms start with, and the moves palette.
+// Left: add boxes, the settings new transforms start with, and the transforms palette.
 import { FileText, PanelLeftClose, PanelLeftOpen, Quote, StickyNote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -40,7 +40,7 @@ function Explain() {
   if (!moves) return null
   return (
     <Collapsible>
-      <CollapsibleTrigger className="text-[13px] text-muted-foreground underline underline-offset-4">What each move does</CollapsibleTrigger>
+      <CollapsibleTrigger className="text-[13px] text-muted-foreground underline underline-offset-4">What each transform does</CollapsibleTrigger>
       <CollapsibleContent className="mt-2 space-y-3 text-[13px]">
         <p className="text-muted-foreground">Every example starts from: {moves.modes[mode].anchor}</p>
         {moves.groups.map((g) => (
@@ -84,7 +84,7 @@ function Rail() {
   )
   return (
     <aside className="flex min-h-0 flex-col items-center gap-1.5 border-r border-border py-3 max-md:flex-row max-md:border-r-0 max-md:border-b max-md:px-3" aria-label="Tools">
-      {tip('Open the panel: moves, settings and help', <Button size="icon" variant="ghost" aria-label="Open the panel" onClick={() => set({ sidebar: true })}><PanelLeftOpen /></Button>)}
+      {tip('Open the panel: transforms, settings and help', <Button size="icon" variant="ghost" aria-label="Open the panel" onClick={() => set({ sidebar: true })}><PanelLeftOpen /></Button>)}
       <div className="my-1 h-px w-6 bg-border max-md:h-6 max-md:w-px" />
       {tip('New concept (or double-click the map)', <Button size="icon" variant="ghost" aria-label="New concept" onClick={() => addText('concept')}><FileText /></Button>)}
       {tip('New source', <Button size="icon" variant="ghost" aria-label="New source" onClick={() => addText('source')}><Quote /></Button>)}

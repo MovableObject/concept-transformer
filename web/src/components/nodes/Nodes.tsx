@@ -153,8 +153,8 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
   const ports = portsOf(n, def)
   const name = n.moveIds.length > 1
     ? n.moveIds.map((m) => labelOf(moveById(m), n.mode)).join(' + ')
-    : labelOf(def, n.mode) || 'Unknown move'
-  const extra = n.card ? `“${n.card}”` : n.field ? `→ ${n.field}` : ''
+    : labelOf(def, n.mode) || 'Unknown transform'
+  const extra = n.card ? `“${n.card}”` : n.field ? `→ ${n.field}` : (n.moveIds.length === 1 && def?.plain) || ''
   const r = n.results[Math.min(n.shown, n.results.length - 1)]
   const color = groupColor(def?.group) || 'var(--muted-foreground)'
   const canRun = state !== 'working' && !n.bypass
@@ -212,7 +212,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
           {def && (
             <Tooltip delayDuration={150}>
               <TooltipTrigger asChild>
-                <button className={flagBtn} aria-label="About this move" onClick={(e) => e.stopPropagation()}><Info className="size-3.5" /></button>
+                <button className={flagBtn} aria-label="About this transform" onClick={(e) => e.stopPropagation()}><Info className="size-3.5" /></button>
               </TooltipTrigger>
               <TooltipContent side="left" className="max-w-80">
                 <p className="mb-1 font-semibold">{name}</p><MoveTip m={def} mode={n.mode} />

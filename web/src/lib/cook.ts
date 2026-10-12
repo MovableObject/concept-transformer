@@ -16,7 +16,7 @@ export function stopRun() { stopper?.abort() }
 function problemWith(t: TransformBox): string {
   const g = useGraph.getState().graph
   const def = moveById(t.moveIds[0])
-  if (!def) return 'This transform’s move is not on the site any more. Delete it and add another.'
+  if (!def) return 'This transform is not on the site any more. Delete it and add another.'
   const need = def.inputs === 2 ? 2 : 1
   for (let i = 0; i < need; i++) {
     const src = t.inputs[i]

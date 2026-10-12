@@ -132,7 +132,7 @@ function Body() {
       )}
       <div className="flex items-center gap-2">
         {t.moveIds.map((m) => <MoveIcon key={m} id={m} className="size-6" />)}
-        <span className="text-[15px] font-semibold" style={{ color: groupColor(def?.group) }}>{name}</span>
+        <span className="min-w-0"><span className="text-[15px] font-semibold" style={{ color: groupColor(def?.group) }}>{name}</span>{def?.plain && <span className="block text-[12px] text-muted-foreground">{def.plain}</span>}</span>
         <Button size="sm" className="ml-auto h-7" disabled={busy || !!t.bypass} onClick={() => runNodes([t.id])} title="Run this transform (R)">
           <Play />{state === 'done' ? 'Run again' : 'Run'}
         </Button>

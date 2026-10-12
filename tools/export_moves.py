@@ -22,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "prompts"))
 import site_prompts as sp  # noqa: E402
 from site_hand import HAND  # noqa: E402  (the by-hand recipes; public)
+from site_plain import GROUP_PLAIN, PLAIN  # noqa: E402  (plain names; public)
 
 OUT = os.path.join(ROOT, "moves.json")
 PRIVATE_OUT = os.path.join(ROOT, "ct_private", "prompts.json")
@@ -69,6 +70,11 @@ def main():
                 problems.append(f"{mid}: takes two inputs but its user template has no {{concept2}}")
         if m.get("deck"):
             pub["deck"] = True
+        plain = PLAIN.get(mid, "").strip()
+        if not plain:
+            problems.append(f"{mid}: needs a plain name in prompts/site_plain.py")
+        else:
+            pub["plain"] = plain
         hand = HAND.get(mid)
         if not hand or not 3 <= len(hand.get("steps", [])) <= 5:
             problems.append(f"{mid}: needs a by-hand recipe of three to five steps in prompts/site_hand.py")
@@ -101,6 +107,7 @@ def main():
         "default_mode": MODE_IDS[0],
         "modes": {k: {f: v[f] for f in ("label", "placeholder", "anchor")} for k, v in sp.MODES.items()},
         "groups": [g for g in sp.GROUPS if g not in getattr(sp, "HIDDEN_GROUPS", [])],
+        "group_plain": {g: GROUP_PLAIN[g] for g in sp.GROUPS},
         "stack_max": sp.STACK_MAX,
         "moves": public_moves,
     }

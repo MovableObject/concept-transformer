@@ -9,7 +9,7 @@ import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
 import { GroupDot, MoveIcon } from './MoveIcon'
 
-interface Item { key: string; label: string; group: string; hint: string; pick: () => void; icon: React.ReactNode }
+interface Item { key: string; label: string; group: string; hint: string; pick: () => void; icon: React.ReactNode; plain?: string }
 
 export function TabMenu() {
   const menu = useUI((u) => u.tabMenu)
@@ -48,7 +48,7 @@ export function TabMenu() {
         if (menu.collideOnly && m.inputs !== 2) continue
         const label = labelOf(m, mode)
         if (!fits(label, g, m.blurb[mode])) continue
-        out.push({ key: m.id, label, group: g, hint: m.blurb[mode], icon: <MoveIcon id={m.id} />,
+        out.push({ key: m.id, label, group: g, hint: m.blurb[mode], icon: <MoveIcon id={m.id} />, plain: m.plain,
           pick: () => addMove(m.id, { inputs: menu.inputs, at: menu.at }) })
       }
     }
@@ -62,7 +62,7 @@ export function TabMenu() {
   useEffect(() => { list.current?.querySelector(`[data-i="${hi}"]`)?.scrollIntoView({ block: 'nearest' }) }, [hi])
 
   if (!menu) return null
-  const W = 300, H = 380
+  const W = 360, H = 380
   const left = Math.max(8, Math.min(menu.sx, window.innerWidth - W - 8))
   const top = Math.max(8, Math.min(menu.sy, window.innerHeight - H - 8))
   let lastGroup = ''
@@ -88,13 +88,14 @@ export function TabMenu() {
             <div key={it.key}>
               {head && (
                 <div className="mt-1 flex items-center gap-1.5 px-3 pb-0.5 pt-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <GroupDot group={head} />{head}
+                  <GroupDot group={head} />{head}{moves?.group_plain?.[head] && <span className="font-normal normal-case tracking-normal opacity-80">· {moves.group_plain[head]}</span>}
                 </div>
               )}
               <button data-i={i} title={it.hint}
                 className={cn('flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm', i === hi ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60')}
                 onMouseEnter={() => setHi(i)} onClick={() => it.pick()}>
                 {it.icon}<span className="truncate">{it.label}</span>
+                {it.plain && <span className="ml-auto truncate pl-2 text-[11px] text-muted-foreground">{it.plain}</span>}
               </button>
             </div>
           )

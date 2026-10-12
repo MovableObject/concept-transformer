@@ -33,6 +33,7 @@ export function MoveTip({ m, mode: forMode }: { m: MoveDef; mode?: ModeId }) {
   const mode = forMode || settingsMode
   return (
     <div className="max-w-80 space-y-1.5 text-left">
+      {m.plain && <p className="font-semibold">{m.plain}</p>}
       <p>{m.blurb[mode]}</p>
       <p className="opacity-80">e.g. {m.example[mode]}</p>
       {m.inputs === 2 && <p className="opacity-80">Two inputs: wire a box into each.</p>}
@@ -97,7 +98,7 @@ export function MoveGroups({ onDone }: { onDone?: () => void }) {
           <div key={g}>
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
-                <h3 className="mb-1.5 flex w-fit cursor-help items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"><GroupDot group={g} />{g}</h3>
+                <h3 className="mb-1.5 flex w-fit cursor-help items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"><GroupDot group={g} />{g}{moves.group_plain?.[g] && <span className="font-normal normal-case tracking-normal opacity-80">· {moves.group_plain[g]}</span>}</h3>
               </TooltipTrigger>
               {GROUP_TIPS[g] && <TooltipContent side="right" className="max-w-72 normal-case">{GROUP_TIPS[g]}</TooltipContent>}
             </Tooltip>
