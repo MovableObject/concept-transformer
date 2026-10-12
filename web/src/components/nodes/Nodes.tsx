@@ -2,7 +2,7 @@
 // Graphs run top to bottom: wires go from the dot under a node (its output) into a dot on top of a transform (its inputs).
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertTriangle, ArrowDown, ChevronLeft, ChevronRight, Info, Loader2, Play, Quote, StickyNote, Volume2, VolumeX } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ChevronLeft, ChevronRight, FileText, Info, Loader2, Play, Quote, StickyNote, Volume2, VolumeX } from 'lucide-react'
 import { labelOf, moveById, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
@@ -101,7 +101,8 @@ export const ConceptNode = memo(function ConceptNode({ id, selected }: NodeProps
     <div className={cn('group relative rounded-[4px] border border-muted-foreground/60 bg-secondary px-3 py-2 text-[13px] leading-snug shadow-sm',
       selected && '!border-primary ring-1 ring-primary')} style={{ width: C_W }}
       onDoubleClick={(e) => { e.stopPropagation(); useUI.getState().set({ editing: id }) }}>
-      <NodeText id={id} text={n.text} placeholder="Type a concept" clamp="line-clamp-5" />
+      <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"><FileText className="size-3" />Concept</div>
+      <NodeText id={id} text={n.text} placeholder="Type a concept: a scene, an idea, a thing" clamp="line-clamp-5" />
       <FlagRing right={<ReadAloud id={id} text={n.text} />} />
       <Handle type="source" id="out" position={Position.Bottom} className={outCls} title="Drag into a transform, or onto empty space to add one" />
     </div>

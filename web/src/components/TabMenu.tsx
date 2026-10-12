@@ -33,7 +33,7 @@ export function TabMenu() {
     const out: Item[] = []
     const needle = q.trim().toLowerCase()
     const fits = (...s: string[]) => !needle || s.some((x) => x.toLowerCase().includes(needle))
-    if (!menu.collideOnly && !menu.inputs.length) {
+    if (!menu.collideOnly) {   // a new concept is always the first thing offered, even with a box selected
       const basics: [string, 'concept' | 'source' | 'note', string, React.ReactNode][] = [
         ['Concept', 'concept', 'A box you type an idea into', <FileText key="c" className="size-[18px]" />],
         ['Source', 'source', 'A pasted passage to collide with', <Quote key="s" className="size-[18px]" />],
