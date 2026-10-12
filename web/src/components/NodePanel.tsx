@@ -121,6 +121,15 @@ function Body() {
   const store = useGraph.getState()
   return (
     <div className="space-y-3 p-4">
+      {def?.hand && (
+        <details className="group rounded-[4px] border border-border px-2.5 py-1.5 text-[13px]">
+          <summary className="cursor-pointer select-none text-[12px] font-semibold text-muted-foreground group-open:mb-1.5">Do it by hand</summary>
+          <div className="space-y-2 text-muted-foreground">
+            <HandSteps m={def} mode={t.mode} />
+            <SpeakButton id={`${t.id}:hand`} text={handText(def, t.mode)} />
+          </div>
+        </details>
+      )}
       <div className="flex items-center gap-2">
         {t.moveIds.map((m) => <MoveIcon key={m} id={m} className="size-6" />)}
         <span className="text-[15px] font-semibold" style={{ color: groupColor(def?.group) }}>{name}</span>
@@ -132,15 +141,6 @@ function Body() {
         {state === 'error' && t.error ? t.error : status}
       </p>
       {def && <div className="text-[13px] text-muted-foreground"><MoveTip m={def} mode={t.mode} /></div>}
-      {def?.hand && (
-        <details className="group rounded-[4px] border border-border px-2.5 py-1.5 text-[13px]">
-          <summary className="cursor-pointer select-none text-[12px] font-semibold text-muted-foreground group-open:mb-1.5">Do it by hand</summary>
-          <div className="space-y-2 text-muted-foreground">
-            <HandSteps m={def} mode={t.mode} />
-            <SpeakButton id={`${t.id}:hand`} text={handText(def, t.mode)} />
-          </div>
-        </details>
-      )}
       {(t.note || t.card) && <p className="text-[12px] text-muted-foreground">{t.card ? `Card drawn: “${t.card}”. ` : ''}{t.note}</p>}
 
       <div className="space-y-2.5 border-t border-border pt-3">
