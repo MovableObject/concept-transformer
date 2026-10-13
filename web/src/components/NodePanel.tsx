@@ -141,7 +141,7 @@ function Body() {
       <p className={cn('text-[12px]', state === 'error' ? 'text-destructive' : state === 'stale' ? 'text-amber-400' : 'text-muted-foreground')}>
         {state === 'error' && t.error ? t.error : status}
       </p>
-      {def && <div className="text-[13px] text-muted-foreground"><MoveTip m={def} mode={t.mode} /></div>}
+      {def && <div className="text-[13px] text-muted-foreground"><MoveTip m={def} mode={t.mode} sub={false} /></div>}
       {(t.note || t.card) && <p className="text-[12px] text-muted-foreground">{t.card ? `Card drawn: “${t.card}”. ` : ''}{t.note}</p>}
 
       <div className="space-y-2.5 border-t border-border pt-3">

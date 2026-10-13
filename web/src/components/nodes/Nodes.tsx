@@ -48,14 +48,14 @@ function ReadAloud({ id, text }: { id: string; text: string }) {
 const tab = 'nodrag h-full w-4 border-l transition-colors'   // full height of the title bar, like Houdini's flag strips
 function BypassTab({ id, on }: { id: string; on: boolean }) {
   return (
-    <button className={cn(tab, on ? 'border-pink-400 bg-pink-400' : 'border-pink-400/50 bg-pink-400/15 hover:bg-pink-400/40')}
+    <button className={cn(tab, on ? 'border-pink-400 bg-pink-400' : 'border-pink-400/60 bg-pink-400/35 hover:bg-pink-400/60')}
       role="switch" aria-checked={on} aria-label="Bypass" title={on ? 'Bypassed: passes its input straight through. Click to turn it back on (B)' : 'Bypass: pass the input straight through without this transform (B)'}
       onClick={(e) => { e.stopPropagation(); useGraph.getState().setParam(id, { bypass: !on || undefined }) }} />
   )
 }
 function DisplayTab({ id, on }: { id: string; on: boolean }) {
   return (
-    <button className={cn(tab, on ? 'border-sky-400 bg-sky-400' : 'border-sky-400/50 bg-sky-400/15 hover:bg-sky-400/40')}
+    <button className={cn(tab, on ? 'border-sky-400 bg-sky-400' : 'border-sky-400/60 bg-sky-400/35 hover:bg-sky-400/60')}
       role="switch" aria-checked={on} aria-label="Display flag"
       title={on ? 'Display flag: Cook runs the chain down to here. Click to take it off (D)' : 'Display flag: put it here, and Cook runs the chain down to this node (D)'}
       onClick={(e) => { e.stopPropagation(); useGraph.getState().setDisplay(on ? null : id) }} />

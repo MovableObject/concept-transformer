@@ -28,12 +28,12 @@ const GROUP_TIPS: Record<string, string> = {
   Shifts: "Same idea, different angle: another person's point of view, another era, another mood, or squeezed down to its core.",
 }
 
-export function MoveTip({ m, mode: forMode }: { m: MoveDef; mode?: ModeId }) {
+export function MoveTip({ m, mode: forMode, sub = true }: { m: MoveDef; mode?: ModeId; sub?: boolean }) {
   const settingsMode = useSettings((s) => s.mode)
   const mode = forMode || settingsMode
   return (
     <div className="max-w-80 space-y-1.5 text-left">
-      {subOf(m, mode) && <p className="font-semibold">{subOf(m, mode)}</p>}
+      {sub && subOf(m, mode) && <p className="font-semibold">{subOf(m, mode)}</p>}
       {m.plain && <p className="font-semibold">{m.plain[0].toUpperCase() + m.plain.slice(1)}.</p>}
       <p>{m.blurb[mode]}</p>
       <p className="opacity-80">e.g. {m.example[mode]}</p>
