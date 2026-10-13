@@ -22,7 +22,7 @@ function lines(g: Graph): Line[] {
     if (!n) return
     if (n.kind === 'transform') {
       const s = stateOf(g, id, memo)
-      const name = n.moveIds.map((m) => labelOf(moveById(m), n.mode)).join(' + ') || 'Unknown move'
+      const name = n.moveIds.map((m) => labelOf(moveById(m), n.mode)).join(' + ') || 'Unknown transform'
       const tag = [n.results.length > 1 ? `result ${n.shown + 1} of ${n.results.length}` : '', s === 'new' ? 'not run yet' : s === 'stale' ? 'changed since it ran' : s === 'error' ? 'failed' : s === 'bypass' ? 'bypassed' : '',
         n.inputs.filter(Boolean).length > 1 ? 'collision' : ''].filter(Boolean).join(' · ')
       out.push({ depth, id, kind: 'transform', name, text: outputFull(g, id), tag })

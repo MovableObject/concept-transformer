@@ -15,6 +15,7 @@ interface Settings {
   minimap: boolean                     // the overview map in the corner (off unless asked for)
   params: boolean                      // the parameter pane on the right is open
   autoCook: boolean                    // the display node's chain runs by itself when something above it changes
+  naming: 'tech' | 'plain' | 'both'    // which name a transform shows: technical, plain, or plain with the technical one underneath
   provider: Provider                   // the own-key panel's provider
   useOwn: boolean                      // presses use the visitor's own key
   useOwnProvider: Provider
@@ -30,14 +31,15 @@ export const useSettings = create<Settings>()(persist((set) => ({
   sidebar: false,
   minimap: false,
   params: true,
-  autoCook: false,                     // Houdini's manual mode by default (owner, 2026-10-11): Cook runs the chain
+  autoCook: false,
+  naming: 'both',                     // Houdini's manual mode by default (owner, 2026-10-11): Cook runs the chain
   provider: 'gemini',
   useOwn: false,
   useOwnProvider: 'gemini',
   set: (p) => set(p),
 }), {
   name: 'ct.settings.v3',
-  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar, minimap: s.minimap, params: s.params, autoCook: s.autoCook,
+  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar, minimap: s.minimap, params: s.params, autoCook: s.autoCook, naming: s.naming,
     provider: s.provider, useOwn: s.useOwn, useOwnProvider: s.useOwnProvider }),
 }))
 

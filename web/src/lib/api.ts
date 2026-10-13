@@ -23,7 +23,21 @@ export const useMoves = create<MovesStore>()((set) => ({
   },
 }))
 export const moveById = (id: string): MoveDef | undefined => useMoves.getState().moves?.moves.find((m) => m.id === id)
-export const labelOf = (m: MoveDef | undefined, mode: ModeId) => (m ? m.label[mode] || m.label.image : '')
+/** The technical name (Synecdoche, Scale shift). */
+export const techOf = (m: MoveDef | undefined, mode: ModeId) => (m ? m.label[mode] || m.label.image : '')
+/** The plain name (Part for Whole, Huge or Tiny); the technical one when a move has none. */
+export const plainOf = (m: MoveDef | undefined, mode: ModeId) => (m ? m.name || techOf(m, mode) : '')
+/** The name the page shows, by the Names setting: technical, plain, or both (plain on top). */
+export const labelOf = (m: MoveDef | undefined, mode: ModeId) => {
+  if (!m) return ''
+  return useSettings.getState().naming === 'tech' ? techOf(m, mode) : plainOf(m, mode)
+}
+/** The other name, shown small under the main one when the setting is Both; empty otherwise, or when they match. */
+export const subOf = (m: MoveDef | undefined, mode: ModeId) => {
+  if (!m || useSettings.getState().naming !== 'both') return ''
+  const t = techOf(m, mode)
+  return t === plainOf(m, mode) ? '' : t
+}
 
 export class FriendlyError extends Error {
   openKey: boolean

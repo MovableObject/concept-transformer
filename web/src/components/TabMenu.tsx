@@ -2,7 +2,7 @@
 // Picking a move adds a transform there, wired to the node it was opened from. Nothing runs until Run.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FileText, Quote, StickyNote } from 'lucide-react'
-import { labelOf, useMoves } from '@/lib/api'
+import { labelOf, plainOf, subOf, techOf, useMoves } from '@/lib/api'
 import { addMove, addText } from '@/lib/actions'
 import { cn } from '@/lib/utils'
 import { useSettings } from '@/store/settings'
@@ -28,6 +28,7 @@ export function TabMenu() {
     return () => window.removeEventListener('pointerdown', off, true)
   }, [menu])
 
+  const naming = useSettings((s) => s.naming)
   const items = useMemo<Item[]>(() => {
     if (!menu || !moves) return []
     const out: Item[] = []
@@ -47,8 +48,8 @@ export function TabMenu() {
       for (const m of moves.moves.filter((x) => x.group === g)) {
         if (menu.collideOnly && m.inputs !== 2) continue
         const label = labelOf(m, mode)
-        if (!fits(label, g, m.blurb[mode])) continue
-        out.push({ key: m.id, label, group: g, hint: m.blurb[mode], icon: <MoveIcon id={m.id} />, plain: m.plain,
+        if (!fits(label, techOf(m, mode), plainOf(m, mode), m.plain || '', g, m.blurb[mode])) continue
+        out.push({ key: m.id, label, group: g, hint: m.blurb[mode], icon: <MoveIcon id={m.id} />, plain: subOf(m, mode),
           pick: () => addMove(m.id, { inputs: menu.inputs, at: menu.at }) })
       }
     }
@@ -56,7 +57,7 @@ export function TabMenu() {
     // with a search, best matches first: name starts with it, then name contains it, then the rest
     const score = (it: Item) => (it.label.toLowerCase().startsWith(needle) ? 0 : it.label.toLowerCase().includes(needle) ? 1 : 2)
     return out.map((it, i) => ({ it, i })).sort((a, b) => score(a.it) - score(b.it) || a.i - b.i).map((x) => x.it)
-  }, [menu, moves, mode, q])
+  }, [menu, moves, mode, q, naming])
 
   useEffect(() => { if (hi >= items.length) setHi(Math.max(0, items.length - 1)) }, [items.length, hi])
   useEffect(() => { list.current?.querySelector(`[data-i="${hi}"]`)?.scrollIntoView({ block: 'nearest' }) }, [hi])

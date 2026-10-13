@@ -3,7 +3,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, ArrowDown, ChevronLeft, ChevronRight, FileText, Info, Loader2, Play, Quote, StickyNote, Volume2, VolumeX } from 'lucide-react'
-import { labelOf, moveById, useMoves } from '@/lib/api'
+import { labelOf, moveById, subOf, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
 import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
 import { cn } from '@/lib/utils'
@@ -14,7 +14,7 @@ import { HandSteps, MoveTip } from '../MoveGroups'
 import { MODE_TIPS } from '../SidePanel'
 import { speak, useSpeaking } from '@/lib/speak'
 import { Slider } from '@/components/ui/slider'
-import { DEFAULT_WORDS } from '@/store/settings'
+import { DEFAULT_WORDS, useSettings } from '@/store/settings'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const outCls = '!size-3 !border-2 !border-background !bg-muted-foreground hover:!bg-primary'
@@ -45,7 +45,7 @@ function ReadAloud({ id, text }: { id: string; text: string }) {
 }
 
 /** Houdini's flag tabs at the right end of the title bar: pink = bypass, blue = display. Dim when off, lit when on. */
-const tab = 'nodrag h-5 w-2.5 rounded-[2px] border transition-colors'
+const tab = 'nodrag h-full w-4 border-l transition-colors'   // full height of the title bar, like Houdini's flag strips
 function BypassTab({ id, on }: { id: string; on: boolean }) {
   return (
     <button className={cn(tab, on ? 'border-pink-400 bg-pink-400' : 'border-pink-400/50 bg-pink-400/15 hover:bg-pink-400/40')}
@@ -148,13 +148,14 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
   const busy = useUI((u) => u.busy)
   useMoves((s) => s.moves)   // redraw when the move list lands (names, colors)
   const isDisplay = useGraph((s) => s.graph.display === id)
+  useSettings((s) => s.naming)
   if (!n || n.kind !== 'transform') return null
   const def = moveById(n.moveIds[0])
   const ports = portsOf(n, def)
   const name = n.moveIds.length > 1
     ? n.moveIds.map((m) => labelOf(moveById(m), n.mode)).join(' + ')
     : labelOf(def, n.mode) || 'Unknown transform'
-  const extra = n.card ? `“${n.card}”` : n.field ? `→ ${n.field}` : (n.moveIds.length === 1 && def?.plain) || ''
+  const extra = n.card ? `“${n.card}”` : n.field ? `→ ${n.field}` : (n.moveIds.length === 1 && subOf(def, n.mode)) || ''
   const r = n.results[Math.min(n.shown, n.results.length - 1)]
   const color = groupColor(def?.group) || 'var(--muted-foreground)'
   const canRun = state !== 'working' && !n.bypass
@@ -202,7 +203,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
               <Play className="size-3" />Run
             </button>
           )}
-        <div className="ml-0.5 flex shrink-0 items-center gap-1 self-center">
+        <div className="-my-1.5 -mr-2 ml-0.5 flex shrink-0 self-stretch overflow-hidden rounded-tr-[3px]">
           <BypassTab id={id} on={!!n.bypass} />
           <DisplayTab id={id} on={isDisplay} />
         </div>

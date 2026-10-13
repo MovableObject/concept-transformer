@@ -117,6 +117,12 @@ export function Toolbar() {
           <DropdownMenuItem disabled={!isMap} onSelect={fit}>Fit the graph in view<DropdownMenuShortcut>H</DropdownMenuShortcut></DropdownMenuItem>
           <DropdownMenuItem disabled={!isMap || !count} onSelect={tidy}>Tidy up the layout<DropdownMenuShortcut>L</DropdownMenuShortcut></DropdownMenuItem>
           <DropdownMenuCheckboxItem checked={s.autoCook} onCheckedChange={(v) => s.set({ autoCook: !!v })}>Cook the display chain automatically</DropdownMenuCheckboxItem>
+          <DropdownMenuLabel>Names</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={s.naming} onValueChange={(v) => s.set({ naming: v as 'tech' | 'plain' | 'both' })}>
+            <DropdownMenuRadioItem value="both">Plain, with the technical name under it</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="plain">Plain names only</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="tech">Technical names only</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
           <DropdownMenuCheckboxItem checked={s.minimap} onCheckedChange={(v) => s.set({ minimap: !!v })}>Overview map</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Map</DropdownMenuLabel>

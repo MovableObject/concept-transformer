@@ -22,7 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "prompts"))
 import site_prompts as sp  # noqa: E402
 from site_hand import HAND  # noqa: E402  (the by-hand recipes; public)
-from site_plain import GROUP_PLAIN, PLAIN  # noqa: E402  (plain names; public)
+from site_plain import GROUP_PLAIN, NAMES, PLAIN  # noqa: E402  (plain names; public)
 
 OUT = os.path.join(ROOT, "moves.json")
 PRIVATE_OUT = os.path.join(ROOT, "ct_private", "prompts.json")
@@ -71,10 +71,12 @@ def main():
         if m.get("deck"):
             pub["deck"] = True
         plain = PLAIN.get(mid, "").strip()
-        if not plain:
-            problems.append(f"{mid}: needs a plain name in prompts/site_plain.py")
+        name = NAMES.get(mid, "").strip()
+        if not plain or not name:
+            problems.append(f"{mid}: needs a plain name and tagline in prompts/site_plain.py")
         else:
             pub["plain"] = plain
+            pub["name"] = name
         hand = HAND.get(mid)
         if not hand or not 3 <= len(hand.get("steps", [])) <= 5:
             problems.append(f"{mid}: needs a by-hand recipe of three to five steps in prompts/site_hand.py")

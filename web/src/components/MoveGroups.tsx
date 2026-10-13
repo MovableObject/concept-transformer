@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { labelOf, useMoves } from '@/lib/api'
+import { labelOf, subOf, useMoves } from '@/lib/api'
 import { addMove } from '@/lib/actions'
 import type { ModeId, MoveDef } from '@/lib/types'
 import { useSettings } from '@/store/settings'
@@ -33,7 +33,8 @@ export function MoveTip({ m, mode: forMode }: { m: MoveDef; mode?: ModeId }) {
   const mode = forMode || settingsMode
   return (
     <div className="max-w-80 space-y-1.5 text-left">
-      {m.plain && <p className="font-semibold">{m.plain}</p>}
+      {subOf(m, mode) && <p className="font-semibold">{subOf(m, mode)}</p>}
+      {m.plain && <p className="font-semibold">{m.plain[0].toUpperCase() + m.plain.slice(1)}.</p>}
       <p>{m.blurb[mode]}</p>
       <p className="opacity-80">e.g. {m.example[mode]}</p>
       {m.inputs === 2 && <p className="opacity-80">Two inputs: wire a box into each.</p>}
@@ -88,6 +89,7 @@ export function MoveButton({ m, onDone }: { m: MoveDef; onDone?: () => void }) {
 
 export function MoveGroups({ onDone }: { onDone?: () => void }) {
   const moves = useMoves((s) => s.moves)
+  useSettings((s) => s.naming)
   if (!moves) return null
   return (
     <div className="space-y-3">

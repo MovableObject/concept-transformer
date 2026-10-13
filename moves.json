@@ -1,5 +1,5 @@
 {
- "exported": "2026-10-11T21:32:33",
+ "exported": "2026-10-13T10:19:02",
  "default_mode": "image",
  "modes": {
   "image": {
@@ -58,6 +58,7 @@
    "count": 3,
    "evidence": "strong",
    "plain": "swap one part",
+   "name": "Swap a Part",
    "hand": {
     "steps": [
      "List the parts of the concept: its materials, people, steps, tools, rules, place and timing.",
@@ -86,6 +87,7 @@
    "count": 3,
    "evidence": "strong",
    "plain": "fuse it with a partner",
+   "name": "Combine",
    "hand": {
     "steps": [
      "Pick a partner from a far-off field: a creature, a trade, a ritual, a machine, a place.",
@@ -113,6 +115,7 @@
    },
    "count": 3,
    "plain": "borrow a trick from elsewhere",
+   "name": "Borrow a Trick",
    "hand": {
     "steps": [
      "Find a weak spot in the concept: a wait, a cost, a risk, something it does badly.",
@@ -141,6 +144,7 @@
    "count": 3,
    "evidence": "strong",
    "plain": "push one quality to an extreme",
+   "name": "Exaggerate",
    "hand": {
     "steps": [
      "Pick one attribute: size, number, how often, how long, how fast, how loud, its shape or what it means.",
@@ -169,6 +173,7 @@
    "count": 3,
    "evidence": "strong",
    "plain": "same thing, new job",
+   "name": "Repurpose",
    "hand": {
     "steps": [
      "Forget what the thing is for.",
@@ -196,6 +201,7 @@
    },
    "count": 3,
    "plain": "take something out",
+   "name": "Remove a Part",
    "hand": {
     "steps": [
      "List what the concept seems to need: a part, a step, a person, a rule, a place.",
@@ -224,6 +230,7 @@
    "count": 3,
    "evidence": "strong",
    "plain": "turn it around",
+   "name": "Reverse",
    "hand": {
     "steps": [
      "Find something in the concept that has a direction: who it serves, what it is for, who is in charge, what comes first.",
@@ -252,6 +259,7 @@
    "count": 3,
    "evidence": "drifts",
    "plain": "build from what is missing",
+   "name": "Negative Space",
    "hand": {
     "steps": [
      "Imagine the concept gone, or replaced by its opposite.",
@@ -280,6 +288,7 @@
    "count": 3,
    "evidence": "strong",
    "plain": "make it huge or tiny",
+   "name": "Huge or Tiny",
    "hand": {
     "steps": [
      "Pick how far to go: down to the microscopic or a single second, or up to a city, a planet or a century.",
@@ -308,6 +317,7 @@
    "count": 3,
    "evidence": "drifts",
    "plain": "as if seen for the first time",
+   "name": "Fresh Eyes",
    "hand": {
     "steps": [
      "Pretend you have never seen anything like this: be a small child, an animal, or a visitor from far away.",
@@ -336,6 +346,7 @@
    "count": 3,
    "evidence": "strong",
    "plain": "break its own defining rule",
+   "name": "Break Its Rule",
    "hand": {
     "steps": [
      "Name the kind of thing the concept is: a portrait, a library, a map.",
@@ -365,6 +376,7 @@
    "evidence": "strong",
    "evidenceNote": "Strong in the studio's tests, though Concretization after it cancelled its jolt.",
    "plain": "start from something impossible",
+   "name": "Start Impossible",
    "hand": {
     "steps": [
      "Write an impossible statement about the concept, starting with 'Po': reverse a fact, exaggerate it to breaking, or remove something essential.",
@@ -400,6 +412,7 @@
    "evidence": "mixed",
    "evidenceNote": "Drifted under one judge in the studio's tests; a second judge rated it well.",
    "plain": "rebuild it in another world",
+   "name": "Rebuild Elsewhere",
    "hand": {
     "steps": [
      "Write down how the concept's own parts relate: what gives to what, what causes what, what protects what.",
@@ -426,6 +439,7 @@
    },
    "count": 3,
    "plain": "a specific instance you could point at",
+   "name": "Make It Real",
    "hand": {
     "steps": [
      "Ask what the concept looks like as one specific example someone could point at.",
@@ -454,6 +468,7 @@
    "evidenceNote": "The owner's favorite in the studio's blind picks; collisions beat single-concept moves in every test.",
    "inputs": 2,
    "plain": "one idea true in both worlds",
+   "name": "Cross Two Worlds",
    "hand": {
     "steps": [
      "Write down the rules of A's world and the rules of B's world.",
@@ -483,6 +498,7 @@
    "evidenceNote": "In the studio, choosing what to collide first added non-obviousness; Split and pair then Bisociation was the owner's top recipe.",
    "inputs": 2,
    "plain": "clash the two best parts",
+   "name": "Clash Two Parts",
    "hand": {
     "steps": [
      "List the real parts of A and the real parts of B: materials, structure, timing, feeling, job.",
@@ -511,6 +527,7 @@
    "evidence": "strong",
    "inputs": 2,
    "plain": "build what both share",
+   "name": "Blend",
    "hand": {
     "steps": [
      "Write how A works and how B works.",
@@ -540,6 +557,7 @@
    "evidenceNote": "Strong in the studio's tests; the most reliable second step after another collision.",
    "inputs": 2,
    "plain": "plant a piece of B inside A",
+   "name": "Plant B in A",
    "hand": {
     "steps": [
      "Keep A almost whole: it is the host.",
@@ -567,6 +585,7 @@
    "count": 3,
    "inputs": 2,
    "plain": "grow a third thing from both",
+   "name": "Collide",
    "hand": {
     "steps": [
      "Find something A and B both do: both protect, both warn, both keep time, both lend.",
@@ -596,6 +615,7 @@
    "evidenceNote": "Judges disagreed in the studio: last under one, mid-pack under another. It can wander.",
    "inputs": 2,
    "plain": "settle the fight between them",
+   "name": "Resolve the Clash",
    "hand": {
     "steps": [
      "Name the conflict between A and B: permanent against passing, control against chaos, giving against keeping.",
@@ -623,6 +643,7 @@
    "count": 3,
    "evidence": "drifts",
    "plain": "find the idea behind it, land elsewhere",
+   "name": "Same Idea Elsewhere",
    "hand": {
     "steps": [
      "Ask what the concept is an example of: its job, the quality it has, its role, the principle it follows.",
@@ -652,6 +673,7 @@
    "evidence": "mixed",
    "evidenceNote": "In the studio it grounded collisions well but cancelled the jolt of a Provocation.",
    "plain": "one real, dated instance",
+   "name": "One Real Case",
    "hand": {
     "steps": [
      "Pin the concept to one particular case: one place, one moment, one named person or event.",
@@ -680,6 +702,7 @@
    "count": 3,
    "evidence": "mixed",
    "plain": "let a part stand for the whole",
+   "name": "Part for Whole",
    "hand": {
     "steps": [
      "Pick a true physical part of the concept, or the larger whole it belongs to.",
@@ -706,6 +729,7 @@
    "count": 3,
    "evidence": "drifts",
    "plain": "swap it for its neighbor",
+   "name": "Its Neighbor",
    "hand": {
     "steps": [
      "List what sits next to the concept: what it uses, what it makes, where it happens, what it leaves behind.",
@@ -733,6 +757,7 @@
    "count": 3,
    "evidence": "drifts",
    "plain": "see it as something else",
+   "name": "Metaphor",
    "hand": {
     "steps": [
      "Pick one essential quality of the concept: its rhythm, its risk, its job, its feeling.",
@@ -760,6 +785,7 @@
    "count": 3,
    "evidence": "drifts",
    "plain": "the word's old meaning, made literal",
+   "name": "Old Meaning",
    "hand": {
     "need": "a dictionary with word histories, such as etymonline.com",
     "steps": [
@@ -795,6 +821,7 @@
    },
    "evidence": "drifts",
    "plain": "lost in translation, on purpose",
+   "name": "Lost in Translation",
    "hand": {
     "need": "a translation tool, or friends who speak other languages",
     "steps": [
@@ -823,6 +850,7 @@
    "count": 3,
    "evidence": "drifts",
    "plain": "find its rule, run it again",
+   "name": "Find the Rule",
    "hand": {
     "steps": [
      "Treat the concept as one result of a written instruction, like Sol LeWitt's wall drawings.",
@@ -849,6 +877,7 @@
    },
    "count": 3,
    "plain": "make it with the wrong tool",
+   "name": "Wrong Tool",
    "hand": {
     "steps": [
      "Pick a specific tool, machine or system: a photocopier, a spreadsheet, a parcel locker, a security camera.",
@@ -875,6 +904,7 @@
    },
    "count": 3,
    "plain": "its paperwork instead of itself",
+   "name": "The Paperwork",
    "hand": {
     "steps": [
      "Choose a dry document form: a receipt, a log entry, an inventory, a certificate, a label, a set of instructions.",
@@ -901,6 +931,7 @@
    },
    "count": 3,
    "plain": "one part becomes the whole subject",
+   "name": "One Part Only",
    "hand": {
     "steps": [
      "List the concept's real parts along different lines: what it is made of, how it is built, how it sounds or feels, its timing, its job.",
@@ -935,6 +966,7 @@
    },
    "evidence": "strong",
    "plain": "one rule it must obey",
+   "name": "Add a Rule",
    "hand": {
     "steps": [
      "Pick one rule the whole concept must obey, or use the one in the box: exactly three of everything, nothing may leave, no one may speak.",
@@ -962,6 +994,7 @@
    "count": 3,
    "evidence": "mixed",
    "plain": "deny what it does best",
+   "name": "Refuse the Strength",
    "hand": {
     "steps": [
      "Name what the concept is best known for doing.",
@@ -989,6 +1022,7 @@
    "count": 3,
    "evidence": "mixed",
    "plain": "a word game forces the idea",
+   "name": "Word Game",
    "hand": {
     "steps": [
      "Pick a word game: ban a letter, so 'tree' must become 'a stand of birch'; or replace each noun with the seventh noun after it in a dictionary.",
@@ -1022,6 +1056,7 @@
    },
    "deck": true,
    "plain": "a random card decides",
+   "name": "Draw a Card",
    "hand": {
     "need": "an Oblique Strategies deck or app, or any random instruction",
     "steps": [
@@ -1049,6 +1084,7 @@
    },
    "count": 3,
    "plain": "let association run",
+   "name": "Free Association",
    "hand": {
     "need": "a friend for the third game",
     "steps": [
@@ -1083,6 +1119,7 @@
     "placeholder": "start from this word instead (optional)"
    },
    "plain": "keep only the last word",
+   "name": "Last Word Only",
    "hand": {
     "steps": [
      "Take only the last word or last image of the concept, or the anchor in the box.",
@@ -1109,6 +1146,7 @@
    },
    "count": 3,
    "plain": "through someone else's eyes",
+   "name": "Point of View",
    "hand": {
     "steps": [
      "Pick someone or something in or near the concept: a witness, an animal, an object, the person leaving, the thing being acted on.",
@@ -1136,6 +1174,7 @@
    },
    "count": 3,
    "plain": "another era, same job",
+   "name": "Another Era",
    "hand": {
     "steps": [
      "Pick an era far from now: centuries back or decades ahead.",
@@ -1163,6 +1202,7 @@
    },
    "count": 3,
    "plain": "same thing, different mood",
+   "name": "Change the Mood",
    "hand": {
     "steps": [
      "Pick a mood: menacing, absurd, tender, bureaucratic, deadpan.",
@@ -1197,6 +1237,7 @@
     "placeholder": "what must survive (optional)"
    },
    "plain": "only the core survives",
+   "name": "Boil It Down",
    "hand": {
     "steps": [
      "Ask what the concept could not lose and still be itself.",
