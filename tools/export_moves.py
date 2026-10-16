@@ -39,6 +39,30 @@ def per_mode(value):
     return {m: value for m in MODE_IDS}
 
 
+# Worked examples written by Claude Opus (tools/make_exemplars.py), one per move per mode, placed just before the
+# JSON line of each prompt to show the free engines what a correct result looks like. CT_NO_EXEMPLARS=1 leaves them out.
+EXAMPLES_FILE = os.path.join(ROOT, "prompts", "exemplars.json")
+EXAMPLES = ({} if os.environ.get("CT_NO_EXEMPLARS") == "1" or not os.path.exists(EXAMPLES_FILE)
+            else json.load(open(EXAMPLES_FILE, encoding="utf-8")))
+JSON_LINE = "\n\nOutput ONLY a JSON object"
+
+
+def with_example(mid, system):
+    out = {}
+    for mode, text in system.items():
+        ex = EXAMPLES.get(mid, {}).get(mode)
+        cut = text.rfind(JSON_LINE)
+        if not ex or cut < 0:
+            out[mode] = text
+            continue
+        lines = ([f"Input: {ex['input']}"] + ([f"Input B: {ex['input2']}"] if ex.get("input2") else [])
+                 + ([f"Box: {ex['field']}"] if ex.get("field") else []) + [f"First result: {ex['output']}"])
+        block = ("\n\nWORKED EXAMPLE, for a different input. It shows the method, the tag and the length; never reuse "
+                 "its subject, its words or its images.\n" + "\n".join(lines))
+        out[mode] = text[:cut] + block + text[cut:]
+    return out
+
+
 def main():
     problems = []
     public_moves, private_moves = [], {}
@@ -87,7 +111,7 @@ def main():
         if m.get("diff") is False:
             pub["diff"] = False
         public_moves.append(pub)
-        priv = {"system": system, "length_rule": m.get("length_rule", True), "count": count, "inputs": inputs}
+        priv = {"system": with_example(mid, system), "length_rule": m.get("length_rule", True), "count": count, "inputs": inputs}
         if m.get("deck"):
             priv["deck"] = True
         if (m["group"] in sp.STACKABLE_GROUPS and "field" not in m and inputs == 1

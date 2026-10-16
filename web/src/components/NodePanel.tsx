@@ -9,6 +9,8 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { labelOf, moveById, subOf, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
+import { addMove } from '@/lib/actions'
+import { suggestNext } from '@/lib/next'
 import { outputOf, portsOf, stateOf, upstream } from '@/lib/graph'
 import { speak, useSpeaking } from '@/lib/speak'
 import type { MoveField, TransformBox } from '@/lib/types'
@@ -79,6 +81,34 @@ function SpeakButton({ id, text, small }: { id: string; text: string; small?: bo
   )
 }
 
+/** "Good next step", folded: two or three transforms to try next, each with the reason, read off the path above. */
+function NextSteps({ id }: { id: string }) {
+  const g = useGraph.getState().graph
+  const list = suggestNext(g, id)
+  if (!list.length) return null
+  const mode = useSettings.getState().mode
+  return (
+    <details className="group rounded-[4px] border border-border px-2.5 py-1.5 text-[13px]">
+      <summary className="cursor-pointer select-none text-[12px] font-semibold text-muted-foreground group-open:mb-1.5">Good next step</summary>
+      <div className="space-y-1.5">
+        {list.map((s) => {
+          const m = moveById(s.moveId)
+          if (!m) return null
+          return (
+            <button key={s.moveId} className="flex w-full items-start gap-2 rounded-[4px] border border-border px-2 py-1.5 text-left hover:border-primary"
+              title="Add it, wired in. Nothing runs until you press Run." onClick={() => addMove(s.moveId, { inputs: s.inputs })}>
+              <MoveIcon id={s.moveId} className="mt-0.5 size-4 shrink-0" />
+              <span><span className="font-semibold" style={{ color: groupColor(m.group) }}>{labelOf(m, mode)}</span>
+                <span className="block text-[12px] text-muted-foreground">{s.reason}</span></span>
+            </button>
+          )
+        })}
+        <p className="text-[11px] text-muted-foreground">One leap, then land. Chains longer than two tend to drift.</p>
+      </div>
+    </details>
+  )
+}
+
 const KIND_HELP: Record<string, [string, string]> = {
   concept: ['Concept', 'Wire it into a transform: Tab with it selected, or drag from the dot under it.'],
   source: ['Source', 'A pasted passage. Only collisions take it: drop a wire from it onto another box.'],
@@ -105,6 +135,7 @@ function Body() {
         <p className="text-[13px] text-muted-foreground">{help}</p>
         <TextParam id={n.id} text={n.text} label={title} />
         <SpeakButton id={n.id} text={n.text} />
+        {n.kind === 'concept' && <NextSteps id={n.id} />}
       </div>
     )
   }
@@ -207,6 +238,7 @@ function Body() {
           <div className="pt-1"><HandWrite id={t.id} /></div>
         </div>
       )}
+      {!t.bypass && <NextSteps id={t.id} />}
       {depth >= 4 && <p className="text-[12px] text-muted-foreground">This chain is {depth} transforms long. Long chains tend to drift; a collision, or finishing it with Visualize, usually works better.</p>}
     </div>
   )
