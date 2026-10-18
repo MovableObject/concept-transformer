@@ -16,6 +16,7 @@ import {
 import { readMap, useGraph } from '@/store/graph'
 import { runAll, stopRun } from '@/lib/cook'
 import { cookDisplay, cookPlan } from '@/lib/autocook'
+import { openExample } from '@/lib/example'
 import { runAllPlan } from '@/lib/graph'
 import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
@@ -117,6 +118,7 @@ export function Toolbar() {
           <DropdownMenuItem disabled={!isMap} onSelect={fit}>Fit the graph in view<DropdownMenuShortcut>H</DropdownMenuShortcut></DropdownMenuItem>
           <DropdownMenuItem disabled={!isMap || !count} onSelect={tidy}>Tidy up the layout<DropdownMenuShortcut>L</DropdownMenuShortcut></DropdownMenuItem>
           <DropdownMenuCheckboxItem checked={s.autoCook} onCheckedChange={(v) => s.set({ autoCook: !!v })}>Cook the display chain automatically</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={s.showChanges} onCheckedChange={(v) => s.set({ showChanges: !!v })}>Highlight what changed</DropdownMenuCheckboxItem>
           <DropdownMenuLabel>Names</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={s.naming} onValueChange={(v) => s.set({ naming: v as 'tech' | 'plain' | 'both' })}>
             <DropdownMenuRadioItem value="both">Plain, with the technical name under it</DropdownMenuRadioItem>
@@ -128,6 +130,7 @@ export function Toolbar() {
           <DropdownMenuLabel>Map</DropdownMenuLabel>
           <DropdownMenuItem disabled={!count} onSelect={saveFile}>Save map to a file</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => file.current?.click()}>Open a map file</DropdownMenuItem>
+          <DropdownMenuItem onSelect={openExample}>Open the example map</DropdownMenuItem>
           <DropdownMenuItem disabled={!isMap || !count} onSelect={() => void picture()}>Save a picture</DropdownMenuItem>
           <DropdownMenuItem disabled={!count} onSelect={() => setConfirmClear(true)}>Clear the map…</DropdownMenuItem>
           <DropdownMenuSeparator />

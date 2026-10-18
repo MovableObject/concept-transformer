@@ -19,6 +19,7 @@ import { useGraph } from '@/store/graph'
 import { DEFAULT_WORDS, useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
 import { MoveIcon, groupColor } from './MoveIcon'
+import { ChangedText } from './ChangedText'
 import { HandSteps, MoveTip, handText } from './MoveGroups'
 import { ModeTabs } from './SidePanel'
 
@@ -216,7 +217,7 @@ function Body() {
           ) : (
             <div key={i} className={cn('rounded-[4px] border px-2.5 py-2 text-[13px] leading-snug', i === t.shown ? 'border-primary bg-primary/10' : 'border-border')}>
               <button className="block w-full text-left" onClick={() => store.show(t.id, i)} title="Use this result as the output (N steps through them)">
-                {r.plain}{r.tag && <span className="text-muted-foreground"> {r.tag}</span>}
+                <ChangedText before={t.inputs.map((i) => outputOf(g, i)).join(' ')} after={r.plain} />{r.tag && <span className="text-muted-foreground"> {r.tag}</span>}
               </button>
               <div className="mt-1.5 flex items-center gap-1">
                 {r.hand && <span className="mr-1 text-[11px] text-muted-foreground">by hand</span>}

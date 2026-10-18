@@ -22,6 +22,7 @@ import { groupColor } from './MoveIcon'
 import { SHORTCUTS } from '@/lib/keys'
 import { pointer } from '@/lib/pointer'
 import { mapHooks } from '@/lib/mapHooks'
+import { openExample } from '@/lib/example'
 import { Button } from '@/components/ui/button'
 
 export function MapView() {
@@ -278,10 +279,10 @@ export function MapView() {
 /** A short tutorial on the empty map. */
 function EmptyMap({ onStart }: { onStart: () => void }) {
   const steps = [
-    ['Add a concept.', 'Double-click the map, or press Tab, and type an idea into the box.'],
-    ['Add a transform.', 'Select the box and press Tab (or right-click), or drag from the dot under it onto empty space, and pick a transform. The panel on the left lists them too.'],
-    ['Run it.', 'Nothing runs until you press Run on a transform, or Run all at the top. Its best result shows in it; “1 of 3” steps through the others.'],
-    ['Keep going.', 'Drag from the dot under a transform into the next one. Drop a wire onto another box to collide the two. Drop a new transform onto a wire to put it in between; hold Y and drag across wires to cut them; Alt-drag a box to copy it. The wheel zooms; drag empty space to move around.'],
+    ['Add a concept.', 'Double-click the map, or press Tab, and type an idea into the box: a scene, a thing, a situation.'],
+    ['Pick a recipe.', 'With the concept selected, press Tab and choose one from Recipes at the bottom, or open the panel on the left. A recipe places a short chain of transforms that tested well.'],
+    ['Cook it.', 'Press Cook at the top to run the chain. The best result shows in each box; the arrows step through the other two.'],
+    ['Or build your own.', 'Tab adds a single transform. Drag from the dot under a box into the next one; drop a wire onto another box to collide the two.'],
   ]
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 max-md:p-3">
@@ -294,7 +295,10 @@ function EmptyMap({ onStart }: { onStart: () => void }) {
             </li>
           ))}
         </ol>
-        <Button size="sm" variant="outline" onClick={onStart}>Add a concept</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={onStart}>Add a concept</Button>
+          <Button size="sm" variant="ghost" onClick={openExample} title="A finished map, already run by Claude Opus, to look around in">Open the example map</Button>
+        </div>
         <p className="text-[11px] text-muted-foreground max-md:hidden">Keys: {SHORTCUTS.map(([k, what]) => `${k} ${what}`).join(' · ')}</p>
       </div>
     </div>

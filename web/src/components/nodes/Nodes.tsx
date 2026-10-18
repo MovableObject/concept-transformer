@@ -5,7 +5,8 @@ import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, ArrowDown, ChevronLeft, ChevronRight, FileText, Info, Loader2, Play, Quote, StickyNote, Volume2, VolumeX } from 'lucide-react'
 import { labelOf, moveById, subOf, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
-import { C_W, N_W, S_W, T_W, portsOf, stateOf, type NodeState } from '@/lib/graph'
+import { C_W, N_W, S_W, T_W, outputOf, portsOf, stateOf, type NodeState } from '@/lib/graph'
+import { ChangedText } from '../ChangedText'
 import { cn } from '@/lib/utils'
 import { useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
@@ -148,6 +149,8 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
   const busy = useUI((u) => u.busy)
   useMoves((s) => s.moves)   // redraw when the move list lands (names, colors)
   const isDisplay = useGraph((s) => s.graph.display === id)
+  const inputText = useGraph((s) => { const t = s.graph.nodes[id]; return t?.kind === 'transform' ? t.inputs.map((i) => outputOf(s.graph, i)).join(' ') : '' })
+  useSettings((s) => s.showChanges)
   useSettings((s) => s.naming)
   if (!n || n.kind !== 'transform') return null
   const def = moveById(n.moveIds[0])
@@ -226,7 +229,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
 
       <div className="px-2.5 py-2">
         {n.bypass ? <div className="italic text-muted-foreground">Bypassed: passes its input straight through.</div>
-          : r ? <div className={cn('line-clamp-5', state === 'stale' && 'text-muted-foreground')}>{r.plain}</div>
+          : r ? <div className={cn('line-clamp-5', state === 'stale' && 'text-muted-foreground')}><ChangedText before={inputText} after={r.plain} /></div>
             : <div className="italic text-muted-foreground">{state === 'error' ? n.error : 'Press Run to see the result.'}</div>}
         {(STATE_WORDS[state] && state !== 'new' && !n.bypass) && (
           <div className={cn('mt-1 flex items-center gap-1 text-[10.5px]', state === 'error' ? 'text-destructive' : state === 'stale' ? 'text-amber-400' : 'text-muted-foreground')}>
