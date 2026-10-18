@@ -1,9 +1,10 @@
 // The Tab menu, as in Houdini: a searchable list of everything that can be added, opened at the pointer.
 // Picking a move adds a transform there, wired to the node it was opened from. Nothing runs until Run.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FileText, Quote, StickyNote } from 'lucide-react'
+import { FileText, ListOrdered, Quote, StickyNote } from 'lucide-react'
 import { labelOf, plainOf, subOf, techOf, useMoves } from '@/lib/api'
 import { addMove, addText } from '@/lib/actions'
+import { RECIPES, placeRecipe, recipeName } from '@/lib/recipes'
 import { cn } from '@/lib/utils'
 import { useSettings } from '@/store/settings'
 import { useUI } from '@/store/ui'
@@ -52,6 +53,15 @@ export function TabMenu() {
         out.push({ key: m.id, label, group: g, hint: m.blurb[mode], icon: <MoveIcon id={m.id} />, plain: subOf(m, mode),
           pick: () => addMove(m.id, { inputs: menu.inputs, at: menu.at }) })
       }
+    }
+    // Recipes last: whole chains that tested well; picking one places them all, wired, display flag on the last
+    for (const r of RECIPES) {
+      if (menu.collideOnly && !r.two) continue
+      const label = recipeName(r, mode)
+      if (!fits(label, 'Recipes', r.example)) continue
+      out.push({ key: 'recipe:' + r.id, label, group: 'Recipes', hint: 'e.g. ' + r.example + (r.two ? ' Takes two boxes.' : ''),
+        icon: <ListOrdered className="size-[18px] text-muted-foreground" />, plain: r.two ? 'two boxes' : undefined,
+        pick: () => placeRecipe(r, menu.inputs) })
     }
     if (!needle) return out
     // with a search, best matches first: name starts with it, then name contains it, then the rest

@@ -103,7 +103,7 @@ function NextSteps({ id }: { id: string }) {
             </button>
           )
         })}
-        <p className="text-[11px] text-muted-foreground">One leap, then land. Chains longer than two tend to drift.</p>
+        <p className="text-[11px] text-muted-foreground">A leap, then a change of form or viewpoint, works best. Chains that leave the input drift.</p>
       </div>
     </details>
   )

@@ -278,7 +278,10 @@ function build_request(string $provider, string $model, string $apiKey, string $
                 ['Content-Type: application/json', 'x-api-key: ' . $apiKey, 'anthropic-version: 2023-06-01'],
                 ['model' => $model, 'max_tokens' => 1600, 'system' => $system, 'messages' => [['role' => 'user', 'content' => $user]]]];
         default:   // groq, openai: the same chat format
-            $payload = ['model' => $model, 'max_completion_tokens' => 4000,
+            // Groq's free tier allows 8,000 tokens a minute and counts the prompt PLUS this ceiling against it up front,
+            // so a long prompt with a 4,000 ceiling was refused as "busy" every time. Three short results and the
+            // hidden reasoning fit well inside 2,400.
+            $payload = ['model' => $model, 'max_completion_tokens' => $provider === 'groq' ? 2400 : 4000,
                         'messages' => [['role' => 'system', 'content' => $system], ['role' => 'user', 'content' => $user]]];
             if ($provider === 'groq') $payload += ['temperature' => 0.9, 'reasoning_effort' => 'medium', 'include_reasoning' => false];
             else $payload['reasoning_effort'] = 'low';
@@ -452,7 +455,8 @@ if (is_array($parsed)) {
 }
 $variants = [];
 foreach ($list as $v) {
-    if (is_string($v) && trim($v) !== '') $variants[] = trim($v);
+    // A small model sometimes echoes a template instead of answering ("v1", "<first result>"): never pass that on.
+    if (is_string($v) && trim($v) !== '' && !preg_match('/^\s*(v\d+|<[^>]*>|result \d+|\.\.\.)\s*$/i', $v)) $variants[] = trim($v);
     if (count($variants) === $count) break;
 }
 if (!$variants) fail(502, 'upstream', ($own ? $label : 'The free engine') . ' answered, but not with rewrites. Press the move again.');

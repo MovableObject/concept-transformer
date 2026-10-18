@@ -79,13 +79,19 @@ def run(label):
     got = d["runs"].setdefault(label, {})
     todo = [mid for mid in ms if mid not in got]
     print(f"{label}: {len(todo)} of {len(ms)} moves to run")
+    misses = 0
     for i, mid in enumerate(todo):
         if i:
-            time.sleep(20)   # Groq's free tier: a few presses a minute
+            time.sleep(60)   # Groq free tier: 8,000 tokens a minute, and one press with its reasoning uses most of that
         r = press(mid, ms[mid].get("inputs") == 2)
         if not r or not r["variants"]:
             print(f"  {mid}: nothing came back")
+            misses += 1
+            if misses >= 3:   # three in a row: Groq's daily token allowance is used up
+                export(True)
+                sys.exit("Groq stopped answering (its daily allowance); run the same command again tomorrow.")
             continue
+        misses = 0
         got[mid] = r
         save(d)
         print(f"  {mid:<22} {r['engine']:<6} {r['variants'][0][:90]}")
@@ -100,6 +106,7 @@ required form (a document, a forced word game, a compression).
 3. It stays on the input's own particulars rather than drifting to a generic or stock idea.
 4. It does not borrow the subject, words or images of the worked example shown in the instructions (if any). \
 Borrowing is a serious fault.
+Each run produced three results; you see only the FIRST of each, so never fault either for showing one result. \
 Ignore which one is more vivid unless 1 to 4 are equal. Answer "tie" only when they are genuinely equal on all four."""
 JUDGE_SCHEMA = {"type": "object", "properties": {"better": {"type": "string", "enum": ["1", "2", "tie"]},
                                                  "reason": {"type": "string"}},
@@ -164,12 +171,16 @@ button.play{background:#4f46e5;color:#fff}button.sel{background:#7c83ff;color:#1
 <p class="sub">Each card is one transform on the free engine, once without the new worked example and once with it, in random order. Listen, pick the better one, and the card shows which was which and what Claude Opus picked. Your picks stay in this browser; Copy my picks puts them on the clipboard.</p>
 <div id="tally"></div><p><button class="play" id="all">Play all</button> <button id="copy">Copy my picks</button></p>__CARDS__</main><script>
 const KEY='ct.exemplar.picks';let picks={};try{picks=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
-const cards=[...document.querySelectorAll('.card')];let cur=null;
+const cards=[...document.querySelectorAll('.card')];let cur=null,seq=0;
 function tally(){let n=0,agree=0,ex=0;cards.forEach(c=>{const p=picks[c.dataset.id];if(!p)return;n++;if(p===c.dataset.judge)agree++;if(p===c.dataset.ex)ex++});
 document.getElementById('tally').textContent=n?`${n} of ${cards.length} picked. You preferred the worked example ${ex} times. You agreed with Claude ${agree} of ${n}.`:`${cards.length} cards. Nothing picked yet.`}
 function show(c){const p=picks[c.dataset.id];c.classList.toggle('done',!!p);c.querySelectorAll('[data-pick]').forEach(b=>b.classList.toggle('sel',b.dataset.pick===p))}
-function play(i){if(cur)cur.pause();cards.forEach(c=>c.classList.remove('on'));if(i>=cards.length)return;const c=cards[i];c.classList.add('on');c.scrollIntoView({block:'center',behavior:'smooth'});cur=c.querySelector('audio');cur.currentTime=0;cur.play();cur.onended=()=>{if(window.chain&&picks[c.dataset.id])play(i+1)}}
+// play clips one after another; a new press stops whatever was playing
+function playList(list,done){if(cur)cur.pause();const my=++seq;let k=0;const next=()=>{if(my!==seq)return;if(k>=list.length){cur=null;if(done)done();return}cur=list[k++];cur.currentTime=0;cur.onended=next;cur.play()};next()}
+function clips(c,names){return names.map(n=>c.querySelector('audio[data-a="'+n+'"]'))}
+function play(i){cards.forEach(c=>c.classList.remove('on'));if(i<0||i>=cards.length)return;const c=cards[i];c.classList.add('on');c.scrollIntoView({block:'center',behavior:'smooth'});playList(clips(c,['intro','1','2']),()=>{if(window.chain&&picks[c.dataset.id])play(i+1)})}
 cards.forEach((c,i)=>{show(c);c.querySelector('.play').onclick=()=>{window.chain=false;play(i)};
+c.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>{window.chain=false;playList(clips(c,[b.dataset.say]))});
 c.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{picks[c.dataset.id]=b.dataset.pick;try{localStorage.setItem(KEY,JSON.stringify(picks))}catch(e){};show(c);tally();if(window.chain)play(i+1)})});
 document.getElementById('all').onclick=()=>{window.chain=true;play(cards.findIndex(c=>!picks[c.dataset.id]))};
 document.getElementById('copy').onclick=()=>navigator.clipboard.writeText(JSON.stringify(picks));tally();
@@ -188,17 +199,24 @@ async def page():
                                                                "base": "2" if j["ex_first"] else "1", "tie": "tie"}[j["winner"]]
         name = ms[mid].get("name") or ms[mid]["label"]["ideas"]
         two_in = ms[mid].get("inputs") == 2
-        say = (f"{n}. {name}. " + ("Colliding the tool library and the night bakery. " if two_in else "Starting from the tool library. ")
-               + f"One: {strip_tag(one)} Two: {strip_tag(two)}")
-        audio = await speak(say)
         verdict = {"ex": "the worked example helped", "base": "the worked example made it worse", "tie": "no difference"}[j["winner"]]
+        picked = "neither" if judge_slot == "tie" else judge_slot
+        said = {
+            "intro": f"{n}. {name}. " + ("Colliding the tool library and the night bakery." if two_in else "Starting from the tool library."),
+            "1": f"One. {strip_tag(one)}",
+            "2": f"Two. {strip_tag(two)}",
+            "verdict": f"The worked example was number {ex_slot}. Claude picked {picked}, so {verdict}. {j['reason']}",
+        }
+        audio = {k: await speak(v) for k, v in said.items()}
+        say_btn = lambda k: f'<button data-say="{k}">Read aloud</button>'
         parts.append(
             f'<div class="card" data-id="{mid}" data-ex="{ex_slot}" data-judge="{judge_slot}">'
-            f'<div class="row"><span class="mv">{n}. {html.escape(name)}</span><button class="play">Play</button></div>'
-            f'<div class="res"><b>1</b> {html.escape(one)}</div><div class="res"><b>2</b> {html.escape(two)}</div>'
+            f'<div class="row"><span class="mv">{n}. {html.escape(name)}</span><button class="play">Read both aloud</button></div>'
+            f'<div class="res"><div class="row"><b>1</b>{say_btn("1")}</div>{html.escape(one)}</div>'
+            f'<div class="res"><div class="row"><b>2</b>{say_btn("2")}</div>{html.escape(two)}</div>'
             f'<div class="row"><button data-pick="1">1 is better</button><button data-pick="2">2 is better</button><button data-pick="tie">Same</button></div>'
-            f'<div class="reveal">With the worked example: {ex_slot}. Claude picked {judge_slot} ({verdict}): {html.escape(j["reason"])}</div>'
-            f'<audio preload="none" src="{audio}"></audio></div>')
+            f'<div class="reveal"><div class="row">{say_btn("verdict")}</div>With the worked example: {ex_slot}. Claude picked {judge_slot} ({verdict}): {html.escape(j["reason"])}</div>'
+            + "".join(f'<audio preload="none" data-a="{k}" src="{v}"></audio>' for k, v in audio.items()) + '</div>')
     path = os.path.join(HERE, "results", "exemplar_ab.html")
     open(path, "w", encoding="utf-8").write(PAGE.replace("__CARDS__", "\n".join(parts)))
     print("wrote", path)

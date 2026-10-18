@@ -12,6 +12,7 @@ import type { ModeId } from '@/lib/types'
 import { useGraph } from '@/store/graph'
 import { DEFAULT_WORDS, useSettings } from '@/store/settings'
 import { MoveGroups } from './MoveGroups'
+import { RECIPES, placeRecipe, recipeName } from '@/lib/recipes'
 
 export const MODE_TIPS: Record<string, string> = {
   image: 'Every result is one still picture: what is in the frame, plain enough to draw, photograph or give to an image generator.',
@@ -130,6 +131,18 @@ export function SidePanel() {
 
       <TargetLine />
       {err && <p className="text-sm text-destructive">{err}</p>}
+      <Collapsible>
+        <CollapsibleTrigger className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground">Recipes ▸</CollapsibleTrigger>
+        <CollapsibleContent className="mt-2 space-y-1.5">
+          <p className="text-[12px] text-muted-foreground">Chains that tested well: a leap, then a change of form or viewpoint. One click places the chain under the selected box; Cook runs it.</p>
+          {RECIPES.map((r) => (
+            <Button key={r.id} size="sm" variant="outline" className="h-auto w-full justify-start whitespace-normal py-1.5 text-left text-[12.5px]"
+              title={'e.g. ' + r.example} onClick={() => placeRecipe(r)}>
+              {recipeName(r, s.mode)}{r.two && <span className="ml-1 text-muted-foreground">(two boxes)</span>}
+            </Button>
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
       <MoveGroups />
       <Explain />
     </aside>

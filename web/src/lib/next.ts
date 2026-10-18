@@ -2,7 +2,7 @@
 // concept along known directions (more abstract or more concrete, stranger or more grounded, further from the input or
 // back toward it). Add up the pushes on the way from the original concept to the selected node, and suggest the move
 // that brings it back toward the middle: climbed, so land; strange twice, so ground; drifted, so graft it back.
-// The studio's rule underneath: one leap, then land; chains longer than two drift.
+// The rule underneath (recipe test on Opus, 2026-10-17): a leap, then a change of form or viewpoint; chains that leave the input drift.
 import type { Graph, MapBox } from './types'
 
 type Push = [level: number, strange: number, drift: number]   // +1 abstract / stranger / further from the input
@@ -67,11 +67,13 @@ export function suggestNext(g: Graph, id: string): Suggestion[] {
     add({ moveId: 'concretization', inputs: [id], reason: 'Two strange steps in a row. One real case grounds it.' })
     add({ moveId: 'pov_shift', inputs: [id], reason: 'Two strange steps in a row. Seeing it through one person makes it believable.' })
   }
-  if (moves.length >= 3) {
-    add({ moveId: 'visualize', inputs: [id], reason: 'Chains longer than two tend to drift. Land it now.' })
+  if (moves.length >= 3 && drift >= 2) {
+    add({ moveId: 'visualize', inputs: [id], reason: 'Three steps and drifting. Land it now.' })
   }
-  // Balanced so far: one leap, then land; or one more leap of a different kind.
-  add({ moveId: 'visualize', inputs: [id], reason: 'One leap, then land: this turns it into a specific instance.' })
+  // Balanced so far: a leap, then a change of form or viewpoint (what won the recipe test on Opus, 2026-10-17).
+  add({ moveId: 'documentation', inputs: [id], reason: 'Leap, then reframe: recast it as its own paperwork, a receipt, a log, a ticket.' })
+  add({ moveId: 'time_shift', inputs: [id], reason: 'Leap, then reframe: the same idea in another era, with that era’s things.' })
+  add({ moveId: 'pov_shift', inputs: [id], reason: 'Leap, then reframe: tell it from someone or something inside it.' })
   if (moves.length < 2 && drift < 1) {
     add({ moveId: 'combine', inputs: [id], reason: 'Still close to the input. A partner from another world takes it further.' })
     add({ moveId: 'scale_shift', inputs: [id], reason: 'Still close to the input. Changing the scale alone often lands well.' })
