@@ -5,6 +5,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, ArrowDown, ChevronLeft, ChevronRight, FileText, Info, Loader2, Play, Quote, StickyNote, Volume2, VolumeX } from 'lucide-react'
 import { labelOf, moveById, subOf, useMoves } from '@/lib/api'
 import { runNodes } from '@/lib/cook'
+import { dialStep, stepDial } from '@/lib/dial'
 import { C_W, N_W, S_W, T_W, outputOf, portsOf, stateOf, type NodeState } from '@/lib/graph'
 import { ChangedText } from '../ChangedText'
 import { cn } from '@/lib/utils'
@@ -60,6 +61,32 @@ function DisplayTab({ id, on }: { id: string; on: boolean }) {
       role="switch" aria-checked={on} aria-label="Display flag"
       title={on ? 'Display flag: Cook runs the chain down to here. Click to take it off (D)' : 'Display flag: put it here, and Cook runs the chain down to this node (D)'}
       onClick={(e) => { e.stopPropagation(); useGraph.getState().setDisplay(on ? null : id) }} />
+  )
+}
+
+/** The transform dial: an arrow either side of the name steps this node to the next or previous transform. Nothing runs
+ *  (unless "Run when I step" is on); results of a transform the node showed before come back with it. */
+function DialName({ id, dir }: { id: string; dir: 1 | -1 }) {
+  const t = useGraph.getState().graph.nodes[id]
+  const next = t?.kind === 'transform' ? dialStep(useGraph.getState().graph, t, dir) : null
+  const def = next ? moveById(next) : undefined
+  if (!def || t?.kind !== 'transform') return null
+  const kept = !!t.kept?.[def.id]?.results.length
+  return <>{dir > 0 ? 'Next' : 'Back'}: <b>{labelOf(def, t.mode)}</b>{def.plain ? ` · ${def.plain}` : ''}{kept ? ' (its results are kept)' : ''} <span className="opacity-70">({dir > 0 ? ']' : '['})</span></>
+}
+export function DialArrow({ id, dir, disabled }: { id: string; dir: 1 | -1; disabled?: boolean }) {
+  const Icon = dir > 0 ? ChevronRight : ChevronLeft
+  return (
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>
+        <button className="nodrag -my-0.5 flex h-5 w-4 shrink-0 items-center justify-center rounded-[3px] text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
+          disabled={disabled} aria-label={dir > 0 ? 'Next transform' : 'Previous transform'}
+          onClick={(e) => { e.stopPropagation(); stepDial(id, dir) }} onDoubleClick={(e) => e.stopPropagation()}>
+          <Icon className="size-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-72"><DialName id={id} dir={dir} /></TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -180,7 +207,8 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
           <span className="pointer-events-none absolute -top-4 left-[68%] ml-2 text-[9px] font-bold text-muted-foreground">B</span>
         </>
       )}
-      <div className="flex items-start gap-1.5 border-b border-border/70 px-2 py-1.5">
+      <div className="flex items-start gap-1 border-b border-border/70 px-1 py-1.5">
+        <DialArrow id={id} dir={-1} disabled={state === 'working'} />
         <Tooltip delayDuration={400}>
           <TooltipTrigger asChild>
             <div className="flex min-w-0 flex-1 cursor-help items-start gap-1.5">
@@ -198,6 +226,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
             </TooltipContent>
           )}
         </Tooltip>
+        <DialArrow id={id} dir={1} disabled={state === 'working'} />
         {state === 'working'
           ? <Loader2 className="mt-0.5 size-4 animate-spin text-muted-foreground" aria-label="Running" />
           : canRun && state !== 'done' && (
@@ -206,7 +235,7 @@ export const TransformNode = memo(function TransformNode({ id, selected }: NodeP
               <Play className="size-3" />Run
             </button>
           )}
-        <div className="-my-1.5 -mr-2 ml-0.5 flex shrink-0 self-stretch overflow-hidden rounded-tr-[3px]">
+        <div className="-my-1.5 -mr-1 ml-0.5 flex shrink-0 self-stretch overflow-hidden rounded-tr-[3px]">
           <BypassTab id={id} on={!!n.bypass} />
           <DisplayTab id={id} on={isDisplay} />
         </div>

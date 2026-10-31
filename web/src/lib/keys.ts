@@ -1,6 +1,7 @@
 // Keyboard shortcuts on the map, Houdini-style. They act on the selected node and are ignored while typing or in a dialog.
 import { finish, openTabMenu } from './actions'
 import { runAll, runNodes, stopRun } from './cook'
+import { stepDial } from './dial'
 import { useGraph } from '@/store/graph'
 import { useUI } from '@/store/ui'
 import { pointer } from './pointer'
@@ -18,6 +19,7 @@ export const SHORTCUTS: [string, string][] = [
   ['R', 'run'],
   ['Shift+R', 'run all'],
   ['N / Shift+N', 'next / previous result'],
+  ['] / [', 'next / previous transform'],
   ['K / X', 'aim for / steer away from this'],
   ['B', 'bypass'],
   ['D', 'display flag (Cook runs its chain)'],
@@ -53,6 +55,7 @@ export function onShortcut(e: KeyboardEvent) {
   if (e.key === 'Enter' && n.kind !== 'transform') { e.preventDefault(); ui.set({ editing: n.id }) }
   else if (k === 'r' && n.kind === 'transform' && !ui.busy) { e.preventDefault(); runNodes([n.id]) }
   else if (k === 'n' && n.kind === 'transform') { e.preventDefault(); if (e.shiftKey) store.show(n.id, n.shown - 1); else store.rotate(n.id) }
+  else if ((e.key === ']' || e.key === '[') && n.kind === 'transform') { e.preventDefault(); stepDial(n.id, e.key === ']' ? 1 : -1) }
   else if (k === 'd' && n.kind === 'transform') { e.preventDefault(); store.setDisplay(g.display === n.id ? null : n.id) }
   else if (k === 'b' && n.kind === 'transform') { e.preventDefault(); store.setParam(n.id, { bypass: !n.bypass || undefined }) }
   else if (k === 'f' && !ui.busy) { e.preventDefault(); finish(n.id) }

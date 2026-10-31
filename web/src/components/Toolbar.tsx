@@ -118,6 +118,7 @@ export function Toolbar() {
           <DropdownMenuItem disabled={!isMap} onSelect={fit}>Fit the graph in view<DropdownMenuShortcut>H</DropdownMenuShortcut></DropdownMenuItem>
           <DropdownMenuItem disabled={!isMap || !count} onSelect={tidy}>Tidy up the layout<DropdownMenuShortcut>L</DropdownMenuShortcut></DropdownMenuItem>
           <DropdownMenuCheckboxItem checked={s.autoCook} onCheckedChange={(v) => s.set({ autoCook: !!v })}>Cook the display chain automatically</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={s.runOnStep} onCheckedChange={(v) => s.set({ runOnStep: !!v })}>Run when I step to another transform</DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem checked={s.showChanges} onCheckedChange={(v) => s.set({ showChanges: !!v })}>Highlight what changed</DropdownMenuCheckboxItem>
           <DropdownMenuLabel>Names</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={s.naming} onValueChange={(v) => s.set({ naming: v as 'tech' | 'plain' | 'both' })}>

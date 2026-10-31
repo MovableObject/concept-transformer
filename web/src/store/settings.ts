@@ -15,6 +15,7 @@ interface Settings {
   minimap: boolean                     // the overview map in the corner (off unless asked for)
   params: boolean                      // the parameter pane on the right is open
   autoCook: boolean                    // the display node's chain runs by itself when something above it changes
+  runOnStep: boolean                   // the transform dial runs the node when it steps to a transform with no results
   naming: 'tech' | 'plain' | 'both'    // which name a transform shows: technical, plain, or plain with the technical one underneath
   provider: Provider                   // the own-key panel's provider
   useOwn: boolean                      // presses use the visitor's own key
@@ -32,6 +33,7 @@ export const useSettings = create<Settings>()(persist((set) => ({
   minimap: false,
   params: true,
   autoCook: false,
+  runOnStep: false,                   // owner's rule: nothing runs until Run or Cook, unless the visitor turns this on
   naming: 'both',                     // Houdini's manual mode by default (owner, 2026-10-11): Cook runs the chain
   provider: 'gemini',
   useOwn: false,
@@ -39,7 +41,7 @@ export const useSettings = create<Settings>()(persist((set) => ({
   set: (p) => set(p),
 }), {
   name: 'ct.settings.v3',
-  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar, minimap: s.minimap, params: s.params, autoCook: s.autoCook, naming: s.naming,
+  partialize: (s) => ({ engine: s.engine, mode: s.mode, words: s.words, showChanges: s.showChanges, view: s.view, sidebar: s.sidebar, minimap: s.minimap, params: s.params, autoCook: s.autoCook, runOnStep: s.runOnStep, naming: s.naming,
     provider: s.provider, useOwn: s.useOwn, useOwnProvider: s.useOwnProvider }),
 }))
 

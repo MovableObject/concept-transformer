@@ -100,6 +100,19 @@ export interface TransformBox extends NodeBase {
   card: string               // Oblique Strategies: the card drawn on the last run
   ranKey: string             // inputs and settings at the last successful run; differs = stale
   bypass?: boolean           // passes its first input straight through
+  kept?: Record<string, KeptRun>   // the transform dial: each transform this node has shown keeps its own results
+}
+
+/** What a node remembers of a transform it stepped away from on the dial, so stepping back needs no rerun. */
+export interface KeptRun {
+  results: Result[]
+  shown: number
+  ranKey: string
+  engine: string
+  note: string
+  card: string
+  field: string
+  field2: string
 }
 
 export type MapBox = ConceptBox | SourceBox | NoteBox | TransformBox

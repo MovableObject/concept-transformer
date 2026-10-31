@@ -6,7 +6,7 @@ import { splitTag } from '@/lib/diff'
 import { canWire, downstream, keyOf, newId, place, tidy as tidyLayout } from '@/lib/graph'
 import { fromOlder } from '@/lib/legacy'
 import { moveById } from '@/lib/api'
-import type { Graph, MapBox, ModeId, Result, TransformBox, Verdict } from '@/lib/types'
+import type { Graph, KeptRun, MapBox, ModeId, Result, TransformBox, Verdict } from '@/lib/types'
 
 const KEY = 'ct.map.v4'
 const OLDER = ['ct.map.v3', 'ct.map.v2', 'ct.map.v1']
@@ -15,6 +15,15 @@ const empty = (): Graph => ({ v: 4, nodes: {}, order: [], selected: null })
 
 const str = (v: unknown, max = 4000) => (v == null ? '' : String(v)).slice(0, max)
 const num = (v: unknown) => Number(v) || 0
+
+const MAX_KEPT = 16   // transforms a node remembers from the dial
+
+function readResults(raw: unknown): Result[] {
+  return (Array.isArray(raw) ? raw : []).slice(0, 8).map((x) => {
+    const o = x as Record<string, unknown>
+    return { text: str(o.text), plain: str(o.plain), tag: str(o.tag), verdict: o.verdict === 'kept' || o.verdict === 'discarded' ? o.verdict : undefined, hand: o.hand === true || undefined }
+  })
+}
 
 /** Accept a version 4 graph, keeping only plain values: nothing from a file or old storage runs. */
 export function normalize(raw: unknown): Graph | null {
@@ -28,16 +37,22 @@ export function normalize(raw: unknown): Graph | null {
     let n: MapBox | null = null
     if (r.kind === 'concept' || r.kind === 'source' || r.kind === 'note') n = { ...base, kind: r.kind, text: str(r.text, 1600) } as MapBox
     else if (r.kind === 'transform') {
-      const results: Result[] = (Array.isArray(r.results) ? r.results : []).slice(0, 8).map((x) => {
-        const o = x as Record<string, unknown>
-        return { text: str(o.text), plain: str(o.plain), tag: str(o.tag), verdict: o.verdict === 'kept' || o.verdict === 'discarded' ? o.verdict : undefined, hand: o.hand === true || undefined }
-      })
+      const results = readResults(r.results)
+      const kept: Record<string, KeptRun> = {}
+      if (r.kept && typeof r.kept === 'object') {
+        for (const [m, v] of Object.entries(r.kept as Record<string, Record<string, unknown>>).slice(0, MAX_KEPT)) {
+          if (!v || typeof v !== 'object') continue
+          const rs = readResults(v.results)
+          kept[str(m, 60)] = { results: rs, shown: Math.min(num(v.shown), Math.max(0, rs.length - 1)), ranKey: str(v.ranKey, 20000),
+            engine: str(v.engine, 80), note: str(v.note, 400), card: str(v.card, 200), field: str(v.field, 300), field2: str(v.field2, 300) }
+        }
+      }
       n = { ...base, kind: 'transform', moveIds: (Array.isArray(r.moveIds) ? r.moveIds : []).slice(0, 3).map((m) => str(m, 60)),
         inputs: (Array.isArray(r.inputs) ? r.inputs : []).slice(0, 2).map((i) => (i ? str(i, 80) : null)),
         field: str(r.field, 300), field2: str(r.field2, 300), mode: r.mode === 'ideas' ? 'ideas' : 'image', words: num(r.words),
         results, shown: Math.min(num(r.shown), Math.max(0, results.length - 1)), status: r.status === 'error' ? 'error' : 'idle',
         error: str(r.error, 400), engine: str(r.engine, 80), note: str(r.note, 400), card: str(r.card, 200), ranKey: str(r.ranKey, 20000),
-        bypass: r.bypass === true || undefined } as TransformBox
+        bypass: r.bypass === true || undefined, kept: Object.keys(kept).length ? kept : undefined } as TransformBox
     }
     if (n) { out.nodes[k] = n; out.order.push(k) }
   }
@@ -100,6 +115,9 @@ interface GraphStore {
   finishRun: (id: string, key: string, variants: string[], engine: string, note: string, card: string) => void
   failRun: (id: string, message: string) => void
   setDisplay: (id: string | null) => void                     // move the display flag here (or take it off)
+  /** The transform dial: turn the node into another transform. Its current results are kept under the old transform,
+   *  and the new one's come back if it was shown before. One undo step; nothing runs. */
+  setMove: (id: string, moveId: string) => void
   writeResult: (id: string, text: string, index?: number) => void   // a result written by hand: new, or replacing result `index`
   show: (id: string, index: number) => void
   rotate: (id: string) => void
@@ -218,6 +236,25 @@ export const useGraph = create<GraphStore>()((set, get) => ({
     t.status = 'idle'; t.error = ''; t.bypass = undefined
     if (!t.engine) t.engine = 'by hand'
     t.ranKey = keyOf(g, t)
+  }, { undo: true }),
+  setMove: (id, moveId) => get().update((g) => {
+    const t = g.nodes[id]
+    if (t?.kind !== 'transform' || t.status === 'working' || (t.moveIds.length === 1 && t.moveIds[0] === moveId)) return
+    const kept = { ...(t.kept || {}) }
+    if (t.moveIds.length === 1 && (t.results.length || t.field || t.field2)) {
+      delete kept[t.moveIds[0]]
+      kept[t.moveIds[0]] = { results: t.results, shown: t.shown, ranKey: t.ranKey, engine: t.engine, note: t.note, card: t.card, field: t.field, field2: t.field2 }
+    }
+    const back = kept[moveId]
+    delete kept[moveId]
+    const names = Object.keys(kept)
+    for (const old of names.slice(0, Math.max(0, names.length - MAX_KEPT))) delete kept[old]   // the oldest go first
+    t.moveIds = [moveId]
+    t.results = back?.results || []; t.shown = back?.shown || 0; t.ranKey = back?.ranKey || ''
+    t.engine = back?.engine || ''; t.note = back?.note || ''; t.card = back?.card || ''
+    t.field = back?.field || ''; t.field2 = back?.field2 || ''
+    t.status = 'idle'; t.error = ''
+    t.kept = Object.keys(kept).length ? kept : undefined
   }, { undo: true }),
   setDisplay: (id) => get().update((g) => { g.display = id && g.nodes[id]?.kind === 'transform' ? id : null }, { undo: true }),
   failRun: (id, message) => get().update((g) => {

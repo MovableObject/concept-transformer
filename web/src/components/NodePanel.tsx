@@ -22,6 +22,7 @@ import { MoveIcon, groupColor } from './MoveIcon'
 import { ChangedText } from './ChangedText'
 import { HandSteps, MoveTip, handText } from './MoveGroups'
 import { ModeTabs } from './SidePanel'
+import { DialArrow } from './nodes/Nodes'
 
 const rowLabel = 'w-20 shrink-0 text-right text-[12px] text-muted-foreground'
 
@@ -164,8 +165,10 @@ function Body() {
         </details>
       )}
       <div className="flex items-center gap-2">
+        <DialArrow id={t.id} dir={-1} disabled={state === 'working'} />
         {t.moveIds.map((m) => <MoveIcon key={m} id={m} className="size-6" />)}
         <span className="min-w-0"><span className="text-[15px] font-semibold" style={{ color: groupColor(def?.group) }}>{name}</span>{subOf(def, t.mode) && <span className="block text-[12px] text-muted-foreground">{subOf(def, t.mode)}</span>}</span>
+        <DialArrow id={t.id} dir={1} disabled={state === 'working'} />
         <Button size="sm" className="ml-auto h-7" disabled={busy || !!t.bypass} onClick={() => runNodes([t.id])} title="Run this transform (R)">
           <Play />{state === 'done' ? 'Run again' : 'Run'}
         </Button>
